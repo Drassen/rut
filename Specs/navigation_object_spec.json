@@ -1,0 +1,163 @@
+{
+  "navigation_document": {
+    "description": "Generic navigation object used by the Rut app.",
+    "fields": {
+      "createdAt": {
+        "type": "ISO-8601 datetime string",
+        "description": "Creation time of this navigation document."
+      },
+      "routes": {
+        "type": "array of Route",
+        "description": "List of routes stored in the document."
+      },
+      "userAirports": {
+        "type": "array of UserAirport",
+        "description": "User-defined airports."
+      },
+      "userNavaids": {
+        "type": "array of UserNavaid",
+        "description": "User-defined navaids."
+      },
+      "userWaypoints": {
+        "type": "array of UserWaypoint",
+        "description": "User-defined waypoints."
+      }
+    }
+  },
+  "Route": {
+    "fields": {
+      "id": {
+        "type": "UUID string",
+        "description": "Internal unique identifier."
+      },
+      "routeId": {
+        "type": "string",
+        "constraints": "Length exactly 5, unique among routes, allowed characters A-Z, 0-9, -"
+      },
+      "name": {
+        "type": "string",
+        "constraints": "Max 15 characters, allowed characters A-Z, 0-9, -"
+      },
+      "pointRefs": {
+        "type": "array of RoutePointRef",
+        "description": "Ordered list of points that form the route."
+      }
+    }
+  },
+  "RoutePointRef": {
+    "fields": {
+      "id": {
+        "type": "UUID string"
+      },
+      "kind": {
+        "type": "enum",
+        "values": [
+          "userAirport",
+          "userNavaid",
+          "userWaypoint",
+          "systemAirport",
+          "systemNavaid"
+        ]
+      },
+      "refId": {
+        "type": "string",
+        "description": "The id field of the referenced object (airport / navaid / waypoint)."
+      }
+    }
+  },
+  "UserAirport": {
+    "fields": {
+      "id": {
+        "type": "string",
+        "constraints": "Exactly 4 characters, unique among user airports, allowed characters A-Z, 0-9"
+      },
+      "name": {
+        "type": "string",
+        "constraints": "Max 15 characters, allowed characters A-Z, 0-9, -"
+      },
+      "latitude": {
+        "type": "double",
+        "description": "Signed degrees latitude."
+      },
+      "longitude": {
+        "type": "double",
+        "description": "Signed degrees longitude."
+      },
+      "elevation": {
+        "type": "double",
+        "description": "Elevation in feet or meters (decided by format)."
+      },
+      "magneticVariation": {
+        "type": "double",
+        "description": "Magnetic variation in degrees."
+      }
+    }
+  },
+  "UserNavaid": {
+    "fields": {
+      "id": {
+        "type": "string",
+        "constraints": "2 or 3 characters, unique among user navaids, allowed characters A-Z, 0-9"
+      },
+      "name": {
+        "type": "string",
+        "constraints": "Max 15 characters, allowed characters A-Z, 0-9, -"
+      },
+      "latitude": {
+        "type": "double"
+      },
+      "longitude": {
+        "type": "double"
+      },
+      "elevation": {
+        "type": "double"
+      },
+      "magneticVariation": {
+        "type": "double"
+      },
+      "frequency": {
+        "type": "double",
+        "description": "Frequency in MHz or kHz (format dependent)."
+      }
+    }
+  },
+  "UserWaypoint": {
+    "fields": {
+      "id": {
+        "type": "string",
+        "constraints": "5 characters, unique among user waypoints, allowed characters A-Z, 0-9, -"
+      },
+      "name": {
+        "type": "string",
+        "constraints": "Max 15 characters, allowed characters A-Z, 0-9, -"
+      },
+      "type": {
+        "type": "enum",
+        "values": [
+          "WPT",
+          "IP",
+          "TGT",
+          "HLD",
+          "CLI",
+          "DES"
+        ]
+      },
+      "latitude": {
+        "type": "double"
+      },
+      "longitude": {
+        "type": "double"
+      },
+      "elevation": {
+        "type": "double"
+      }
+    }
+  },
+  "notes": [
+    "All strings are expected to be uppercase in exported formats.",
+    "A route is a path connecting points. The allowed characters in ids and names are A-Z, 0-9 and '-'.",
+    "When assigning waypoint types, names should be automatically updated to TYPE## within the route (e.g. TGT01, WPT02).",
+    "Airports and navaids can be part of a route but are not renamed when waypoint types are changed.",
+    "If a route is imported without a separate airport file, any 4-letter code starting with 'E' is treated as an airport and created in userAirports."
+  ]
+}
