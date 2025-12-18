@@ -7,21 +7,32 @@ struct RouteTileView: View {
     let onClose: () -> Void
 
     var body: some View {
-        HStack {
-            Text(route.name)
-                .font(.headline)
+        HStack(spacing: 8) {
+            Text("\(route.name)")
                 .lineLimit(1)
-            Spacer()
-            Button(action: onClose) {
-                Image(systemName: "xmark.circle.fill")
-                    .imageScale(.medium)
+                .fontWeight(isActive ? .semibold : .regular)
+                .foregroundColor(isActive ? .white : .primary)
+            
+            Text("\(route.pointRefs.count)")
+                .lineLimit(1)
+                .fontWeight(.regular)
+                .foregroundColor(route.pointRefs.count>40 ? .red : .white.opacity(0.6))
+
+            Button {
+                onClose()
+            } label: {
+                Image(systemName: "xmark")
+                    .font(.caption)
+                    .foregroundColor(isActive ? .white.opacity(0.8) : .secondary)
+                    .padding(4)
+                    .background(Color.black.opacity(0.1))
+                    .clipShape(Circle())
             }
-            .buttonStyle(.plain)
         }
-        .padding(8)
-        .background(isActive ? Color.accentColor.opacity(0.9) : Color.accentColor.opacity(0.3))
-        .foregroundColor(.white)
-        .cornerRadius(4)
+        .padding(.vertical, 10)
+        .padding(.horizontal, 16)
+        .background(isActive ? Color.blue : Color(.secondarySystemBackground))
+        .cornerRadius(8)
         .onTapGesture {
             onTap()
         }

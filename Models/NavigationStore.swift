@@ -56,17 +56,36 @@ final class NavigationStore: ObservableObject {
     }
 
     func deleteRoute(_ route: Route) {
-        document.routes.removeAll { $0.id == route.id }
-        let stillReferencedIds: Set<String> = Set(document.routes.flatMap { $0.pointRefs.map { $0.refId } })
-        
-        document.userWaypoints.removeAll { !stillReferencedIds.contains($0.id) }
-        document.userAirports.removeAll { !stillReferencedIds.contains($0.id) }
-        document.userNavaids.removeAll { !stillReferencedIds.contains($0.id) }
-        document.systemAirports.removeAll { !stillReferencedIds.contains($0.id) }
-        document.systemNavaids.removeAll { !stillReferencedIds.contains($0.id) }
+            // 1. Spara undan IDn som används av rutten vi ska ta bort
+            // Detta är "Kandidater för radering"
+            let idsInDeletedRoute = Set(route.pointRefs.map { $0.refId })
 
-        if activeRouteId == route.id { activeRouteId = document.routes.first?.id }
-    }
+            // 2. Ta bort själva rutten från dokumentet
+            document.routes.removeAll { $0.id == route.id }
+
+            // 3. Ta reda på vilka IDn som fortfarande används av de KVARVARANDE rutterna
+            // Detta är "Skyddade IDn"
+            let idsInRemainingRoutes = Set(document.routes.flatMap { $0.pointRefs.map { $0.refId } })
+
+            // 4. Räkna ut exakt vilka som ska bort:
+            // Formel: (Punkter i raderad rutt) MINUS (Punkter som används av andra)
+            // Detta skyddar punkter som inte hade med den raderade rutten att göra ("Orphans").
+            let idsToRemove = idsInDeletedRoute.subtracting(idsInRemainingRoutes)
+
+            // 5. Rensa bara de punkter som vi räknade fram i steg 4
+            if !idsToRemove.isEmpty {
+                document.userWaypoints.removeAll { idsToRemove.contains($0.id) }
+                document.userAirports.removeAll { idsToRemove.contains($0.id) }
+                document.userNavaids.removeAll { idsToRemove.contains($0.id) }
+                document.systemAirports.removeAll { idsToRemove.contains($0.id) }
+                document.systemNavaids.removeAll { idsToRemove.contains($0.id) }
+            }
+
+            // 6. Uppdatera activeRoute om vi tog bort den som var aktiv
+            if activeRouteId == route.id {
+                activeRouteId = document.routes.first?.id
+            }
+        }
 
     func updateRouteName(_ route: Route, newName: String) {
         guard let idx = document.routes.firstIndex(where: { $0.id == route.id }) else { return }

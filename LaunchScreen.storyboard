@@ -4,7 +4,6 @@
     <dependencies>
         <plugIn identifier="com.apple.InterfaceBuilder.IBCocoaTouchPlugin" version="24504"/>
         <capability name="Safe area layout guides" minToolsVersion="9.0"/>
-        <capability name="System colors in document resources" minToolsVersion="11.0"/>
         <capability name="documents saved in the Xcode 8 format" minToolsVersion="8.0"/>
     </dependencies>
     <scenes>
@@ -23,20 +22,12 @@
                                     <constraint firstAttribute="width" secondItem="PPd-ee-pMi" secondAttribute="height" multiplier="56:75" id="xMN-8E-Z10"/>
                                 </constraints>
                             </imageView>
-                            <label opaque="NO" userInteractionEnabled="NO" contentMode="left" horizontalHuggingPriority="251" verticalHuggingPriority="251" text="0.1" textAlignment="center" lineBreakMode="tailTruncation" baselineAdjustment="alignBaselines" adjustsFontSizeToFit="NO" translatesAutoresizingMaskIntoConstraints="NO" id="ylF-ER-5Vy">
-                                <rect key="frame" x="402" y="1116" width="30" height="29"/>
-                                <fontDescription key="fontDescription" type="system" pointSize="24"/>
-                                <color key="textColor" systemColor="systemGray2Color"/>
-                                <nil key="highlightedColor"/>
-                            </label>
                         </subviews>
                         <viewLayoutGuide key="safeArea" id="Bcu-3y-fUS"/>
                         <color key="backgroundColor" white="0.0" alpha="1" colorSpace="custom" customColorSpace="genericGamma22GrayColorSpace"/>
                         <constraints>
-                            <constraint firstItem="Bcu-3y-fUS" firstAttribute="bottom" secondItem="ylF-ER-5Vy" secondAttribute="bottom" constant="20" id="2XZ-ni-j1m"/>
                             <constraint firstItem="PPd-ee-pMi" firstAttribute="centerY" secondItem="Ze5-6b-2t3" secondAttribute="centerY" id="9iY-u7-qhO"/>
                             <constraint firstItem="PPd-ee-pMi" firstAttribute="centerX" secondItem="Ze5-6b-2t3" secondAttribute="centerX" id="OgG-jC-IQc"/>
-                            <constraint firstItem="ylF-ER-5Vy" firstAttribute="centerX" secondItem="Ze5-6b-2t3" secondAttribute="centerX" id="VHi-3X-hEd"/>
                         </constraints>
                     </view>
                 </viewController>
@@ -46,9 +37,6 @@
         </scene>
     </scenes>
     <resources>
-        <image name="startimage" width="765" height="1024"/>
-        <systemColor name="systemGray2Color">
-            <color red="0.68235294117647061" green="0.68235294117647061" blue="0.69803921568627447" alpha="1" colorSpace="custom" customColorSpace="sRGB"/>
-        </systemColor>
+        <image name="startimage" width="1195" height="1600"/>
     </resources>
 </document>

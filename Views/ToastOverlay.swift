@@ -24,7 +24,7 @@ struct ToastOverlay: View {
                                 .fill(Color.black.opacity(0.85))
                         )
                         .foregroundColor(.white)
-                        .padding(.bottom, 24)
+                        .padding(.bottom, 90)
                         .onTapGesture {
                             withAnimation {
                                 core.toastManager.isVisible = false

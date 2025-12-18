@@ -117,7 +117,7 @@ final class CoreServices: ObservableObject {
 
         // Register exporters
         self.exportServices = [
-            A109P01SetExportService(),
+            A109PCMCIAExportService(),
             FPLExportService(),
             RTEExportService(),
             RUTExportService(),
@@ -195,12 +195,14 @@ final class CoreServices: ObservableObject {
             }
 
             do {
+                // Vi kopierar alltid till temp först för att undvika problem med låsta filer
                 let tempDir = FileManager.default.temporaryDirectory
                 let localURL = tempDir.appendingPathComponent(originalName)
                 try? FileManager.default.removeItem(at: localURL)
                 
                 let secured = url.startAccessingSecurityScopedResource()
                 defer { if secured { url.stopAccessingSecurityScopedResource() } }
+                
                 try FileManager.default.copyItem(at: url, to: localURL)
                 defer { try? FileManager.default.removeItem(at: localURL) }
 
@@ -224,6 +226,7 @@ final class CoreServices: ObservableObject {
                 importedNavaids += doc.userNavaids.count
                 importedWaypoints += doc.userWaypoints.count
 
+                // Vi bygger upp en temporär store för att merga filen korrekt
                 let tmpStore = NavigationStore()
                 tmpStore.document = newDoc
                 tmpStore.addOrMerge(document: doc)
@@ -235,17 +238,15 @@ final class CoreServices: ObservableObject {
             }
         }
 
+        // Här läggs allt in i huvud-databasen.
+        // Eftersom JSONDecoder behöll ordningen, och addOrMerge (förhoppningsvis) lägger till i slutet,
+        // så bibehålls ordningen.
         navStore.addOrMerge(document: newDoc)
-
-        // FIX: Bytte till _ = ... för att tysta varningen om oanvänd variabel
+        
+        // Tysta varningen om oanvänd variabel med _
         _ = newDoc.routes.map { $0.id }
         
         navStore.deriveUserAirportsIfNeeded()
-
-        // --- VIKTIGT ---
-        // Vi kommenterar ut renumberWaypoints eftersom det döper om importade
-        // waypoints till "WPT1", "WPT2" etc, vilket förstör original-IDt.
-        // navStore.renumberWaypoints(forRouteIds: importedRouteIds)
 
         let totalItems = importedRoutePoints + importedAirports + importedNavaids + importedWaypoints + importedRoutesCount
         

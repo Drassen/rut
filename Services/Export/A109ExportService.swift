@@ -14,11 +14,11 @@ struct A109FileSet {
 
 // MARK: - Export Service
 
-struct A109P01SetExportService: RouteExporting {
+struct A109PCMCIAExportService: RouteExporting {
     
     // Protocol requirements
-    let id = "A109 P01 set"
-    let displayName = "A109 P01 set"
+    let id = "A109 PCMCIA"
+    let displayName = "A109 PCMCIA"
     let supportedExtensions = ["zip"]
     
     // Max records according to the A109 limits
@@ -30,7 +30,7 @@ struct A109P01SetExportService: RouteExporting {
     /// Main entry point
     func export(document: NavigationDocument, selectedRoutes: [Route]) throws -> [ExportedFile] {
         
-        let fileSet = A109P01SetExportService.generateFileSet(document: document)
+        let fileSet = A109PCMCIAExportService.generateFileSet(document: document)
         
         return [
             ExportedFile(filename: "PILOTE.HD", data: fileSet.piloteHD),
@@ -47,7 +47,7 @@ struct A109P01SetExportService: RouteExporting {
         
         
         // --- DEBUG: Tvinga datum
-        //let date = Calendar(identifier: .gregorian).date(from: DateComponents(year: 2025, month: 11, day: 17)) ?? date
+        //let date = Calendar(identifier: .gregorian).date(from: DateComponents(year: 2025, month: 11, day: 07)) ?? date
         
         // 1. Clamp to A109 limits
         let airports = Array(document.userAirports.prefix(maxAirports))
@@ -113,7 +113,7 @@ struct A109P01SetExportService: RouteExporting {
 
 // MARK: - File Generators (Private Extensions)
 
-private extension A109P01SetExportService {
+private extension A109PCMCIAExportService {
     
     // MARK: AIRPORT.P01
     static func makeAirportFile(airports: [UserAirport], usage: [String: Int]) -> Data {
@@ -562,7 +562,7 @@ private extension A109P01SetExportService {
 
 // MARK: - Common Helpers
 
-private extension A109P01SetExportService {
+private extension A109PCMCIAExportService {
     
     static func usageCountsForAirports(routes: [Route]) -> [String: Int] {
         var counts: [String: Int] = [:]

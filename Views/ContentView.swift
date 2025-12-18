@@ -5,11 +5,6 @@ import Foundation
 
 // MARK: - Helper Structs
 
-struct ExportContainer: Identifiable {
-    let id = UUID()
-    let urls: [URL]
-}
-
 struct EditorWrapper: Identifiable {
     let id = UUID()
     let mode: PointEditorView.EditMode
@@ -17,25 +12,45 @@ struct EditorWrapper: Identifiable {
 
 enum ExportFormat: String, CaseIterable, Identifiable {
     case a109 = "A109 PCMCIA"
-    case fpl = "ForeFlight FPL"
-    case rte = "Garmin RTE"
-    case rut = "Rut .RUT"
-    case apt = "User Airports .APT"
-    case nav = "User Navaids .NAV"
+    case uh60m = "UH60M PCMCIA (Not implemented)"
+    case h145 = "H145 PCMCIA (Not implemented)"
+    
+    case rte = "Garmin route (.RTE)"
+    
+    case rut = "RUT complete set (.RUT)"
+    case fpl = "User Routes (.FPL)"
+    case apt = "User Airports (.APT)"
+    case nav = "User Navaids (.NAV)"
     
     var id: String { rawValue }
+}
+
+struct ExportContainer: Identifiable {
+    let id = UUID()
+    let urls: [URL]
 }
 
 struct ContentView: View {
     @EnvironmentObject var navStore: NavigationStore
     @EnvironmentObject var toastManager: ToastManager
     
+    // Import state
     @State private var isImporting = false
+    
+    // Export state
+    @State private var isSelectingExportFolder = false // For A109 direct write
+    @State private var exportContainer: ExportContainer? // For other formats (Share sheet)
+    @State private var showA109MissingDataAlert = false // Varning för saknad data
+    
     @State private var showDatabase = false
     @State private var editorSheet: EditorWrapper?
     
     @State private var exportFormat: ExportFormat = .a109
-    @State private var exportContainer: ExportContainer?
+    
+    // NYTT: Helper för att hämta version
+    private var appVersion: String {
+        Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "Unknown"
+    }
     
     private var hasAnyData: Bool {
         !navStore.routes.isEmpty ||
@@ -63,7 +78,6 @@ struct ContentView: View {
                         isImporting = true
                     } label: {
                         Label("Import", systemImage: "square.and.arrow.down")
-                            //.frame(maxWidth: .infinity)
                             .frame(minWidth: 200)
                     }
                     .buttonStyle(.borderedProminent)
@@ -73,13 +87,11 @@ struct ContentView: View {
                         allowsMultipleSelection: true,
                         onCompletion: handleImport(result:)
                     )
-                    
-                    
                 }
                 .padding(.horizontal)
-               
+                
                 if !hasAnyData {
-                    Text("Import files (FPL, RTE, P01, APT, NAV)")
+                    Text(".RUT .FPL .RTE .P01 .APT .NAV")
                         .font(.footnote)
                         .foregroundColor(.secondary)
                         .padding(.horizontal)
@@ -107,20 +119,17 @@ struct ContentView: View {
                         let uApCount = navStore.document.userAirports.count
                         if uApCount > 0 {
                             Label("\(uApCount) Apt", systemImage: "airplane")
-                                .font(.headline)
-                                .foregroundColor(.secondary)
+                                .font(.headline).foregroundColor(.secondary)
                         }
                         let uNvCount = navStore.document.userNavaids.count
                         if uNvCount > 0 {
                             Label("\(uNvCount) Nav", systemImage: "antenna.radiowaves.left.and.right")
-                                .font(.headline)
-                                .foregroundColor(.secondary)
+                                .font(.headline).foregroundColor(.secondary)
                         }
                         let uWpCount = navStore.document.userWaypoints.count
                         if uWpCount > 0 {
                             Label("\(uWpCount) Wpt", systemImage: "mappin.and.ellipse")
-                                .font(.headline)
-                                .foregroundColor(.secondary)
+                                .font(.headline).foregroundColor(.secondary)
                         }
                         Spacer()
                         Button {
@@ -134,7 +143,6 @@ struct ContentView: View {
                     
                     // Map
                     RutMapView(onPointTap: { point in
-                        // ÄNDRAT: Callback har nu bara 'point' (inga route/index)
                         switch point.kind {
                         case .userWaypoint:
                             if let wp = navStore.document.userWaypoints.first(where: { $0.id == point.name }) {
@@ -161,7 +169,7 @@ struct ContentView: View {
                     .environmentObject(navStore)
                     .frame(minHeight: 250)
                     
-                    // Export
+                    // Export Controls
                     HStack {
                         Picker("Format", selection: $exportFormat) {
                             ForEach(ExportFormat.allCases) { format in
@@ -169,19 +177,51 @@ struct ContentView: View {
                             }
                         }
                         .pickerStyle(.menu)
-                       
+                        
                         Button {
-                            prepareExport()
+                            handleExportButtonTap()
                         } label: {
-                            Label("Export", systemImage: "square.and.arrow.up")
-                                .frame(maxWidth: .infinity)
+                            // Label changes based on context (PCMCIA formats vs others)
+                            if exportFormat == .a109 || exportFormat == .uh60m || exportFormat == .h145 {
+                                Label("Save to Drive", systemImage: "externaldrive.badge.plus")
+                            } else {
+                                Label("Export", systemImage: "square.and.arrow.up")
+                            }
                         }
+                        .frame(maxWidth: .infinity)
                         .buttonStyle(.borderedProminent)
+                        // Trigger for A109 Folder Selection
+                        .fileImporter(
+                            isPresented: $isSelectingExportFolder,
+                            allowedContentTypes: [.folder],
+                            allowsMultipleSelection: false,
+                            onCompletion: { result in
+                                handleA109ExportFolderSelection(result: result)
+                            }
+                        )
+                        // ALERT: Varning om data saknas vid A109
+                        .alert("Incomplete Data", isPresented: $showA109MissingDataAlert) {
+                            Button("Cancel", role: .cancel) { }
+                            Button("Continue") {
+                                // Fortsätt till mapp-val om användaren godkänner
+                                isSelectingExportFolder = true
+                            }
+                        } message: {
+                            Text("Do you want to continue the export without user airports or user navaids?")
+                        }
                     }
                     .padding()
                 }
+                
+                // Versionsnummer längst ner
+                if !hasAnyData {
+                    Text("v\(appVersion)")
+                        .font(.caption)
+                        .foregroundColor(.secondary.opacity(0.5))
+                        .padding(.bottom, 4)
+                }
             }
-           
+            
             ToastOverlay()
                 .environmentObject(toastManager)
         }
@@ -196,7 +236,8 @@ struct ContentView: View {
             DatabaseListView()
                 .environmentObject(navStore)
         }
-
+        
+        // Trigger for Standard Share Sheet (Non-A109)
         .sheet(item: $exportContainer) { container in
             MultiFileExportController(fileURLs: container.urls) { success in
                 if !success { }
@@ -207,6 +248,8 @@ struct ContentView: View {
             importURLs([url])
         }
     }
+    
+    // MARK: - Logic
     
     private func handleImport(result: Result<[URL], Error>) {
         switch result {
@@ -235,9 +278,7 @@ struct ContentView: View {
     private func showRenameDialog(for route: Route) {
         let currentName = route.name
         let alert = UIAlertController(title: "Rename route", message: nil, preferredStyle: .alert)
-        alert.addTextField { tf in
-            tf.text = currentName
-        }
+        alert.addTextField { tf in tf.text = currentName }
         alert.addAction(UIAlertAction(title: "Cancel", style: .cancel, handler: { _ in }))
         alert.addAction(UIAlertAction(title: "Save", style: .default, handler: { _ in
             if let newName = alert.textFields?.first?.text {
@@ -250,33 +291,71 @@ struct ContentView: View {
         }
     }
     
-    private func prepareExport() {
-        let hasDataToExport: Bool
+    // MARK: - Export Logic
+    
+    private func canExport() -> Bool {
+        let hasData: Bool
         switch exportFormat {
-        case .apt: hasDataToExport = !navStore.document.userAirports.isEmpty
-        case .nav: hasDataToExport = !navStore.document.userNavaids.isEmpty
-        case .fpl, .rte: hasDataToExport = !navStore.routes.isEmpty
-        case .rut, .a109:
-            hasDataToExport = !navStore.routes.isEmpty ||
-                              !navStore.document.userAirports.isEmpty ||
-                              !navStore.document.userNavaids.isEmpty ||
-                              !navStore.document.userWaypoints.isEmpty
+        case .apt: hasData = !navStore.document.userAirports.isEmpty
+        case .nav: hasData = !navStore.document.userNavaids.isEmpty
+        case .fpl, .rte: hasData = !navStore.routes.isEmpty
+        case .rut, .a109, .uh60m, .h145: // Inkludera de nya formaten i datakollen
+            hasData = !navStore.routes.isEmpty ||
+                      !navStore.document.userAirports.isEmpty ||
+                      !navStore.document.userNavaids.isEmpty ||
+                      !navStore.document.userWaypoints.isEmpty
         }
         
-        guard hasDataToExport else {
+        if !hasData {
             toastManager.show(message: "No data available to export for \(exportFormat.rawValue).", kind: .info)
+            return false
+        }
+        return true
+    }
+    
+    private func handleExportButtonTap() {
+        // Om UH-60M eller H145 är vald, stoppa direkt med ett meddelande
+        if exportFormat == .uh60m {
+            toastManager.show(message: "UH-60M export is not implemented yet.", kind: .info)
+            return
+        }
+        if exportFormat == .h145 {
+            toastManager.show(message: "H145 export is not implemented yet.", kind: .info)
             return
         }
         
+        guard canExport() else { return }
+        
+        if exportFormat == .a109 {
+            // Kontrollera om data saknas
+            let missingAirports = navStore.document.userAirports.isEmpty
+            let missingNavaids = navStore.document.userNavaids.isEmpty
+            
+            if missingAirports || missingNavaids {
+                // Visa varning -> Alert triggar 'isSelectingExportFolder' om man väljer Continue
+                showA109MissingDataAlert = true
+            } else {
+                // Allt ok, öppna mapp-väljare direkt
+                isSelectingExportFolder = true
+            }
+        } else {
+            // Övriga format -> Standard Share Sheet
+            prepareStandardExport()
+        }
+    }
+    
+    // MARK: - Standard Export (FPL, RTE, etc)
+    
+    private func prepareStandardExport() {
         let registry = ImportExportRegistry.shared
         guard let exporter = {
             switch exportFormat {
-            case .fpl: return registry.exporter(forFormatName: "ForeFlight FPL")
-            case .rte: return registry.exporter(forFormatName: "Garmin RTE")
-            case .rut: return registry.exporter(forFormatName: "Rut .RUT")
-            case .a109: return registry.exporter(forFormatName: "A109 PCMCIA")
+            case .fpl: return registry.exporter(forFormatName: "ForeFlight (.FPL)")
+            case .rte: return registry.exporter(forFormatName: "Garmin (.RTE)")
+            case .rut: return registry.exporter(forFormatName: "Rut (.RUT)")
             case .apt: return registry.exporter(forFormatName: "Rut User Airports (.APT)")
             case .nav: return registry.exporter(forFormatName: "Rut User Navaids (.NAV)")
+            default: return nil // A109, UH60M, H145 hanteras inte här
             }
         }() else {
             toastManager.show(message: "Exporter not available.")
@@ -290,6 +369,7 @@ struct ContentView: View {
                 return
             }
             
+            // Create temp folder
             let tempDir = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
             try FileManager.default.createDirectory(at: tempDir, withIntermediateDirectories: true)
             
@@ -297,15 +377,105 @@ struct ContentView: View {
             for file in generatedFiles {
                 let fileURL = tempDir.appendingPathComponent(file.filename)
                 try file.data.write(to: fileURL, options: .atomic)
-                urls.append(fileURL.standardizedFileURL)
+                urls.append(fileURL)
             }
             
             DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
                 self.exportContainer = ExportContainer(urls: urls)
             }
+            
         } catch {
             ErrorLogger.shared.logError(error)
             toastManager.show(message: error.localizedDescription)
+        }
+    }
+    
+    // MARK: - A109 Direct Export (Folder Selection)
+    
+    private func handleA109ExportFolderSelection(result: Result<[URL], Error>) {
+        switch result {
+        case .failure(let error):
+            toastManager.showError(error)
+        case .success(let urls):
+            guard let folderURL = urls.first else { return }
+            performA109DirectExport(to: folderURL)
+        }
+    }
+    
+    private func performA109DirectExport(to folderURL: URL) {
+        let registry = ImportExportRegistry.shared
+        guard let exporter = registry.exporter(forFormatName: "A109 PCMCIA") else {
+            toastManager.show(message: "Exporter not available.")
+            return
+        }
+        
+        do {
+            let generatedFiles = try exporter.export(document: navStore.document, routes: navStore.routes)
+            if generatedFiles.isEmpty {
+                toastManager.show(message: "Nothing to export.", kind: .info)
+                return
+            }
+            
+            // Start accessing security scoped resource
+            let secured = folderURL.startAccessingSecurityScopedResource()
+            defer { if secured { folderURL.stopAccessingSecurityScopedResource() } }
+            
+            // --- WRITE FILES ---
+            // Ingen tömning av mappen görs här längre. Vi skriver bara över filer om de heter samma.
+            
+            var successCount = 0
+            for file in generatedFiles {
+                let destinationURL = folderURL.appendingPathComponent(file.filename)
+                try file.data.write(to: destinationURL, options: .atomic)
+                
+                // Clean metadata (._ files)
+                destinationURL.cleanAppleAttributes()
+                successCount += 1
+            }
+            
+            // Final cleanup of any system folders like .Spotlight-V100 that might persist
+            try cleanupDotFiles(in: folderURL)
+            
+            toastManager.show(message: "Saved \(successCount) files to \(folderURL.lastPathComponent)", kind: .info)
+            
+        } catch {
+            ErrorLogger.shared.logError(error)
+            toastManager.show(message: "Export failed: \(error.localizedDescription)")
+        }
+    }
+    
+    private func cleanupDotFiles(in folderURL: URL) throws {
+        let fileManager = FileManager.default
+        let contents = try fileManager.contentsOfDirectory(at: folderURL, includingPropertiesForKeys: nil, options: [])
+        
+        for fileURL in contents {
+            let name = fileURL.lastPathComponent
+            if name.hasPrefix(".") {
+                do {
+                    try fileManager.removeItem(at: fileURL)
+                    print("Deleted system artifact: \(name)")
+                } catch {
+                    print("Failed to delete \(name): \(error.localizedDescription)")
+                }
+            }
+        }
+    }
+}
+
+// MARK: - URL Extension (Städning)
+
+extension URL {
+    func cleanAppleAttributes() {
+        self.withUnsafeFileSystemRepresentation { fileSystemPath in
+            guard let fileSystemPath = fileSystemPath else { return }
+            let attributesToRemove = [
+                "com.apple.quarantine", "com.apple.FinderInfo",
+                "com.apple.ResourceFork", "com.apple.metadata:_kMDItemUserTags",
+                "com.apple.lastuseddate#PS"
+            ]
+            for attr in attributesToRemove {
+                removexattr(fileSystemPath, attr, 0)
+            }
         }
     }
 }
