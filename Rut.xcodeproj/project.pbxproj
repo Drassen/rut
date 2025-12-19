@@ -10,20 +10,16 @@
 		423415612EEF03C200F0ACCA /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 423415592EEF03C200F0ACCA /* Assets.xcassets */; };
 		423415632EEF03C200F0ACCA /* README.md in Resources */ = {isa = PBXBuildFile; fileRef = 4234155E2EEF03C200F0ACCA /* README.md */; };
 		4234157F2EEF03C200F0ACCA /* Errors.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4234155A2EEF03C200F0ACCA /* Errors.swift */; };
-		423415802EEF03C200F0ACCA /* ImportExportRegistry.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4234155B2EEF03C200F0ACCA /* ImportExportRegistry.swift */; };
-		423415812EEF03C200F0ACCA /* Item.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4234155D2EEF03C200F0ACCA /* Item.swift */; };
-		423415822EEF03C200F0ACCA /* RuttisApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4234155F2EEF03C200F0ACCA /* RuttisApp.swift */; };
+		423415822EEF03C200F0ACCA /* RutApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4234155F2EEF03C200F0ACCA /* RutApp.swift */; };
 		423415862EEF12E100F0ACCA /* LaunchScreen.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = 423415852EEF12E100F0ACCA /* LaunchScreen.storyboard */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
 		423415592EEF03C200F0ACCA /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 		4234155A2EEF03C200F0ACCA /* Errors.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Errors.swift; sourceTree = "<group>"; };
-		4234155B2EEF03C200F0ACCA /* ImportExportRegistry.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ImportExportRegistry.swift; sourceTree = "<group>"; };
 		4234155C2EEF03C200F0ACCA /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
-		4234155D2EEF03C200F0ACCA /* Item.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Item.swift; sourceTree = "<group>"; };
 		4234155E2EEF03C200F0ACCA /* README.md */ = {isa = PBXFileReference; lastKnownFileType = net.daringfireball.markdown; path = README.md; sourceTree = "<group>"; };
-		4234155F2EEF03C200F0ACCA /* RuttisApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RuttisApp.swift; sourceTree = "<group>"; };
+		4234155F2EEF03C200F0ACCA /* RutApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RutApp.swift; sourceTree = "<group>"; };
 		423415852EEF12E100F0ACCA /* LaunchScreen.storyboard */ = {isa = PBXFileReference; lastKnownFileType = file.storyboard; path = LaunchScreen.storyboard; sourceTree = "<group>"; };
 		429A0F072EEF5A9C00A4960A /* .gitignore */ = {isa = PBXFileReference; lastKnownFileType = text; path = .gitignore; sourceTree = "<group>"; };
 		42EE06B32ED4F10100952608 /* Rut.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Rut.app; sourceTree = BUILT_PRODUCTS_DIR; };
@@ -115,11 +111,9 @@
 				423415592EEF03C200F0ACCA /* Assets.xcassets */,
 				4234155A2EEF03C200F0ACCA /* Errors.swift */,
 				429A0F072EEF5A9C00A4960A /* .gitignore */,
-				4234155B2EEF03C200F0ACCA /* ImportExportRegistry.swift */,
 				4234155C2EEF03C200F0ACCA /* Info.plist */,
-				4234155D2EEF03C200F0ACCA /* Item.swift */,
 				4234155E2EEF03C200F0ACCA /* README.md */,
-				4234155F2EEF03C200F0ACCA /* RuttisApp.swift */,
+				4234155F2EEF03C200F0ACCA /* RutApp.swift */,
 			);
 			sourceTree = "<group>";
 		};
@@ -209,9 +203,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				4234157F2EEF03C200F0ACCA /* Errors.swift in Sources */,
-				423415802EEF03C200F0ACCA /* ImportExportRegistry.swift in Sources */,
-				423415812EEF03C200F0ACCA /* Item.swift in Sources */,
-				423415822EEF03C200F0ACCA /* RuttisApp.swift in Sources */,
+				423415822EEF03C200F0ACCA /* RutApp.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

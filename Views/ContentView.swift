@@ -347,48 +347,50 @@ struct ContentView: View {
     // MARK: - Standard Export (FPL, RTE, etc)
     
     private func prepareStandardExport() {
-        let registry = ImportExportRegistry.shared
-        guard let exporter = {
+            // Hämta rätt exporter baserat på ID (säkrare än namn)
+            let exporterId: String
             switch exportFormat {
-            case .fpl: return registry.exporter(forFormatName: "ForeFlight (.FPL)")
-            case .rte: return registry.exporter(forFormatName: "Garmin (.RTE)")
-            case .rut: return registry.exporter(forFormatName: "Rut (.RUT)")
-            case .apt: return registry.exporter(forFormatName: "Rut User Airports (.APT)")
-            case .nav: return registry.exporter(forFormatName: "Rut User Navaids (.NAV)")
-            default: return nil // A109, UH60M, H145 hanteras inte här
+            case .fpl: exporterId = "fpl"
+            case .rte: exporterId = "rte"
+            case .rut: exporterId = "rut"
+            case .apt: exporterId = "apt" // Se till att APTExportService har id="apt"
+            case .nav: exporterId = "nav" // Se till att NAVExportService har id="nav"
+            default: return
             }
-        }() else {
-            toastManager.show(message: "Exporter not available.")
-            return
-        }
-        
-        do {
-            let generatedFiles = try exporter.export(document: navStore.document, routes: navStore.routes)
-            if generatedFiles.isEmpty {
-                toastManager.show(message: "Nothing to export.", kind: .info)
+            
+            // Fråga CoreServices direkt
+            guard let exporter = CoreServices.shared.exporter(withId: exporterId) else {
+                toastManager.show(message: "Exporter for '\(exporterId)' not found.")
                 return
             }
             
-            // Create temp folder
-            let tempDir = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
-            try FileManager.default.createDirectory(at: tempDir, withIntermediateDirectories: true)
-            
-            var urls: [URL] = []
-            for file in generatedFiles {
-                let fileURL = tempDir.appendingPathComponent(file.filename)
-                try file.data.write(to: fileURL, options: .atomic)
-                urls.append(fileURL)
+            // Resten är samma som förut...
+            do {
+                let generatedFiles = try exporter.export(document: navStore.document, routes: navStore.routes)
+                if generatedFiles.isEmpty {
+                    toastManager.show(message: "Nothing to export.", kind: .info)
+                    return
+                }
+                
+                let tempDir = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
+                try FileManager.default.createDirectory(at: tempDir, withIntermediateDirectories: true)
+                
+                var urls: [URL] = []
+                for file in generatedFiles {
+                    let fileURL = tempDir.appendingPathComponent(file.filename)
+                    try file.data.write(to: fileURL, options: .atomic)
+                    urls.append(fileURL)
+                }
+                
+                DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
+                    self.exportContainer = ExportContainer(urls: urls)
+                }
+                
+            } catch {
+                ErrorLogger.shared.logError(error)
+                toastManager.show(message: error.localizedDescription)
             }
-            
-            DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
-                self.exportContainer = ExportContainer(urls: urls)
-            }
-            
-        } catch {
-            ErrorLogger.shared.logError(error)
-            toastManager.show(message: error.localizedDescription)
         }
-    }
     
     // MARK: - A109 Direct Export (Folder Selection)
     
@@ -403,46 +405,39 @@ struct ContentView: View {
     }
     
     private func performA109DirectExport(to folderURL: URL) {
-        let registry = ImportExportRegistry.shared
-        guard let exporter = registry.exporter(forFormatName: "A109 PCMCIA") else {
-            toastManager.show(message: "Exporter not available.")
-            return
-        }
-        
-        do {
-            let generatedFiles = try exporter.export(document: navStore.document, routes: navStore.routes)
-            if generatedFiles.isEmpty {
-                toastManager.show(message: "Nothing to export.", kind: .info)
+            // Hämta direkt via ID "a109" (kontrollera att A109PCMCIAExportService har id="a109")
+            guard let exporter = CoreServices.shared.exporter(withId: "a109") else {
+                toastManager.show(message: "A109 Exporter not available.")
                 return
             }
             
-            // Start accessing security scoped resource
-            let secured = folderURL.startAccessingSecurityScopedResource()
-            defer { if secured { folderURL.stopAccessingSecurityScopedResource() } }
-            
-            // --- WRITE FILES ---
-            // Ingen tömning av mappen görs här längre. Vi skriver bara över filer om de heter samma.
-            
-            var successCount = 0
-            for file in generatedFiles {
-                let destinationURL = folderURL.appendingPathComponent(file.filename)
-                try file.data.write(to: destinationURL, options: .atomic)
+            do {
+                let generatedFiles = try exporter.export(document: navStore.document, routes: navStore.routes)
+                if generatedFiles.isEmpty {
+                    toastManager.show(message: "Nothing to export.", kind: .info)
+                    return
+                }
                 
-                // Clean metadata (._ files)
-                destinationURL.cleanAppleAttributes()
-                successCount += 1
+                let secured = folderURL.startAccessingSecurityScopedResource()
+                defer { if secured { folderURL.stopAccessingSecurityScopedResource() } }
+                
+                var successCount = 0
+                for file in generatedFiles {
+                    let destinationURL = folderURL.appendingPathComponent(file.filename)
+                    try file.data.write(to: destinationURL, options: .atomic)
+                    destinationURL.cleanAppleAttributes()
+                    successCount += 1
+                }
+                
+                try cleanupDotFiles(in: folderURL)
+                
+                toastManager.show(message: "Saved \(successCount) files to \(folderURL.lastPathComponent)", kind: .info)
+                
+            } catch {
+                ErrorLogger.shared.logError(error)
+                toastManager.show(message: "Export failed: \(error.localizedDescription)")
             }
-            
-            // Final cleanup of any system folders like .Spotlight-V100 that might persist
-            try cleanupDotFiles(in: folderURL)
-            
-            toastManager.show(message: "Saved \(successCount) files to \(folderURL.lastPathComponent)", kind: .info)
-            
-        } catch {
-            ErrorLogger.shared.logError(error)
-            toastManager.show(message: "Export failed: \(error.localizedDescription)")
         }
-    }
     
     private func cleanupDotFiles(in folderURL: URL) throws {
         let fileManager = FileManager.default
