@@ -27,20 +27,82 @@ final class NavigationStore: ObservableObject {
         var incoming = newDoc
         var merged = document
 
+        // 1. Normalisera IDs
         normalizeImportedRouteIds(&incoming, existingRoutes: merged.routes)
         normalizeImportedWaypointIds(&incoming, existingWaypoints: merged.userWaypoints)
 
-        for route in incoming.routes { merged.routes.append(route) }
+        // Håller koll på vilka User Waypoints som faktiskt behövs
+        var idsToImport = Set<String>()
 
+        // --- HJÄLPFUNKTION: Hämta koordinat ---
+        func getCoordinate(for ref: RoutePointRef, in doc: NavigationDocument) -> CLLocationCoordinate2D? {
+            switch ref.kind {
+            case .userWaypoint: return doc.userWaypoints.first { $0.id == ref.refId }?.coordinate
+            case .userAirport:  return doc.userAirports.first { $0.id == ref.refId }?.coordinate
+            case .userNavaid:   return doc.userNavaids.first { $0.id == ref.refId }?.coordinate
+            case .systemAirport: return doc.systemAirports.first { $0.id == ref.refId }?.coordinate
+            case .systemNavaid:  return doc.systemNavaids.first { $0.id == ref.refId }?.coordinate
+            }
+        }
+
+        // --- 2. DUBBLETTKONTROLL RUTTER ---
+        for route in incoming.routes {
+            let isDuplicate = merged.routes.contains { existing in
+                if existing.name.caseInsensitiveCompare(route.name) != .orderedSame { return false }
+                if existing.pointRefs.count != route.pointRefs.count { return false }
+                
+                for (i, p1) in existing.pointRefs.enumerated() {
+                    let p2 = route.pointRefs[i]
+                    if p1.kind != p2.kind { return false }
+                    if p1.refId == p2.refId { continue }
+                    
+                    guard let c1 = getCoordinate(for: p1, in: merged),
+                          let c2 = getCoordinate(for: p2, in: incoming) else { return false }
+                    
+                    if abs(c1.latitude - c2.latitude) > 0.00001 || abs(c1.longitude - c2.longitude) > 0.00001 {
+                        return false
+                    }
+                }
+                return true
+            }
+            
+            if !isDuplicate {
+                merged.routes.append(route)
+                // Spara waypoints som denna rutt behöver
+                let wpIds = route.pointRefs.filter { $0.kind == .userWaypoint }.map { $0.refId }
+                idsToImport.formUnion(wpIds)
+            } else {
+                print("Skipping duplicate route: \(route.name)")
+            }
+        }
+
+        // --- 3. IMPORTERA PUNKTER ---
+
+        // A. User Waypoints (Strikt filtrering)
+        // Om filen innehöll rutter, importera bara waypoints som hör till de nya rutterna.
+        // Om filen INTE hade rutter (t.ex. en ren waypoint-lista), importera alla.
+        let hasRoutes = !incoming.routes.isEmpty
+        
+        for wp in incoming.userWaypoints {
+            let isNeeded = !hasRoutes || idsToImport.contains(wp.id)
+            
+            if isNeeded && !merged.userWaypoints.contains(where: { $0.id == wp.id }) {
+                merged.userWaypoints.append(wp)
+            }
+        }
+        
+        // B. Airports & Navaids (Lös filtrering)
+        // Dessa importeras ALLTID om de inte finns, oavsett om en rutt använder dem eller inte.
+        // Detta fixar buggen att flygplatser inte importerades.
+        
         for ap in incoming.userAirports {
             if !merged.userAirports.contains(where: { $0.id == ap.id }) { merged.userAirports.append(ap) }
         }
         for nv in incoming.userNavaids {
             if !merged.userNavaids.contains(where: { $0.id == nv.id }) { merged.userNavaids.append(nv) }
         }
-        for wp in incoming.userWaypoints {
-            if !merged.userWaypoints.contains(where: { $0.id == wp.id }) { merged.userWaypoints.append(wp) }
-        }
+        
+        // System points
         for ap in incoming.systemAirports {
             if !merged.systemAirports.contains(where: { $0.id == ap.id }) { merged.systemAirports.append(ap) }
         }
@@ -56,23 +118,11 @@ final class NavigationStore: ObservableObject {
     }
 
     func deleteRoute(_ route: Route) {
-            // 1. Spara undan IDn som används av rutten vi ska ta bort
-            // Detta är "Kandidater för radering"
             let idsInDeletedRoute = Set(route.pointRefs.map { $0.refId })
-
-            // 2. Ta bort själva rutten från dokumentet
             document.routes.removeAll { $0.id == route.id }
-
-            // 3. Ta reda på vilka IDn som fortfarande används av de KVARVARANDE rutterna
-            // Detta är "Skyddade IDn"
             let idsInRemainingRoutes = Set(document.routes.flatMap { $0.pointRefs.map { $0.refId } })
-
-            // 4. Räkna ut exakt vilka som ska bort:
-            // Formel: (Punkter i raderad rutt) MINUS (Punkter som används av andra)
-            // Detta skyddar punkter som inte hade med den raderade rutten att göra ("Orphans").
             let idsToRemove = idsInDeletedRoute.subtracting(idsInRemainingRoutes)
 
-            // 5. Rensa bara de punkter som vi räknade fram i steg 4
             if !idsToRemove.isEmpty {
                 document.userWaypoints.removeAll { idsToRemove.contains($0.id) }
                 document.userAirports.removeAll { idsToRemove.contains($0.id) }
@@ -81,7 +131,6 @@ final class NavigationStore: ObservableObject {
                 document.systemNavaids.removeAll { idsToRemove.contains($0.id) }
             }
 
-            // 6. Uppdatera activeRoute om vi tog bort den som var aktiv
             if activeRouteId == route.id {
                 activeRouteId = document.routes.first?.id
             }
@@ -108,13 +157,11 @@ final class NavigationStore: ObservableObject {
         
         guard let index = document.userWaypoints.firstIndex(where: { $0.id == originalId }) else { return }
         
-        // FIX: Hantera ID-krockar automatiskt istället för att avbryta
         var finalId = newId
         if originalId != newId {
             if document.userWaypoints.contains(where: { $0.id == newId }) {
                 let used = Set(document.userWaypoints.map { $0.id })
                 finalId = makeUniqueWaypointId(preferred: newId, used: used)
-                print("Waypoint conflict resolved: Requested '\(newId)' -> Assigned '\(finalId)'")
             }
         }
 
@@ -127,7 +174,6 @@ final class NavigationStore: ObservableObject {
         wp.elevation = elevation
         document.userWaypoints[index] = wp
         
-        // Uppdatera referenser om ID ändrades
         if originalId != finalId {
             for rIndex in 0..<document.routes.count {
                 var route = document.routes[rIndex]
@@ -145,7 +191,6 @@ final class NavigationStore: ObservableObject {
             }
         }
         
-        // Trigga omnumrering av rutter om typen är sekventiell (inte custom)
         if type != .custom {
             let affectedRouteIds = document.routes.filter { route in
                 route.pointRefs.contains { $0.refId == finalId && $0.kind == .userWaypoint }
@@ -218,7 +263,6 @@ final class NavigationStore: ObservableObject {
             if let customId, !customId.isEmpty {
                 let sanitized = NavigationStore.sanitizedName(customId, maxLength: 5)
                 if !sanitized.isEmpty {
-                    // Om ID krockar, gör inget (eller generera unikt om vi vill vara snälla, men för customId är det oftast manuellt val)
                     let isTaken = document.userWaypoints.contains(where: { $0.id == sanitized && $0.id != document.userWaypoints[wpIdx].id })
                     if !isTaken {
                         let oldId = document.userWaypoints[wpIdx].id
@@ -257,7 +301,6 @@ final class NavigationStore: ObservableObject {
     // MARK: - Renumbering logic
 
     func renumberWaypoints(forRouteIds routeIds: [UUID]) {
-        // Samla alla IDn som används i hela dokumentet
         var usedIds = Set(document.userWaypoints.map { $0.id })
 
         for routeId in routeIds {
@@ -269,7 +312,6 @@ final class NavigationStore: ObservableObject {
     private func renumberWaypoints(inRouteAt routeIdx: Int, usedIds: inout Set<String>) {
             let route = document.routes[routeIdx]
             
-            // 1. FRIGÖR IDn för denna rutts punkter
             let refsToRenumber = route.pointRefs.filter { ref in
                 guard ref.kind == .userWaypoint else { return false }
                 if let wp = document.userWaypoints.first(where: { $0.id == ref.refId }) {
@@ -280,7 +322,7 @@ final class NavigationStore: ObservableObject {
             for ref in refsToRenumber { usedIds.remove(ref.refId) }
             
             var counters: [WaypointType: Int] = [:]
-            var idMapping: [String: String] = [:] // oldId -> newId
+            var idMapping: [String: String] = [:]
 
             func nextCandidate(for type: WaypointType) -> String {
                 let next = (counters[type] ?? 0) + 1
@@ -288,7 +330,6 @@ final class NavigationStore: ObservableObject {
                 return String(format: "%@%02d", type.rawValue, next)
             }
 
-            // 2. TILLDELA nya IDn
             for ref in route.pointRefs {
                 guard ref.kind == .userWaypoint else { continue }
                 guard let wpIdx = document.userWaypoints.firstIndex(where: { $0.id == ref.refId }) else { continue }
@@ -297,18 +338,13 @@ final class NavigationStore: ObservableObject {
                 if type == .custom { continue }
 
                 let oldId = document.userWaypoints[wpIdx].id
-                
-                // Om vi redan mappat om detta ID i denna loop (dubblett i rutt), använd samma
-                // FIX: Bytte 'if let existingNewId = ...' till en enkel nil-check
                 if idMapping[oldId] != nil { continue }
 
                 var candidate = nextCandidate(for: type)
-                // Hitta en kandidat som inte är upptagen av ANNAN data
                 while usedIds.contains(candidate) {
                     candidate = nextCandidate(for: type)
                 }
 
-                // Uppdatera
                 document.userWaypoints[wpIdx].id = candidate
                 document.userWaypoints[wpIdx].name = candidate
                 
@@ -318,7 +354,6 @@ final class NavigationStore: ObservableObject {
 
             guard !idMapping.isEmpty else { return }
 
-            // 3. UPPDATERA referenser i alla rutter
             for rIndex in document.routes.indices {
                 for pIndex in document.routes[rIndex].pointRefs.indices {
                     var ref = document.routes[rIndex].pointRefs[pIndex]
@@ -343,7 +378,6 @@ final class NavigationStore: ObservableObject {
         }
     }
     
-    /// Försöker gissa vad IDt kommer bli i rutt-kontext (för UI feedback).
     func predictRenumberedId(for originalId: String, newType: WaypointType) -> String {
         let routeToCheck = activeRoute ?? document.routes.first { r in r.pointRefs.contains { $0.refId == originalId } }
         guard let route = routeToCheck else { return nextAvailableId(for: newType) }
@@ -353,14 +387,11 @@ final class NavigationStore: ObservableObject {
             if ref.refId == originalId {
                 let prefix = newType.rawValue
                 var candidateNum = count + 1
-                
-                // Exkludera denna punkts ID från "upptagna"
                 let allOtherIds = document.userWaypoints.filter { $0.id != originalId }.map { $0.id }
                 let usedSet = Set(allOtherIds)
                 
                 while true {
                     let candidate = String(format: "%@%02d", prefix, candidateNum)
-                    // Enkel koll: Är den upptagen av någon annan?
                     if !usedSet.contains(candidate) { return candidate }
                     candidateNum += 1
                 }
@@ -396,46 +427,27 @@ final class NavigationStore: ObservableObject {
     }
     
     func deriveUserAirportsIfNeeded() {
-            // Om vi redan har user airports, gör inget (valfritt, men behåll om du vill)
-            // let hasAirports = !document.userAirports.isEmpty
-            // guard !hasAirports else { return }
-
             var airportsById: [String: UserAirport] = [:]
-            
-            // Indexera existerande för snabbkoll
             let existingUserIds = Set(document.userAirports.map { $0.id })
-            let existingSystemIds = Set(document.systemAirports.map { $0.id }) // <--- NYTT
+            let existingSystemIds = Set(document.systemAirports.map { $0.id })
 
             for route in document.routes {
                 let points = mapPoints(for: route)
                 for p in points {
                     let id = p.name
-                    
-                    // 1. Om punkten redan är en System Airport (Jeppesen), skapa INTE en User Airport kopia.
-                    if p.kind == .systemAirport || existingSystemIds.contains(id) {
-                        continue
-                    }
-                    
-                    // 2. Om den redan finns som User Airport, hoppa över
-                    if existingUserIds.contains(id) {
-                        continue
-                    }
+                    if p.kind == .systemAirport || existingSystemIds.contains(id) { continue }
+                    if existingUserIds.contains(id) { continue }
 
-                    // 3. Om den ser ut som en flygplats och vi inte har den
                     if NavigationStore.looksLikeAirportId(id), airportsById[id] == nil {
                         let newAirport = UserAirport(
-                            id: id,
-                            name: id,
-                            latitude: p.coordinate.latitude,
-                            longitude: p.coordinate.longitude,
-                            elevation: 0,
-                            magneticVariation: 0
+                            id: id, name: id,
+                            latitude: p.coordinate.latitude, longitude: p.coordinate.longitude,
+                            elevation: 0, magneticVariation: 0
                         )
                         airportsById[id] = newAirport
                     }
                 }
             }
-            
             document.userAirports.append(contentsOf: airportsById.values)
         }
 
