@@ -17,7 +17,7 @@ struct A109FileSet {
 struct A109PCMCIAExportService: RouteExporting {
     
     // Protocol requirements
-    let id = "A109 PCMCIA"
+    let id = "a109"
     let displayName = "A109 PCMCIA"
     let supportedExtensions = ["zip"]
     
