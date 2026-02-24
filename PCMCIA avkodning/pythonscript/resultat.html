@@ -1,0 +1,807 @@
+<!doctype html><meta charset='utf-8'>
+    <style>
+      body { background: #111; color: #ddd; }
+      pre { font: 13px/1.3 ui-monospace, SFMono-Regular, Menlo, Consolas, "Liberation Mono", monospace; }
+      .red { color: #ff5555; }
+      .green { color: #50fa7b; }
+      .blue { color: #61afef; }
+      .yellow { color: #e5c07b; }
+    </style>
+    <pre>Sammanfattning av waypointraden i caracterfilerna:
+
+<span class="red">***stdkort3stwpt***</span>---CARACTER.P01--- 3st waypoints
+<span class="blue">11111111</span> <span class="blue">11111111</span> <span class="blue">01110101</span> <span class="blue">00000101</span> <span class="blue">11111111</span> <span class="blue">11111111</span> <span class="blue">11000110</span> 00000000
+<span class="green">  255   </span> <span class="green">  255   </span> <span class="green">  117   </span> <span class="green">   5    </span> <span class="green">  255   </span> <span class="green">  255   </span> <span class="green">  198   </span> <span class="green">   0    </span>
+<span class="red">***stdkortnyttruttnamn***</span>---CARACTER.P01--- 1st waypoints
+<span class="blue">11111111</span> <span class="blue">11111111</span> <span class="blue">01011010</span> <span class="blue">10001010</span> 00000000 00000000 <span class="blue">00000010</span> 00000000
+<span class="green">  255   </span> <span class="green">  255   </span> <span class="green">   90   </span> <span class="green">  138   </span> <span class="green">   0    </span> <span class="green">   0    </span> <span class="green">   2    </span> <span class="green">   0    </span>
+<span class="red">***stdkort123nykoordinat***</span>---CARACTER.P01--- 3st waypoints
+<span class="blue">11111111</span> <span class="blue">11111111</span> <span class="blue">11111111</span> <span class="blue">10011100</span> 00000000 00000000 <span class="blue">00000110</span> 00000000
+<span class="green">  255   </span> <span class="green">  255   </span> <span class="green">  255   </span> <span class="green">  156   </span> <span class="green">   0    </span> <span class="green">   0    </span> <span class="green">   6    </span> <span class="green">   0    </span>
+<span class="red">***stdkort***</span>---CARACTER.P01--- 1st waypoints
+<span class="blue">11111111</span> <span class="blue">11111111</span> <span class="blue">01011010</span> <span class="blue">10001010</span> 00000000 00000000 <span class="blue">00000010</span> 00000000
+<span class="green">  255   </span> <span class="green">  255   </span> <span class="green">   90   </span> <span class="green">  138   </span> <span class="green">   0    </span> <span class="green">   0    </span> <span class="green">   2    </span> <span class="green">   0    </span>
+<span class="red">***stdkortwpt2***</span>---CARACTER.P01--- 1st waypoints
+<span class="blue">11111111</span> <span class="blue">11111111</span> <span class="blue">01100000</span> <span class="blue">10001010</span> 00000000 00000000 <span class="blue">00000010</span> 00000000
+<span class="green">  255   </span> <span class="green">  255   </span> <span class="green">   96   </span> <span class="green">  138   </span> <span class="green">   0    </span> <span class="green">   0    </span> <span class="green">   2    </span> <span class="green">   0    </span>
+<span class="red">***stdkort12wpt***</span>---CARACTER.P01--- 2st waypoints
+<span class="blue">11111111</span> <span class="blue">11111111</span> <span class="blue">01111010</span> <span class="blue">10010011</span> 00000000 00000000 <span class="blue">00000100</span> 00000000
+<span class="green">  255   </span> <span class="green">  255   </span> <span class="green">  122   </span> <span class="green">  147   </span> <span class="green">   0    </span> <span class="green">   0    </span> <span class="green">   4    </span> <span class="green">   0    </span>
+<span class="red">***stdkort12nykoordinat***</span>---CARACTER.P01--- 2st waypoints
+<span class="blue">11111111</span> <span class="blue">11111111</span> <span class="blue">10111010</span> <span class="blue">00010011</span> 00000000 00000000 <span class="blue">00000100</span> 00000000
+<span class="green">  255   </span> <span class="green">  255   </span> <span class="green">  186   </span> <span class="green">   19   </span> <span class="green">   0    </span> <span class="green">   0    </span> <span class="green">   4    </span> <span class="green">   0    </span>
+<span class="red">***ny fyra navaids***</span>---CARACTER.P01--- 2st waypoints
+<span class="blue">11111111</span> <span class="blue">11111111</span> <span class="blue">00011000</span> <span class="blue">11011001</span> 00000000 00000000 <span class="blue">00111001</span> <span class="blue">00010000</span>
+<span class="green">  255   </span> <span class="green">  255   </span> <span class="green">   24   </span> <span class="green">  217   </span> <span class="green">   0    </span> <span class="green">   0    </span> <span class="green">   57   </span> <span class="green">   16   </span>
+<span class="red">***ändrat sexnamn***</span>---CARACTER.P01--- 2st waypoints
+<span class="blue">11111111</span> <span class="blue">11111111</span> <span class="blue">00100000</span> 00000000 00000000 00000000 <span class="blue">00011001</span> <span class="blue">00101110</span>
+<span class="green">  255   </span> <span class="green">  255   </span> <span class="green">   32   </span> <span class="green">   0    </span> <span class="green">   0    </span> <span class="green">   0    </span> <span class="green">   25   </span> <span class="green">   46   </span>
+<span class="red">***ny annan flygplats***</span>---CARACTER.P01--- 2st waypoints
+<span class="blue">11111111</span> <span class="blue">11111111</span> <span class="blue">00011000</span> <span class="blue">11011001</span> 00000000 00000000 <span class="blue">00111001</span> <span class="blue">00010000</span>
+<span class="green">  255   </span> <span class="green">  255   </span> <span class="green">   24   </span> <span class="green">  217   </span> <span class="green">   0    </span> <span class="green">   0    </span> <span class="green">   57   </span> <span class="green">   16   </span>
+<span class="red">***ändrat femlong***</span>---CARACTER.P01--- 2st waypoints
+<span class="blue">11111111</span> <span class="blue">11111111</span> <span class="blue">00011000</span> <span class="blue">11001001</span> 00000000 00000000 <span class="blue">00111001</span> <span class="blue">00010000</span>
+<span class="green">  255   </span> <span class="green">  255   </span> <span class="green">   24   </span> <span class="green">  201   </span> <span class="green">   0    </span> <span class="green">   0    </span> <span class="green">   57   </span> <span class="green">   16   </span>
+<span class="red">***ny båda flygplatserna***</span>---CARACTER.P01--- 2st waypoints
+<span class="blue">11111111</span> <span class="blue">11111111</span> <span class="blue">00011000</span> <span class="blue">11011001</span> 00000000 00000000 <span class="blue">00111001</span> <span class="blue">00010000</span>
+<span class="green">  255   </span> <span class="green">  255   </span> <span class="green">   24   </span> <span class="green">  217   </span> <span class="green">   0    </span> <span class="green">   0    </span> <span class="green">   57   </span> <span class="green">   16   </span>
+<span class="red">***ny waypoint***</span>---CARACTER.P01--- 3st waypoints
+<span class="blue">11111111</span> <span class="blue">11111111</span> <span class="blue">11110101</span> <span class="blue">01010100</span> 00000000 00000000 <span class="blue">11011110</span> <span class="blue">00010010</span>
+<span class="green">  255   </span> <span class="green">  255   </span> <span class="green">  245   </span> <span class="green">   84   </span> <span class="green">   0    </span> <span class="green">   0    </span> <span class="green">  222   </span> <span class="green">   18   </span>
+<span class="red">***standard***</span>---CARACTER.P01--- 2st waypoints
+<span class="blue">11111111</span> <span class="blue">11111111</span> <span class="blue">00011000</span> <span class="blue">11011001</span> 00000000 00000000 <span class="blue">00111001</span> <span class="blue">00010000</span>
+<span class="green">  255   </span> <span class="green">  255   </span> <span class="green">   24   </span> <span class="green">  217   </span> <span class="green">   0    </span> <span class="green">   0    </span> <span class="green">   57   </span> <span class="green">   16   </span>
+<span class="red">***ändrat femlat***</span>---CARACTER.P01--- 2st waypoints
+<span class="blue">11111111</span> <span class="blue">11111111</span> <span class="blue">00011000</span> <span class="blue">11010101</span> 00000000 00000000 <span class="blue">00111001</span> <span class="blue">00010000</span>
+<span class="green">  255   </span> <span class="green">  255   </span> <span class="green">   24   </span> <span class="green">  213   </span> <span class="green">   0    </span> <span class="green">   0    </span> <span class="green">   57   </span> <span class="green">   16   </span>
+<span class="red">***ny flygplats***</span>---CARACTER.P01--- 2st waypoints
+<span class="blue">11111111</span> <span class="blue">11111111</span> <span class="blue">00011000</span> <span class="blue">11011001</span> 00000000 00000000 <span class="blue">00111001</span> <span class="blue">00010000</span>
+<span class="green">  255   </span> <span class="green">  255   </span> <span class="green">   24   </span> <span class="green">  217   </span> <span class="green">   0    </span> <span class="green">   0    </span> <span class="green">   57   </span> <span class="green">   16   </span>
+<span class="red">***ändrat femnamn***</span>---CARACTER.P01--- 2st waypoints
+<span class="blue">11111111</span> <span class="blue">11111111</span> <span class="blue">00100000</span> <span class="blue">00000010</span> <span class="blue">11111111</span> <span class="blue">11111111</span> <span class="blue">11110110</span> <span class="blue">00101110</span>
+<span class="green">  255   </span> <span class="green">  255   </span> <span class="green">   32   </span> <span class="green">   2    </span> <span class="green">  255   </span> <span class="green">  255   </span> <span class="green">  246   </span> <span class="green">   46   </span>
+<span class="red">***ändrat femalt***</span>---CARACTER.P01--- 2st waypoints
+<span class="blue">11111111</span> <span class="blue">11111111</span> <span class="blue">00011000</span> <span class="blue">11011001</span> 00000000 00000000 <span class="blue">00111001</span> <span class="blue">00010000</span>
+<span class="green">  255   </span> <span class="green">  255   </span> <span class="green">   24   </span> <span class="green">  217   </span> <span class="green">   0    </span> <span class="green">   0    </span> <span class="green">   57   </span> <span class="green">   16   </span>
+<span class="red">***abcde_igen***</span>---CARACTER.P01--- 8st waypoints
+00000000 00000000 <span class="blue">10000000</span> <span class="blue">00101111</span> 00000000 <span class="blue">00000011</span> <span class="blue">11100110</span> <span class="blue">11000000</span>
+<span class="green">   0    </span> <span class="green">   0    </span> <span class="green">  128   </span> <span class="green">   47   </span> <span class="green">   0    </span> <span class="green">   3    </span> <span class="green">  230   </span> <span class="green">  192   </span>
+<span class="red">***aaaaabbbbbccccc_samma_latlong***</span>---CARACTER.P01--- 8st waypoints
+00000000 00000000 <span class="blue">10000000</span> <span class="blue">00101111</span> 00000000 <span class="blue">00000011</span> <span class="blue">11100110</span> <span class="blue">11000000</span>
+<span class="green">   0    </span> <span class="green">   0    </span> <span class="green">  128   </span> <span class="green">   47   </span> <span class="green">   0    </span> <span class="green">   3    </span> <span class="green">  230   </span> <span class="green">  192   </span>
+
+
+Listning av waypointrad i caracterfilen, samt dess tillhörande waypointfil:
+
+<span class="red">***stdkort3stwpt*************************************************************</span>
+<span class="red">---CARACTER.P01---</span>
+<span class="blue">11111111</span> <span class="blue">11111111</span> <span class="blue">01110101</span> <span class="blue">00000101</span> <span class="blue">11111111</span> <span class="blue">11111111</span> <span class="blue">11000110</span> 00000000
+<span class="green">  255   </span> <span class="green">  255   </span> <span class="green">  117   </span> <span class="green">   5    </span> <span class="green">  255   </span> <span class="green">  255   </span> <span class="green">  198   </span> <span class="green">   0    </span>
+<span class="red">---WAYPOINT.P01 checksum header---</span>
+00000000 <span class="blue">10000100</span> <span class="blue">00000110</span> 00000000
+<span class="green">   0    </span> <span class="green">  132   </span> <span class="green">   6    </span> <span class="green">   0    </span>
+<span class="red">---Wpt 1--------------------------------- name: </span>1<span class="red"> id: </span>1<span class="red"> lat: </span>0.000000<span class="red"> long: </span>0.000000<span class="red"> route: </span>1
+00000000 00000000 00000000 00000000
+<span class="green">   0    </span> <span class="green">   0    </span> <span class="green">   0    </span> <span class="green">   0    </span>
+00000000 00000000 00000000 00000000
+<span class="green">   0    </span> <span class="green">   0    </span> <span class="green">   0    </span> <span class="green">   0    </span>
+<span class="blue">00111100</span> 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000
+<span class="green">   60   </span> <span class="green">   0    </span> <span class="green">   0    </span> <span class="green">   0    </span> <span class="green">   0    </span> <span class="green">   0    </span> <span class="green">   0    </span> <span class="green">   0    </span> <span class="green">   0    </span> <span class="green">   0    </span> <span class="green">   0    </span> <span class="green">   0    </span>
+00000000 <span class="blue">00001000</span> 00000000 00000000
+<span class="green">   0    </span> <span class="green">   8    </span> <span class="green">   0    </span> <span class="green">   0    </span>
+<span class="blue">10011110</span> 00000000 00000000 00000000
+<span class="green">  158   </span> <span class="green">   0    </span> <span class="green">   0    </span> <span class="green">   0    </span>
+<span class="red">---Wpt 2--------------------------------- name: </span>2<span class="red"> id: </span>2<span class="red"> lat: </span>0.000000<span class="red"> long: </span>0.000000<span class="red"> route: </span>1
+00000000 00000000 00000000 00000000
+<span class="green">   0    </span> <span class="green">   0    </span> <span class="green">   0    </span> <span class="green">   0    </span>
+00000000 00000000 00000000 00000000
+<span class="green">   0    </span> <span class="green">   0    </span> <span class="green">   0    </span> <span class="green">   0    </span>
+<span class="blue">01000000</span> 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000
+<span class="green">   64   </span> <span class="green">   0    </span> <span class="green">   0    </span> <span class="green">   0    </span> <span class="green">   0    </span> <span class="green">   0    </span> <span class="green">   0    </span> <span class="green">   0    </span> <span class="green">   0    </span> <span class="green">   0    </span> <span class="green">   0    </span> <span class="green">   0    </span>
+00000000 <span class="blue">00001000</span> 00000000 00000000
+<span class="green">   0    </span> <span class="green">   8    </span> <span class="green">   0    </span> <span class="green">   0    </span>
+<span class="blue">10100000</span> 00000000 00000000 00000000
+<span class="green">  160   </span> <span class="green">   0    </span> <span class="green">   0    </span> <span class="green">   0    </span>
+<span class="red">---Wpt 3--------------------------------- name: </span>1<span class="red"> id: </span>100<span class="red"> lat: </span>0.000000<span class="red"> long: </span>0.000000<span class="red"> route: </span>0
+00000000 00000000 00000000 00000000
+<span class="green">   0    </span> <span class="green">   0    </span> <span class="green">   0    </span> <span class="green">   0    </span>
+00000000 00000000 00000000 00000000
+<span class="green">   0    </span> <span class="green">   0    </span> <span class="green">   0    </span> <span class="green">   0    </span>
+<span class="blue">00111100</span> 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000
+<span class="green">   60   </span> <span class="green">   0    </span> <span class="green">   0    </span> <span class="green">   0    </span> <span class="green">   0    </span> <span class="green">   0    </span> <span class="green">   0    </span> <span class="green">   0    </span> <span class="green">   0    </span> <span class="green">   0    </span> <span class="green">   0    </span> <span class="green">   0    </span>
+00000000 00000000 00000000 00000000
+<span class="green">   0    </span> <span class="green">   0    </span> <span class="green">   0    </span> <span class="green">   0    </span>
+<span class="blue">10011110</span> <span class="blue">01110001</span> <span class="blue">11000000</span> 00000000
+<span class="green">  158   </span> <span class="green">  113   </span> <span class="green">  192   </span> <span class="green">   0    </span>
+
+<span class="red">***stdkortnyttruttnamn*******************************************************</span>
+<span class="red">---CARACTER.P01---</span>
+<span class="blue">11111111</span> <span class="blue">11111111</span> <span class="blue">01011010</span> <span class="blue">10001010</span> 00000000 00000000 <span class="blue">00000010</span> 00000000
+<span class="green">  255   </span> <span class="green">  255   </span> <span class="green">   90   </span> <span class="green">  138   </span> <span class="green">   0    </span> <span class="green">   0    </span> <span class="green">   2    </span> <span class="green">   0    </span>
+<span class="red">---WAYPOINT.P01 checksum header---</span>
+00000000 <span class="blue">10000010</span> <span class="blue">00000010</span> 00000000
+<span class="green">   0    </span> <span class="green">  130   </span> <span class="green">   2    </span> <span class="green">   0    </span>
+<span class="red">---Wpt 1--------------------------------- name: </span>1<span class="red"> id: </span>1<span class="red"> lat: </span>0.000000<span class="red"> long: </span>0.000000<span class="red"> route: </span>1
+00000000 00000000 00000000 00000000
+<span class="green">   0    </span> <span class="green">   0    </span> <span class="green">   0    </span> <span class="green">   0    </span>
+00000000 00000000 00000000 00000000
+<span class="green">   0    </span> <span class="green">   0    </span> <span class="green">   0    </span> <span class="green">   0    </span>
+<span class="blue">00111100</span> 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000
+<span class="green">   60   </span> <span class="green">   0    </span> <span class="green">   0    </span> <span class="green">   0    </span> <span class="green">   0    </span> <span class="green">   0    </span> <span class="green">   0    </span> <span class="green">   0    </span> <span class="green">   0    </span> <span class="green">   0    </span> <span class="green">   0    </span> <span class="green">   0    </span>
+00000000 <span class="blue">00001000</span> 00000000 00000000
+<span class="green">   0    </span> <span class="green">   8    </span> <span class="green">   0    </span> <span class="green">   0    </span>
+<span class="blue">10011110</span> 00000000 00000000 00000000
+<span class="green">  158   </span> <span class="green">   0    </span> <span class="green">   0    </span> <span class="green">   0    </span>
+
+<span class="red">***stdkort123nykoordinat*****************************************************</span>
+<span class="red">---CARACTER.P01---</span>
+<span class="blue">11111111</span> <span class="blue">11111111</span> <span class="blue">11111111</span> <span class="blue">10011100</span> 00000000 00000000 <span class="blue">00000110</span> 00000000
+<span class="green">  255   </span> <span class="green">  255   </span> <span class="green">  255   </span> <span class="green">  156   </span> <span class="green">   0    </span> <span class="green">   0    </span> <span class="green">   6    </span> <span class="green">   0    </span>
+<span class="red">---WAYPOINT.P01 checksum header---</span>
+00000000 <span class="blue">10000100</span> <span class="blue">00000110</span> 00000000
+<span class="green">   0    </span> <span class="green">  132   </span> <span class="green">   6    </span> <span class="green">   0    </span>
+<span class="red">---Wpt 1--------------------------------- name: </span>1<span class="red"> id: </span>1<span class="red"> lat: </span>0.000000<span class="red"> long: </span>0.000000<span class="red"> route: </span>1
+00000000 00000000 00000000 00000000
+<span class="green">   0    </span> <span class="green">   0    </span> <span class="green">   0    </span> <span class="green">   0    </span>
+00000000 00000000 00000000 00000000
+<span class="green">   0    </span> <span class="green">   0    </span> <span class="green">   0    </span> <span class="green">   0    </span>
+<span class="blue">00111100</span> 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000
+<span class="green">   60   </span> <span class="green">   0    </span> <span class="green">   0    </span> <span class="green">   0    </span> <span class="green">   0    </span> <span class="green">   0    </span> <span class="green">   0    </span> <span class="green">   0    </span> <span class="green">   0    </span> <span class="green">   0    </span> <span class="green">   0    </span> <span class="green">   0    </span>
+00000000 <span class="blue">00001000</span> 00000000 00000000
+<span class="green">   0    </span> <span class="green">   8    </span> <span class="green">   0    </span> <span class="green">   0    </span>
+<span class="blue">10011110</span> 00000000 00000000 00000000
+<span class="green">  158   </span> <span class="green">   0    </span> <span class="green">   0    </span> <span class="green">   0    </span>
+<span class="red">---Wpt 2--------------------------------- name: </span>2<span class="red"> id: </span>2<span class="red"> lat: </span>1.000000<span class="red"> long: </span>0.000000<span class="red"> route: </span>1
+<span class="blue">00111111</span> <span class="blue">10000000</span> 00000000 00000000
+<span class="green">   63   </span> <span class="green">  128   </span> <span class="green">   0    </span> <span class="green">   0    </span>
+00000000 00000000 00000000 00000000
+<span class="green">   0    </span> <span class="green">   0    </span> <span class="green">   0    </span> <span class="green">   0    </span>
+<span class="blue">01000000</span> 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000
+<span class="green">   64   </span> <span class="green">   0    </span> <span class="green">   0    </span> <span class="green">   0    </span> <span class="green">   0    </span> <span class="green">   0    </span> <span class="green">   0    </span> <span class="green">   0    </span> <span class="green">   0    </span> <span class="green">   0    </span> <span class="green">   0    </span> <span class="green">   0    </span>
+00000000 <span class="blue">00001000</span> 00000000 00000000
+<span class="green">   0    </span> <span class="green">   8    </span> <span class="green">   0    </span> <span class="green">   0    </span>
+<span class="blue">10100000</span> 00000000 00000000 00000000
+<span class="green">  160   </span> <span class="green">   0    </span> <span class="green">   0    </span> <span class="green">   0    </span>
+<span class="red">---Wpt 3--------------------------------- name: </span>3<span class="red"> id: </span>3<span class="red"> lat: </span>1.000000<span class="red"> long: </span>0.000000<span class="red"> route: </span>1
+<span class="blue">00111111</span> <span class="blue">10000000</span> 00000000 00000000
+<span class="green">   63   </span> <span class="green">  128   </span> <span class="green">   0    </span> <span class="green">   0    </span>
+00000000 00000000 00000000 00000000
+<span class="green">   0    </span> <span class="green">   0    </span> <span class="green">   0    </span> <span class="green">   0    </span>
+<span class="blue">01000100</span> 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000
+<span class="green">   68   </span> <span class="green">   0    </span> <span class="green">   0    </span> <span class="green">   0    </span> <span class="green">   0    </span> <span class="green">   0    </span> <span class="green">   0    </span> <span class="green">   0    </span> <span class="green">   0    </span> <span class="green">   0    </span> <span class="green">   0    </span> <span class="green">   0    </span>
+00000000 <span class="blue">00001000</span> 00000000 00000000
+<span class="green">   0    </span> <span class="green">   8    </span> <span class="green">   0    </span> <span class="green">   0    </span>
+<span class="blue">10100010</span> 00000000 00000000 00000000
+<span class="green">  162   </span> <span class="green">   0    </span> <span class="green">   0    </span> <span class="green">   0    </span>
+
+<span class="red">***stdkort*******************************************************************</span>
+<span class="red">---CARACTER.P01---</span>
+<span class="blue">11111111</span> <span class="blue">11111111</span> <span class="blue">01011010</span> <span class="blue">10001010</span> 00000000 00000000 <span class="blue">00000010</span> 00000000
+<span class="green">  255   </span> <span class="green">  255   </span> <span class="green">   90   </span> <span class="green">  138   </span> <span class="green">   0    </span> <span class="green">   0    </span> <span class="green">   2    </span> <span class="green">   0    </span>
+<span class="red">---WAYPOINT.P01 checksum header---</span>
+00000000 <span class="blue">10000010</span> <span class="blue">00000010</span> 00000000
+<span class="green">   0    </span> <span class="green">  130   </span> <span class="green">   2    </span> <span class="green">   0    </span>
+<span class="red">---Wpt 1--------------------------------- name: </span>1<span class="red"> id: </span>1<span class="red"> lat: </span>0.000000<span class="red"> long: </span>0.000000<span class="red"> route: </span>1
+00000000 00000000 00000000 00000000
+<span class="green">   0    </span> <span class="green">   0    </span> <span class="green">   0    </span> <span class="green">   0    </span>
+00000000 00000000 00000000 00000000
+<span class="green">   0    </span> <span class="green">   0    </span> <span class="green">   0    </span> <span class="green">   0    </span>
+<span class="blue">00111100</span> 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000
+<span class="green">   60   </span> <span class="green">   0    </span> <span class="green">   0    </span> <span class="green">   0    </span> <span class="green">   0    </span> <span class="green">   0    </span> <span class="green">   0    </span> <span class="green">   0    </span> <span class="green">   0    </span> <span class="green">   0    </span> <span class="green">   0    </span> <span class="green">   0    </span>
+00000000 <span class="blue">00001000</span> 00000000 00000000
+<span class="green">   0    </span> <span class="green">   8    </span> <span class="green">   0    </span> <span class="green">   0    </span>
+<span class="blue">10011110</span> 00000000 00000000 00000000
+<span class="green">  158   </span> <span class="green">   0    </span> <span class="green">   0    </span> <span class="green">   0    </span>
+
+<span class="red">***stdkortwpt2***************************************************************</span>
+<span class="red">---CARACTER.P01---</span>
+<span class="blue">11111111</span> <span class="blue">11111111</span> <span class="blue">01100000</span> <span class="blue">10001010</span> 00000000 00000000 <span class="blue">00000010</span> 00000000
+<span class="green">  255   </span> <span class="green">  255   </span> <span class="green">   96   </span> <span class="green">  138   </span> <span class="green">   0    </span> <span class="green">   0    </span> <span class="green">   2    </span> <span class="green">   0    </span>
+<span class="red">---WAYPOINT.P01 checksum header---</span>
+00000000 <span class="blue">10000010</span> <span class="blue">00000010</span> 00000000
+<span class="green">   0    </span> <span class="green">  130   </span> <span class="green">   2    </span> <span class="green">   0    </span>
+<span class="red">---Wpt 1--------------------------------- name: </span>2<span class="red"> id: </span>2<span class="red"> lat: </span>0.000000<span class="red"> long: </span>0.000000<span class="red"> route: </span>1
+00000000 00000000 00000000 00000000
+<span class="green">   0    </span> <span class="green">   0    </span> <span class="green">   0    </span> <span class="green">   0    </span>
+00000000 00000000 00000000 00000000
+<span class="green">   0    </span> <span class="green">   0    </span> <span class="green">   0    </span> <span class="green">   0    </span>
+<span class="blue">01000000</span> 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000
+<span class="green">   64   </span> <span class="green">   0    </span> <span class="green">   0    </span> <span class="green">   0    </span> <span class="green">   0    </span> <span class="green">   0    </span> <span class="green">   0    </span> <span class="green">   0    </span> <span class="green">   0    </span> <span class="green">   0    </span> <span class="green">   0    </span> <span class="green">   0    </span>
+00000000 <span class="blue">00001000</span> 00000000 00000000
+<span class="green">   0    </span> <span class="green">   8    </span> <span class="green">   0    </span> <span class="green">   0    </span>
+<span class="blue">10100000</span> 00000000 00000000 00000000
+<span class="green">  160   </span> <span class="green">   0    </span> <span class="green">   0    </span> <span class="green">   0    </span>
+
+<span class="red">***stdkort12wpt**************************************************************</span>
+<span class="red">---CARACTER.P01---</span>
+<span class="blue">11111111</span> <span class="blue">11111111</span> <span class="blue">01111010</span> <span class="blue">10010011</span> 00000000 00000000 <span class="blue">00000100</span> 00000000
+<span class="green">  255   </span> <span class="green">  255   </span> <span class="green">  122   </span> <span class="green">  147   </span> <span class="green">   0    </span> <span class="green">   0    </span> <span class="green">   4    </span> <span class="green">   0    </span>
+<span class="red">---WAYPOINT.P01 checksum header---</span>
+00000000 <span class="blue">10000011</span> <span class="blue">00000100</span> 00000000
+<span class="green">   0    </span> <span class="green">  131   </span> <span class="green">   4    </span> <span class="green">   0    </span>
+<span class="red">---Wpt 1--------------------------------- name: </span>1<span class="red"> id: </span>1<span class="red"> lat: </span>0.000000<span class="red"> long: </span>0.000000<span class="red"> route: </span>1
+00000000 00000000 00000000 00000000
+<span class="green">   0    </span> <span class="green">   0    </span> <span class="green">   0    </span> <span class="green">   0    </span>
+00000000 00000000 00000000 00000000
+<span class="green">   0    </span> <span class="green">   0    </span> <span class="green">   0    </span> <span class="green">   0    </span>
+<span class="blue">00111100</span> 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000
+<span class="green">   60   </span> <span class="green">   0    </span> <span class="green">   0    </span> <span class="green">   0    </span> <span class="green">   0    </span> <span class="green">   0    </span> <span class="green">   0    </span> <span class="green">   0    </span> <span class="green">   0    </span> <span class="green">   0    </span> <span class="green">   0    </span> <span class="green">   0    </span>
+00000000 <span class="blue">00001000</span> 00000000 00000000
+<span class="green">   0    </span> <span class="green">   8    </span> <span class="green">   0    </span> <span class="green">   0    </span>
+<span class="blue">10011110</span> 00000000 00000000 00000000
+<span class="green">  158   </span> <span class="green">   0    </span> <span class="green">   0    </span> <span class="green">   0    </span>
+<span class="red">---Wpt 2--------------------------------- name: </span>2<span class="red"> id: </span>2<span class="red"> lat: </span>0.000000<span class="red"> long: </span>0.000000<span class="red"> route: </span>1
+00000000 00000000 00000000 00000000
+<span class="green">   0    </span> <span class="green">   0    </span> <span class="green">   0    </span> <span class="green">   0    </span>
+00000000 00000000 00000000 00000000
+<span class="green">   0    </span> <span class="green">   0    </span> <span class="green">   0    </span> <span class="green">   0    </span>
+<span class="blue">01000000</span> 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000
+<span class="green">   64   </span> <span class="green">   0    </span> <span class="green">   0    </span> <span class="green">   0    </span> <span class="green">   0    </span> <span class="green">   0    </span> <span class="green">   0    </span> <span class="green">   0    </span> <span class="green">   0    </span> <span class="green">   0    </span> <span class="green">   0    </span> <span class="green">   0    </span>
+00000000 <span class="blue">00001000</span> 00000000 00000000
+<span class="green">   0    </span> <span class="green">   8    </span> <span class="green">   0    </span> <span class="green">   0    </span>
+<span class="blue">10100000</span> 00000000 00000000 00000000
+<span class="green">  160   </span> <span class="green">   0    </span> <span class="green">   0    </span> <span class="green">   0    </span>
+
+<span class="red">***stdkort12nykoordinat******************************************************</span>
+<span class="red">---CARACTER.P01---</span>
+<span class="blue">11111111</span> <span class="blue">11111111</span> <span class="blue">10111010</span> <span class="blue">00010011</span> 00000000 00000000 <span class="blue">00000100</span> 00000000
+<span class="green">  255   </span> <span class="green">  255   </span> <span class="green">  186   </span> <span class="green">   19   </span> <span class="green">   0    </span> <span class="green">   0    </span> <span class="green">   4    </span> <span class="green">   0    </span>
+<span class="red">---WAYPOINT.P01 checksum header---</span>
+00000000 <span class="blue">10000011</span> <span class="blue">00000100</span> 00000000
+<span class="green">   0    </span> <span class="green">  131   </span> <span class="green">   4    </span> <span class="green">   0    </span>
+<span class="red">---Wpt 1--------------------------------- name: </span>1<span class="red"> id: </span>1<span class="red"> lat: </span>0.000000<span class="red"> long: </span>0.000000<span class="red"> route: </span>1
+00000000 00000000 00000000 00000000
+<span class="green">   0    </span> <span class="green">   0    </span> <span class="green">   0    </span> <span class="green">   0    </span>
+00000000 00000000 00000000 00000000
+<span class="green">   0    </span> <span class="green">   0    </span> <span class="green">   0    </span> <span class="green">   0    </span>
+<span class="blue">00111100</span> 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000
+<span class="green">   60   </span> <span class="green">   0    </span> <span class="green">   0    </span> <span class="green">   0    </span> <span class="green">   0    </span> <span class="green">   0    </span> <span class="green">   0    </span> <span class="green">   0    </span> <span class="green">   0    </span> <span class="green">   0    </span> <span class="green">   0    </span> <span class="green">   0    </span>
+00000000 <span class="blue">00001000</span> 00000000 00000000
+<span class="green">   0    </span> <span class="green">   8    </span> <span class="green">   0    </span> <span class="green">   0    </span>
+<span class="blue">10011110</span> 00000000 00000000 00000000
+<span class="green">  158   </span> <span class="green">   0    </span> <span class="green">   0    </span> <span class="green">   0    </span>
+<span class="red">---Wpt 2--------------------------------- name: </span>2<span class="red"> id: </span>2<span class="red"> lat: </span>1.000000<span class="red"> long: </span>0.000000<span class="red"> route: </span>1
+<span class="blue">00111111</span> <span class="blue">10000000</span> 00000000 00000000
+<span class="green">   63   </span> <span class="green">  128   </span> <span class="green">   0    </span> <span class="green">   0    </span>
+00000000 00000000 00000000 00000000
+<span class="green">   0    </span> <span class="green">   0    </span> <span class="green">   0    </span> <span class="green">   0    </span>
+<span class="blue">01000000</span> 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000
+<span class="green">   64   </span> <span class="green">   0    </span> <span class="green">   0    </span> <span class="green">   0    </span> <span class="green">   0    </span> <span class="green">   0    </span> <span class="green">   0    </span> <span class="green">   0    </span> <span class="green">   0    </span> <span class="green">   0    </span> <span class="green">   0    </span> <span class="green">   0    </span>
+00000000 <span class="blue">00001000</span> 00000000 00000000
+<span class="green">   0    </span> <span class="green">   8    </span> <span class="green">   0    </span> <span class="green">   0    </span>
+<span class="blue">10100000</span> 00000000 00000000 00000000
+<span class="green">  160   </span> <span class="green">   0    </span> <span class="green">   0    </span> <span class="green">   0    </span>
+
+<span class="red">***ny fyra navaids***********************************************************</span>
+<span class="red">---CARACTER.P01---</span>
+<span class="blue">11111111</span> <span class="blue">11111111</span> <span class="blue">00011000</span> <span class="blue">11011001</span> 00000000 00000000 <span class="blue">00111001</span> <span class="blue">00010000</span>
+<span class="green">  255   </span> <span class="green">  255   </span> <span class="green">   24   </span> <span class="green">  217   </span> <span class="green">   0    </span> <span class="green">   0    </span> <span class="green">   57   </span> <span class="green">   16   </span>
+<span class="red">---WAYPOINT.P01 checksum header---</span>
+00000000 <span class="blue">10000011</span> <span class="blue">00000100</span> 00000000
+<span class="green">   0    </span> <span class="green">  131   </span> <span class="green">   4    </span> <span class="green">   0    </span>
+<span class="red">---Wpt 1--------------------------------- name: </span>FEMTON<span class="red"> id: </span>FEMTO<span class="red"> lat: </span>58.000000<span class="red"> long: </span>15.000000<span class="red"> route: </span>1
+<span class="blue">01000010</span> <span class="blue">01101000</span> 00000000 00000000
+<span class="green">   66   </span> <span class="green">  104   </span> <span class="green">   0    </span> <span class="green">   0    </span>
+<span class="blue">01000001</span> <span class="blue">01110000</span> 00000000 00000000
+<span class="green">   65   </span> <span class="green">  112   </span> <span class="green">   0    </span> <span class="green">   0    </span>
+<span class="blue">10001110</span> <span class="blue">00101010</span> <span class="blue">10110001</span> <span class="blue">10110000</span> <span class="blue">10101100</span> 00000000 00000000 00000000 00000000 00000000 00000000 00000000
+<span class="green">  142   </span> <span class="green">   42   </span> <span class="green">  177   </span> <span class="green">  176   </span> <span class="green">  172   </span> <span class="green">   0    </span> <span class="green">   0    </span> <span class="green">   0    </span> <span class="green">   0    </span> <span class="green">   0    </span> <span class="green">   0    </span> <span class="green">   0    </span>
+00000000 <span class="blue">00001000</span> 00000000 00000000
+<span class="green">   0    </span> <span class="green">   8    </span> <span class="green">   0    </span> <span class="green">   0    </span>
+<span class="blue">11000111</span> <span class="blue">00010101</span> <span class="blue">01011000</span> <span class="blue">11011000</span>
+<span class="green">  199   </span> <span class="green">   21   </span> <span class="green">   88   </span> <span class="green">  216   </span>
+<span class="red">---Wpt 2--------------------------------- name: </span>SEXTON<span class="red"> id: </span>SEXTO<span class="red"> lat: </span>59.000000<span class="red"> long: </span>16.000000<span class="red"> route: </span>1
+<span class="blue">01000010</span> <span class="blue">01101100</span> 00000000 00000000
+<span class="green">   66   </span> <span class="green">  108   </span> <span class="green">   0    </span> <span class="green">   0    </span>
+<span class="blue">01000001</span> <span class="blue">10000000</span> 00000000 00000000
+<span class="green">   65   </span> <span class="green">  128   </span> <span class="green">   0    </span> <span class="green">   0    </span>
+<span class="blue">11000010</span> <span class="blue">00101101</span> <span class="blue">01110001</span> <span class="blue">10110000</span> <span class="blue">10101100</span> 00000000 00000000 00000000 00000000 00000000 00000000 00000000
+<span class="green">  194   </span> <span class="green">   45   </span> <span class="green">  113   </span> <span class="green">  176   </span> <span class="green">  172   </span> <span class="green">   0    </span> <span class="green">   0    </span> <span class="green">   0    </span> <span class="green">   0    </span> <span class="green">   0    </span> <span class="green">   0    </span> <span class="green">   0    </span>
+00000000 <span class="blue">00001000</span> 00000000 00000000
+<span class="green">   0    </span> <span class="green">   8    </span> <span class="green">   0    </span> <span class="green">   0    </span>
+<span class="blue">11100001</span> <span class="blue">00010110</span> <span class="blue">10111000</span> <span class="blue">11011000</span>
+<span class="green">  225   </span> <span class="green">   22   </span> <span class="green">  184   </span> <span class="green">  216   </span>
+
+<span class="red">***ändrat sexnamn************************************************************</span>
+<span class="red">---CARACTER.P01---</span>
+<span class="blue">11111111</span> <span class="blue">11111111</span> <span class="blue">00100000</span> 00000000 00000000 00000000 <span class="blue">00011001</span> <span class="blue">00101110</span>
+<span class="green">  255   </span> <span class="green">  255   </span> <span class="green">   32   </span> <span class="green">   0    </span> <span class="green">   0    </span> <span class="green">   0    </span> <span class="green">   25   </span> <span class="green">   46   </span>
+<span class="red">---WAYPOINT.P01 checksum header---</span>
+00000000 <span class="blue">10000011</span> <span class="blue">00000100</span> 00000000
+<span class="green">   0    </span> <span class="green">  131   </span> <span class="green">   4    </span> <span class="green">   0    </span>
+<span class="red">---Wpt 1--------------------------------- name: </span>FEMTON<span class="red"> id: </span>FEMTO<span class="red"> lat: </span>58.000000<span class="red"> long: </span>15.000000<span class="red"> route: </span>1
+<span class="blue">01000010</span> <span class="blue">01101000</span> 00000000 00000000
+<span class="green">   66   </span> <span class="green">  104   </span> <span class="green">   0    </span> <span class="green">   0    </span>
+<span class="blue">01000001</span> <span class="blue">01110000</span> 00000000 00000000
+<span class="green">   65   </span> <span class="green">  112   </span> <span class="green">   0    </span> <span class="green">   0    </span>
+<span class="blue">10001110</span> <span class="blue">00101010</span> <span class="blue">10110001</span> <span class="blue">10110000</span> <span class="blue">10101100</span> 00000000 00000000 00000000 00000000 00000000 00000000 00000000
+<span class="green">  142   </span> <span class="green">   42   </span> <span class="green">  177   </span> <span class="green">  176   </span> <span class="green">  172   </span> <span class="green">   0    </span> <span class="green">   0    </span> <span class="green">   0    </span> <span class="green">   0    </span> <span class="green">   0    </span> <span class="green">   0    </span> <span class="green">   0    </span>
+00000000 <span class="blue">00001000</span> 00000000 00000000
+<span class="green">   0    </span> <span class="green">   8    </span> <span class="green">   0    </span> <span class="green">   0    </span>
+<span class="blue">11000111</span> <span class="blue">00010101</span> <span class="blue">01011000</span> <span class="blue">11011000</span>
+<span class="green">  199   </span> <span class="green">   21   </span> <span class="green">   88   </span> <span class="green">  216   </span>
+<span class="red">---Wpt 2--------------------------------- name: </span>SJUTTON<span class="red"> id: </span>SJUTT<span class="red"> lat: </span>59.000000<span class="red"> long: </span>16.000000<span class="red"> route: </span>1
+<span class="blue">01000010</span> <span class="blue">01101100</span> 00000000 00000000
+<span class="green">   66   </span> <span class="green">  108   </span> <span class="green">   0    </span> <span class="green">   0    </span>
+<span class="blue">01000001</span> <span class="blue">10000000</span> 00000000 00000000
+<span class="green">   65   </span> <span class="green">  128   </span> <span class="green">   0    </span> <span class="green">   0    </span>
+<span class="blue">11000010</span> <span class="blue">01111100</span> <span class="blue">10110001</span> <span class="blue">11000100</span> <span class="blue">10110010</span> <span class="blue">10110000</span> 00000000 00000000 00000000 00000000 00000000 00000000
+<span class="green">  194   </span> <span class="green">  124   </span> <span class="green">  177   </span> <span class="green">  196   </span> <span class="green">  178   </span> <span class="green">  176   </span> <span class="green">   0    </span> <span class="green">   0    </span> <span class="green">   0    </span> <span class="green">   0    </span> <span class="green">   0    </span> <span class="green">   0    </span>
+00000000 <span class="blue">00001000</span> 00000000 00000000
+<span class="green">   0    </span> <span class="green">   8    </span> <span class="green">   0    </span> <span class="green">   0    </span>
+<span class="blue">11100001</span> <span class="blue">00111110</span> <span class="blue">01011000</span> <span class="blue">11100010</span>
+<span class="green">  225   </span> <span class="green">   62   </span> <span class="green">   88   </span> <span class="green">  226   </span>
+
+<span class="red">***ny annan flygplats********************************************************</span>
+<span class="red">---CARACTER.P01---</span>
+<span class="blue">11111111</span> <span class="blue">11111111</span> <span class="blue">00011000</span> <span class="blue">11011001</span> 00000000 00000000 <span class="blue">00111001</span> <span class="blue">00010000</span>
+<span class="green">  255   </span> <span class="green">  255   </span> <span class="green">   24   </span> <span class="green">  217   </span> <span class="green">   0    </span> <span class="green">   0    </span> <span class="green">   57   </span> <span class="green">   16   </span>
+<span class="red">---WAYPOINT.P01 checksum header---</span>
+00000000 <span class="blue">10000011</span> <span class="blue">00000100</span> 00000000
+<span class="green">   0    </span> <span class="green">  131   </span> <span class="green">   4    </span> <span class="green">   0    </span>
+<span class="red">---Wpt 1--------------------------------- name: </span>FEMTON<span class="red"> id: </span>FEMTO<span class="red"> lat: </span>58.000000<span class="red"> long: </span>15.000000<span class="red"> route: </span>1
+<span class="blue">01000010</span> <span class="blue">01101000</span> 00000000 00000000
+<span class="green">   66   </span> <span class="green">  104   </span> <span class="green">   0    </span> <span class="green">   0    </span>
+<span class="blue">01000001</span> <span class="blue">01110000</span> 00000000 00000000
+<span class="green">   65   </span> <span class="green">  112   </span> <span class="green">   0    </span> <span class="green">   0    </span>
+<span class="blue">10001110</span> <span class="blue">00101010</span> <span class="blue">10110001</span> <span class="blue">10110000</span> <span class="blue">10101100</span> 00000000 00000000 00000000 00000000 00000000 00000000 00000000
+<span class="green">  142   </span> <span class="green">   42   </span> <span class="green">  177   </span> <span class="green">  176   </span> <span class="green">  172   </span> <span class="green">   0    </span> <span class="green">   0    </span> <span class="green">   0    </span> <span class="green">   0    </span> <span class="green">   0    </span> <span class="green">   0    </span> <span class="green">   0    </span>
+00000000 <span class="blue">00001000</span> 00000000 00000000
+<span class="green">   0    </span> <span class="green">   8    </span> <span class="green">   0    </span> <span class="green">   0    </span>
+<span class="blue">11000111</span> <span class="blue">00010101</span> <span class="blue">01011000</span> <span class="blue">11011000</span>
+<span class="green">  199   </span> <span class="green">   21   </span> <span class="green">   88   </span> <span class="green">  216   </span>
+<span class="red">---Wpt 2--------------------------------- name: </span>SEXTON<span class="red"> id: </span>SEXTO<span class="red"> lat: </span>59.000000<span class="red"> long: </span>16.000000<span class="red"> route: </span>1
+<span class="blue">01000010</span> <span class="blue">01101100</span> 00000000 00000000
+<span class="green">   66   </span> <span class="green">  108   </span> <span class="green">   0    </span> <span class="green">   0    </span>
+<span class="blue">01000001</span> <span class="blue">10000000</span> 00000000 00000000
+<span class="green">   65   </span> <span class="green">  128   </span> <span class="green">   0    </span> <span class="green">   0    </span>
+<span class="blue">11000010</span> <span class="blue">00101101</span> <span class="blue">01110001</span> <span class="blue">10110000</span> <span class="blue">10101100</span> 00000000 00000000 00000000 00000000 00000000 00000000 00000000
+<span class="green">  194   </span> <span class="green">   45   </span> <span class="green">  113   </span> <span class="green">  176   </span> <span class="green">  172   </span> <span class="green">   0    </span> <span class="green">   0    </span> <span class="green">   0    </span> <span class="green">   0    </span> <span class="green">   0    </span> <span class="green">   0    </span> <span class="green">   0    </span>
+00000000 <span class="blue">00001000</span> 00000000 00000000
+<span class="green">   0    </span> <span class="green">   8    </span> <span class="green">   0    </span> <span class="green">   0    </span>
+<span class="blue">11100001</span> <span class="blue">00010110</span> <span class="blue">10111000</span> <span class="blue">11011000</span>
+<span class="green">  225   </span> <span class="green">   22   </span> <span class="green">  184   </span> <span class="green">  216   </span>
+
+<span class="red">***ändrat femlong************************************************************</span>
+<span class="red">---CARACTER.P01---</span>
+<span class="blue">11111111</span> <span class="blue">11111111</span> <span class="blue">00011000</span> <span class="blue">11001001</span> 00000000 00000000 <span class="blue">00111001</span> <span class="blue">00010000</span>
+<span class="green">  255   </span> <span class="green">  255   </span> <span class="green">   24   </span> <span class="green">  201   </span> <span class="green">   0    </span> <span class="green">   0    </span> <span class="green">   57   </span> <span class="green">   16   </span>
+<span class="red">---WAYPOINT.P01 checksum header---</span>
+00000000 <span class="blue">10000011</span> <span class="blue">00000100</span> 00000000
+<span class="green">   0    </span> <span class="green">  131   </span> <span class="green">   4    </span> <span class="green">   0    </span>
+<span class="red">---Wpt 1--------------------------------- name: </span>FEMTON<span class="red"> id: </span>FEMTO<span class="red"> lat: </span>58.000000<span class="red"> long: </span>14.000000<span class="red"> route: </span>1
+<span class="blue">01000010</span> <span class="blue">01101000</span> 00000000 00000000
+<span class="green">   66   </span> <span class="green">  104   </span> <span class="green">   0    </span> <span class="green">   0    </span>
+<span class="blue">01000001</span> <span class="blue">01100000</span> 00000000 00000000
+<span class="green">   65   </span> <span class="green">   96   </span> <span class="green">   0    </span> <span class="green">   0    </span>
+<span class="blue">10001110</span> <span class="blue">00101010</span> <span class="blue">10110001</span> <span class="blue">10110000</span> <span class="blue">10101100</span> 00000000 00000000 00000000 00000000 00000000 00000000 00000000
+<span class="green">  142   </span> <span class="green">   42   </span> <span class="green">  177   </span> <span class="green">  176   </span> <span class="green">  172   </span> <span class="green">   0    </span> <span class="green">   0    </span> <span class="green">   0    </span> <span class="green">   0    </span> <span class="green">   0    </span> <span class="green">   0    </span> <span class="green">   0    </span>
+00000000 <span class="blue">00001000</span> 00000000 00000000
+<span class="green">   0    </span> <span class="green">   8    </span> <span class="green">   0    </span> <span class="green">   0    </span>
+<span class="blue">11000111</span> <span class="blue">00010101</span> <span class="blue">01011000</span> <span class="blue">11011000</span>
+<span class="green">  199   </span> <span class="green">   21   </span> <span class="green">   88   </span> <span class="green">  216   </span>
+<span class="red">---Wpt 2--------------------------------- name: </span>SEXTON<span class="red"> id: </span>SEXTO<span class="red"> lat: </span>59.000000<span class="red"> long: </span>16.000000<span class="red"> route: </span>1
+<span class="blue">01000010</span> <span class="blue">01101100</span> 00000000 00000000
+<span class="green">   66   </span> <span class="green">  108   </span> <span class="green">   0    </span> <span class="green">   0    </span>
+<span class="blue">01000001</span> <span class="blue">10000000</span> 00000000 00000000
+<span class="green">   65   </span> <span class="green">  128   </span> <span class="green">   0    </span> <span class="green">   0    </span>
+<span class="blue">11000010</span> <span class="blue">00101101</span> <span class="blue">01110001</span> <span class="blue">10110000</span> <span class="blue">10101100</span> 00000000 00000000 00000000 00000000 00000000 00000000 00000000
+<span class="green">  194   </span> <span class="green">   45   </span> <span class="green">  113   </span> <span class="green">  176   </span> <span class="green">  172   </span> <span class="green">   0    </span> <span class="green">   0    </span> <span class="green">   0    </span> <span class="green">   0    </span> <span class="green">   0    </span> <span class="green">   0    </span> <span class="green">   0    </span>
+00000000 <span class="blue">00001000</span> 00000000 00000000
+<span class="green">   0    </span> <span class="green">   8    </span> <span class="green">   0    </span> <span class="green">   0    </span>
+<span class="blue">11100001</span> <span class="blue">00010110</span> <span class="blue">10111000</span> <span class="blue">11011000</span>
+<span class="green">  225   </span> <span class="green">   22   </span> <span class="green">  184   </span> <span class="green">  216   </span>
+
+<span class="red">***ny båda flygplatserna*****************************************************</span>
+<span class="red">---CARACTER.P01---</span>
+<span class="blue">11111111</span> <span class="blue">11111111</span> <span class="blue">00011000</span> <span class="blue">11011001</span> 00000000 00000000 <span class="blue">00111001</span> <span class="blue">00010000</span>
+<span class="green">  255   </span> <span class="green">  255   </span> <span class="green">   24   </span> <span class="green">  217   </span> <span class="green">   0    </span> <span class="green">   0    </span> <span class="green">   57   </span> <span class="green">   16   </span>
+<span class="red">---WAYPOINT.P01 checksum header---</span>
+00000000 <span class="blue">10000011</span> <span class="blue">00000100</span> 00000000
+<span class="green">   0    </span> <span class="green">  131   </span> <span class="green">   4    </span> <span class="green">   0    </span>
+<span class="red">---Wpt 1--------------------------------- name: </span>FEMTON<span class="red"> id: </span>FEMTO<span class="red"> lat: </span>58.000000<span class="red"> long: </span>15.000000<span class="red"> route: </span>1
+<span class="blue">01000010</span> <span class="blue">01101000</span> 00000000 00000000
+<span class="green">   66   </span> <span class="green">  104   </span> <span class="green">   0    </span> <span class="green">   0    </span>
+<span class="blue">01000001</span> <span class="blue">01110000</span> 00000000 00000000
+<span class="green">   65   </span> <span class="green">  112   </span> <span class="green">   0    </span> <span class="green">   0    </span>
+<span class="blue">10001110</span> <span class="blue">00101010</span> <span class="blue">10110001</span> <span class="blue">10110000</span> <span class="blue">10101100</span> 00000000 00000000 00000000 00000000 00000000 00000000 00000000
+<span class="green">  142   </span> <span class="green">   42   </span> <span class="green">  177   </span> <span class="green">  176   </span> <span class="green">  172   </span> <span class="green">   0    </span> <span class="green">   0    </span> <span class="green">   0    </span> <span class="green">   0    </span> <span class="green">   0    </span> <span class="green">   0    </span> <span class="green">   0    </span>
+00000000 <span class="blue">00001000</span> 00000000 00000000
+<span class="green">   0    </span> <span class="green">   8    </span> <span class="green">   0    </span> <span class="green">   0    </span>
+<span class="blue">11000111</span> <span class="blue">00010101</span> <span class="blue">01011000</span> <span class="blue">11011000</span>
+<span class="green">  199   </span> <span class="green">   21   </span> <span class="green">   88   </span> <span class="green">  216   </span>
+<span class="red">---Wpt 2--------------------------------- name: </span>SEXTON<span class="red"> id: </span>SEXTO<span class="red"> lat: </span>59.000000<span class="red"> long: </span>16.000000<span class="red"> route: </span>1
+<span class="blue">01000010</span> <span class="blue">01101100</span> 00000000 00000000
+<span class="green">   66   </span> <span class="green">  108   </span> <span class="green">   0    </span> <span class="green">   0    </span>
+<span class="blue">01000001</span> <span class="blue">10000000</span> 00000000 00000000
+<span class="green">   65   </span> <span class="green">  128   </span> <span class="green">   0    </span> <span class="green">   0    </span>
+<span class="blue">11000010</span> <span class="blue">00101101</span> <span class="blue">01110001</span> <span class="blue">10110000</span> <span class="blue">10101100</span> 00000000 00000000 00000000 00000000 00000000 00000000 00000000
+<span class="green">  194   </span> <span class="green">   45   </span> <span class="green">  113   </span> <span class="green">  176   </span> <span class="green">  172   </span> <span class="green">   0    </span> <span class="green">   0    </span> <span class="green">   0    </span> <span class="green">   0    </span> <span class="green">   0    </span> <span class="green">   0    </span> <span class="green">   0    </span>
+00000000 <span class="blue">00001000</span> 00000000 00000000
+<span class="green">   0    </span> <span class="green">   8    </span> <span class="green">   0    </span> <span class="green">   0    </span>
+<span class="blue">11100001</span> <span class="blue">00010110</span> <span class="blue">10111000</span> <span class="blue">11011000</span>
+<span class="green">  225   </span> <span class="green">   22   </span> <span class="green">  184   </span> <span class="green">  216   </span>
+
+<span class="red">***ny waypoint***************************************************************</span>
+<span class="red">---CARACTER.P01---</span>
+<span class="blue">11111111</span> <span class="blue">11111111</span> <span class="blue">11110101</span> <span class="blue">01010100</span> 00000000 00000000 <span class="blue">11011110</span> <span class="blue">00010010</span>
+<span class="green">  255   </span> <span class="green">  255   </span> <span class="green">  245   </span> <span class="green">   84   </span> <span class="green">   0    </span> <span class="green">   0    </span> <span class="green">  222   </span> <span class="green">   18   </span>
+<span class="red">---WAYPOINT.P01 checksum header---</span>
+00000000 <span class="blue">10000100</span> <span class="blue">00000110</span> 00000000
+<span class="green">   0    </span> <span class="green">  132   </span> <span class="green">   6    </span> <span class="green">   0    </span>
+<span class="red">---Wpt 1--------------------------------- name: </span>FEMTON<span class="red"> id: </span>FEMTO<span class="red"> lat: </span>58.000000<span class="red"> long: </span>15.000000<span class="red"> route: </span>1
+<span class="blue">01000010</span> <span class="blue">01101000</span> 00000000 00000000
+<span class="green">   66   </span> <span class="green">  104   </span> <span class="green">   0    </span> <span class="green">   0    </span>
+<span class="blue">01000001</span> <span class="blue">01110000</span> 00000000 00000000
+<span class="green">   65   </span> <span class="green">  112   </span> <span class="green">   0    </span> <span class="green">   0    </span>
+<span class="blue">10001110</span> <span class="blue">00101010</span> <span class="blue">10110001</span> <span class="blue">10110000</span> <span class="blue">10101100</span> 00000000 00000000 00000000 00000000 00000000 00000000 00000000
+<span class="green">  142   </span> <span class="green">   42   </span> <span class="green">  177   </span> <span class="green">  176   </span> <span class="green">  172   </span> <span class="green">   0    </span> <span class="green">   0    </span> <span class="green">   0    </span> <span class="green">   0    </span> <span class="green">   0    </span> <span class="green">   0    </span> <span class="green">   0    </span>
+00000000 <span class="blue">00001000</span> 00000000 00000000
+<span class="green">   0    </span> <span class="green">   8    </span> <span class="green">   0    </span> <span class="green">   0    </span>
+<span class="blue">11000111</span> <span class="blue">00010101</span> <span class="blue">01011000</span> <span class="blue">11011000</span>
+<span class="green">  199   </span> <span class="green">   21   </span> <span class="green">   88   </span> <span class="green">  216   </span>
+<span class="red">---Wpt 2--------------------------------- name: </span>SEXTON<span class="red"> id: </span>SEXTO<span class="red"> lat: </span>59.000000<span class="red"> long: </span>16.000000<span class="red"> route: </span>1
+<span class="blue">01000010</span> <span class="blue">01101100</span> 00000000 00000000
+<span class="green">   66   </span> <span class="green">  108   </span> <span class="green">   0    </span> <span class="green">   0    </span>
+<span class="blue">01000001</span> <span class="blue">10000000</span> 00000000 00000000
+<span class="green">   65   </span> <span class="green">  128   </span> <span class="green">   0    </span> <span class="green">   0    </span>
+<span class="blue">11000010</span> <span class="blue">00101101</span> <span class="blue">01110001</span> <span class="blue">10110000</span> <span class="blue">10101100</span> 00000000 00000000 00000000 00000000 00000000 00000000 00000000
+<span class="green">  194   </span> <span class="green">   45   </span> <span class="green">  113   </span> <span class="green">  176   </span> <span class="green">  172   </span> <span class="green">   0    </span> <span class="green">   0    </span> <span class="green">   0    </span> <span class="green">   0    </span> <span class="green">   0    </span> <span class="green">   0    </span> <span class="green">   0    </span>
+00000000 <span class="blue">00001000</span> 00000000 00000000
+<span class="green">   0    </span> <span class="green">   8    </span> <span class="green">   0    </span> <span class="green">   0    </span>
+<span class="blue">11100001</span> <span class="blue">00010110</span> <span class="blue">10111000</span> <span class="blue">11011000</span>
+<span class="green">  225   </span> <span class="green">   22   </span> <span class="green">  184   </span> <span class="green">  216   </span>
+<span class="red">---Wpt 3--------------------------------- name: </span>ARTON<span class="red"> id: </span>ARTON<span class="red"> lat: </span>60.000000<span class="red"> long: </span>17.000000<span class="red"> route: </span>1
+<span class="blue">01000010</span> <span class="blue">01110000</span> 00000000 00000000
+<span class="green">   66   </span> <span class="green">  112   </span> <span class="green">   0    </span> <span class="green">   0    </span>
+<span class="blue">01000001</span> <span class="blue">10001000</span> 00000000 00000000
+<span class="green">   65   </span> <span class="green">  136   </span> <span class="green">   0    </span> <span class="green">   0    </span>
+<span class="blue">01111010</span> <span class="blue">11111100</span> <span class="blue">01101100</span> <span class="blue">10101100</span> 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000
+<span class="green">  122   </span> <span class="green">  252   </span> <span class="green">  108   </span> <span class="green">  172   </span> <span class="green">   0    </span> <span class="green">   0    </span> <span class="green">   0    </span> <span class="green">   0    </span> <span class="green">   0    </span> <span class="green">   0    </span> <span class="green">   0    </span> <span class="green">   0    </span>
+00000000 <span class="blue">00001000</span> 00000000 00000000
+<span class="green">   0    </span> <span class="green">   8    </span> <span class="green">   0    </span> <span class="green">   0    </span>
+<span class="blue">10111101</span> <span class="blue">01111110</span> <span class="blue">00110110</span> <span class="blue">01010110</span>
+<span class="green">  189   </span> <span class="green">  126   </span> <span class="green">   54   </span> <span class="green">   86   </span>
+
+<span class="red">***standard******************************************************************</span>
+<span class="red">---CARACTER.P01---</span>
+<span class="blue">11111111</span> <span class="blue">11111111</span> <span class="blue">00011000</span> <span class="blue">11011001</span> 00000000 00000000 <span class="blue">00111001</span> <span class="blue">00010000</span>
+<span class="green">  255   </span> <span class="green">  255   </span> <span class="green">   24   </span> <span class="green">  217   </span> <span class="green">   0    </span> <span class="green">   0    </span> <span class="green">   57   </span> <span class="green">   16   </span>
+<span class="red">---WAYPOINT.P01 checksum header---</span>
+00000000 <span class="blue">10000011</span> <span class="blue">00000100</span> 00000000
+<span class="green">   0    </span> <span class="green">  131   </span> <span class="green">   4    </span> <span class="green">   0    </span>
+<span class="red">---Wpt 1--------------------------------- name: </span>FEMTON<span class="red"> id: </span>FEMTO<span class="red"> lat: </span>58.000000<span class="red"> long: </span>15.000000<span class="red"> route: </span>1
+<span class="blue">01000010</span> <span class="blue">01101000</span> 00000000 00000000
+<span class="green">   66   </span> <span class="green">  104   </span> <span class="green">   0    </span> <span class="green">   0    </span>
+<span class="blue">01000001</span> <span class="blue">01110000</span> 00000000 00000000
+<span class="green">   65   </span> <span class="green">  112   </span> <span class="green">   0    </span> <span class="green">   0    </span>
+<span class="blue">10001110</span> <span class="blue">00101010</span> <span class="blue">10110001</span> <span class="blue">10110000</span> <span class="blue">10101100</span> 00000000 00000000 00000000 00000000 00000000 00000000 00000000
+<span class="green">  142   </span> <span class="green">   42   </span> <span class="green">  177   </span> <span class="green">  176   </span> <span class="green">  172   </span> <span class="green">   0    </span> <span class="green">   0    </span> <span class="green">   0    </span> <span class="green">   0    </span> <span class="green">   0    </span> <span class="green">   0    </span> <span class="green">   0    </span>
+00000000 <span class="blue">00001000</span> 00000000 00000000
+<span class="green">   0    </span> <span class="green">   8    </span> <span class="green">   0    </span> <span class="green">   0    </span>
+<span class="blue">11000111</span> <span class="blue">00010101</span> <span class="blue">01011000</span> <span class="blue">11011000</span>
+<span class="green">  199   </span> <span class="green">   21   </span> <span class="green">   88   </span> <span class="green">  216   </span>
+<span class="red">---Wpt 2--------------------------------- name: </span>SEXTON<span class="red"> id: </span>SEXTO<span class="red"> lat: </span>59.000000<span class="red"> long: </span>16.000000<span class="red"> route: </span>1
+<span class="blue">01000010</span> <span class="blue">01101100</span> 00000000 00000000
+<span class="green">   66   </span> <span class="green">  108   </span> <span class="green">   0    </span> <span class="green">   0    </span>
+<span class="blue">01000001</span> <span class="blue">10000000</span> 00000000 00000000
+<span class="green">   65   </span> <span class="green">  128   </span> <span class="green">   0    </span> <span class="green">   0    </span>
+<span class="blue">11000010</span> <span class="blue">00101101</span> <span class="blue">01110001</span> <span class="blue">10110000</span> <span class="blue">10101100</span> 00000000 00000000 00000000 00000000 00000000 00000000 00000000
+<span class="green">  194   </span> <span class="green">   45   </span> <span class="green">  113   </span> <span class="green">  176   </span> <span class="green">  172   </span> <span class="green">   0    </span> <span class="green">   0    </span> <span class="green">   0    </span> <span class="green">   0    </span> <span class="green">   0    </span> <span class="green">   0    </span> <span class="green">   0    </span>
+00000000 <span class="blue">00001000</span> 00000000 00000000
+<span class="green">   0    </span> <span class="green">   8    </span> <span class="green">   0    </span> <span class="green">   0    </span>
+<span class="blue">11100001</span> <span class="blue">00010110</span> <span class="blue">10111000</span> <span class="blue">11011000</span>
+<span class="green">  225   </span> <span class="green">   22   </span> <span class="green">  184   </span> <span class="green">  216   </span>
+
+<span class="red">***ändrat femlat*************************************************************</span>
+<span class="red">---CARACTER.P01---</span>
+<span class="blue">11111111</span> <span class="blue">11111111</span> <span class="blue">00011000</span> <span class="blue">11010101</span> 00000000 00000000 <span class="blue">00111001</span> <span class="blue">00010000</span>
+<span class="green">  255   </span> <span class="green">  255   </span> <span class="green">   24   </span> <span class="green">  213   </span> <span class="green">   0    </span> <span class="green">   0    </span> <span class="green">   57   </span> <span class="green">   16   </span>
+<span class="red">---WAYPOINT.P01 checksum header---</span>
+00000000 <span class="blue">10000011</span> <span class="blue">00000100</span> 00000000
+<span class="green">   0    </span> <span class="green">  131   </span> <span class="green">   4    </span> <span class="green">   0    </span>
+<span class="red">---Wpt 1--------------------------------- name: </span>FEMTON<span class="red"> id: </span>FEMTO<span class="red"> lat: </span>57.000000<span class="red"> long: </span>15.000000<span class="red"> route: </span>1
+<span class="blue">01000010</span> <span class="blue">01100100</span> 00000000 00000000
+<span class="green">   66   </span> <span class="green">  100   </span> <span class="green">   0    </span> <span class="green">   0    </span>
+<span class="blue">01000001</span> <span class="blue">01110000</span> 00000000 00000000
+<span class="green">   65   </span> <span class="green">  112   </span> <span class="green">   0    </span> <span class="green">   0    </span>
+<span class="blue">10001110</span> <span class="blue">00101010</span> <span class="blue">10110001</span> <span class="blue">10110000</span> <span class="blue">10101100</span> 00000000 00000000 00000000 00000000 00000000 00000000 00000000
+<span class="green">  142   </span> <span class="green">   42   </span> <span class="green">  177   </span> <span class="green">  176   </span> <span class="green">  172   </span> <span class="green">   0    </span> <span class="green">   0    </span> <span class="green">   0    </span> <span class="green">   0    </span> <span class="green">   0    </span> <span class="green">   0    </span> <span class="green">   0    </span>
+00000000 <span class="blue">00001000</span> 00000000 00000000
+<span class="green">   0    </span> <span class="green">   8    </span> <span class="green">   0    </span> <span class="green">   0    </span>
+<span class="blue">11000111</span> <span class="blue">00010101</span> <span class="blue">01011000</span> <span class="blue">11011000</span>
+<span class="green">  199   </span> <span class="green">   21   </span> <span class="green">   88   </span> <span class="green">  216   </span>
+<span class="red">---Wpt 2--------------------------------- name: </span>SEXTON<span class="red"> id: </span>SEXTO<span class="red"> lat: </span>59.000000<span class="red"> long: </span>16.000000<span class="red"> route: </span>1
+<span class="blue">01000010</span> <span class="blue">01101100</span> 00000000 00000000
+<span class="green">   66   </span> <span class="green">  108   </span> <span class="green">   0    </span> <span class="green">   0    </span>
+<span class="blue">01000001</span> <span class="blue">10000000</span> 00000000 00000000
+<span class="green">   65   </span> <span class="green">  128   </span> <span class="green">   0    </span> <span class="green">   0    </span>
+<span class="blue">11000010</span> <span class="blue">00101101</span> <span class="blue">01110001</span> <span class="blue">10110000</span> <span class="blue">10101100</span> 00000000 00000000 00000000 00000000 00000000 00000000 00000000
+<span class="green">  194   </span> <span class="green">   45   </span> <span class="green">  113   </span> <span class="green">  176   </span> <span class="green">  172   </span> <span class="green">   0    </span> <span class="green">   0    </span> <span class="green">   0    </span> <span class="green">   0    </span> <span class="green">   0    </span> <span class="green">   0    </span> <span class="green">   0    </span>
+00000000 <span class="blue">00001000</span> 00000000 00000000
+<span class="green">   0    </span> <span class="green">   8    </span> <span class="green">   0    </span> <span class="green">   0    </span>
+<span class="blue">11100001</span> <span class="blue">00010110</span> <span class="blue">10111000</span> <span class="blue">11011000</span>
+<span class="green">  225   </span> <span class="green">   22   </span> <span class="green">  184   </span> <span class="green">  216   </span>
+
+<span class="red">***ny flygplats**************************************************************</span>
+<span class="red">---CARACTER.P01---</span>
+<span class="blue">11111111</span> <span class="blue">11111111</span> <span class="blue">00011000</span> <span class="blue">11011001</span> 00000000 00000000 <span class="blue">00111001</span> <span class="blue">00010000</span>
+<span class="green">  255   </span> <span class="green">  255   </span> <span class="green">   24   </span> <span class="green">  217   </span> <span class="green">   0    </span> <span class="green">   0    </span> <span class="green">   57   </span> <span class="green">   16   </span>
+<span class="red">---WAYPOINT.P01 checksum header---</span>
+00000000 <span class="blue">10000011</span> <span class="blue">00000100</span> 00000000
+<span class="green">   0    </span> <span class="green">  131   </span> <span class="green">   4    </span> <span class="green">   0    </span>
+<span class="red">---Wpt 1--------------------------------- name: </span>FEMTON<span class="red"> id: </span>FEMTO<span class="red"> lat: </span>58.000000<span class="red"> long: </span>15.000000<span class="red"> route: </span>1
+<span class="blue">01000010</span> <span class="blue">01101000</span> 00000000 00000000
+<span class="green">   66   </span> <span class="green">  104   </span> <span class="green">   0    </span> <span class="green">   0    </span>
+<span class="blue">01000001</span> <span class="blue">01110000</span> 00000000 00000000
+<span class="green">   65   </span> <span class="green">  112   </span> <span class="green">   0    </span> <span class="green">   0    </span>
+<span class="blue">10001110</span> <span class="blue">00101010</span> <span class="blue">10110001</span> <span class="blue">10110000</span> <span class="blue">10101100</span> 00000000 00000000 00000000 00000000 00000000 00000000 00000000
+<span class="green">  142   </span> <span class="green">   42   </span> <span class="green">  177   </span> <span class="green">  176   </span> <span class="green">  172   </span> <span class="green">   0    </span> <span class="green">   0    </span> <span class="green">   0    </span> <span class="green">   0    </span> <span class="green">   0    </span> <span class="green">   0    </span> <span class="green">   0    </span>
+00000000 <span class="blue">00001000</span> 00000000 00000000
+<span class="green">   0    </span> <span class="green">   8    </span> <span class="green">   0    </span> <span class="green">   0    </span>
+<span class="blue">11000111</span> <span class="blue">00010101</span> <span class="blue">01011000</span> <span class="blue">11011000</span>
+<span class="green">  199   </span> <span class="green">   21   </span> <span class="green">   88   </span> <span class="green">  216   </span>
+<span class="red">---Wpt 2--------------------------------- name: </span>SEXTON<span class="red"> id: </span>SEXTO<span class="red"> lat: </span>59.000000<span class="red"> long: </span>16.000000<span class="red"> route: </span>1
+<span class="blue">01000010</span> <span class="blue">01101100</span> 00000000 00000000
+<span class="green">   66   </span> <span class="green">  108   </span> <span class="green">   0    </span> <span class="green">   0    </span>
+<span class="blue">01000001</span> <span class="blue">10000000</span> 00000000 00000000
+<span class="green">   65   </span> <span class="green">  128   </span> <span class="green">   0    </span> <span class="green">   0    </span>
+<span class="blue">11000010</span> <span class="blue">00101101</span> <span class="blue">01110001</span> <span class="blue">10110000</span> <span class="blue">10101100</span> 00000000 00000000 00000000 00000000 00000000 00000000 00000000
+<span class="green">  194   </span> <span class="green">   45   </span> <span class="green">  113   </span> <span class="green">  176   </span> <span class="green">  172   </span> <span class="green">   0    </span> <span class="green">   0    </span> <span class="green">   0    </span> <span class="green">   0    </span> <span class="green">   0    </span> <span class="green">   0    </span> <span class="green">   0    </span>
+00000000 <span class="blue">00001000</span> 00000000 00000000
+<span class="green">   0    </span> <span class="green">   8    </span> <span class="green">   0    </span> <span class="green">   0    </span>
+<span class="blue">11100001</span> <span class="blue">00010110</span> <span class="blue">10111000</span> <span class="blue">11011000</span>
+<span class="green">  225   </span> <span class="green">   22   </span> <span class="green">  184   </span> <span class="green">  216   </span>
+
+<span class="red">***ändrat femnamn************************************************************</span>
+<span class="red">---CARACTER.P01---</span>
+<span class="blue">11111111</span> <span class="blue">11111111</span> <span class="blue">00100000</span> <span class="blue">00000010</span> <span class="blue">11111111</span> <span class="blue">11111111</span> <span class="blue">11110110</span> <span class="blue">00101110</span>
+<span class="green">  255   </span> <span class="green">  255   </span> <span class="green">   32   </span> <span class="green">   2    </span> <span class="green">  255   </span> <span class="green">  255   </span> <span class="green">  246   </span> <span class="green">   46   </span>
+<span class="red">---WAYPOINT.P01 checksum header---</span>
+00000000 <span class="blue">10000011</span> <span class="blue">00000100</span> 00000000
+<span class="green">   0    </span> <span class="green">  131   </span> <span class="green">   4    </span> <span class="green">   0    </span>
+<span class="red">---Wpt 1--------------------------------- name: </span>FJORTON<span class="red"> id: </span>FJORT<span class="red"> lat: </span>58.000000<span class="red"> long: </span>15.000000<span class="red"> route: </span>1
+<span class="blue">01000010</span> <span class="blue">01101000</span> 00000000 00000000
+<span class="green">   66   </span> <span class="green">  104   </span> <span class="green">   0    </span> <span class="green">   0    </span>
+<span class="blue">01000001</span> <span class="blue">01110000</span> 00000000 00000000
+<span class="green">   65   </span> <span class="green">  112   </span> <span class="green">   0    </span> <span class="green">   0    </span>
+<span class="blue">10001110</span> <span class="blue">01111011</span> <span class="blue">00101111</span> <span class="blue">11000100</span> <span class="blue">10110010</span> <span class="blue">10110000</span> 00000000 00000000 00000000 00000000 00000000 00000000
+<span class="green">  142   </span> <span class="green">  123   </span> <span class="green">   47   </span> <span class="green">  196   </span> <span class="green">  178   </span> <span class="green">  176   </span> <span class="green">   0    </span> <span class="green">   0    </span> <span class="green">   0    </span> <span class="green">   0    </span> <span class="green">   0    </span> <span class="green">   0    </span>
+00000000 <span class="blue">00001000</span> 00000000 00000000
+<span class="green">   0    </span> <span class="green">   8    </span> <span class="green">   0    </span> <span class="green">   0    </span>
+<span class="blue">11000111</span> <span class="blue">00111101</span> <span class="blue">10010111</span> <span class="blue">11100010</span>
+<span class="green">  199   </span> <span class="green">   61   </span> <span class="green">  151   </span> <span class="green">  226   </span>
+<span class="red">---Wpt 2--------------------------------- name: </span>SEXTON<span class="red"> id: </span>SEXTO<span class="red"> lat: </span>59.000000<span class="red"> long: </span>16.000000<span class="red"> route: </span>1
+<span class="blue">01000010</span> <span class="blue">01101100</span> 00000000 00000000
+<span class="green">   66   </span> <span class="green">  108   </span> <span class="green">   0    </span> <span class="green">   0    </span>
+<span class="blue">01000001</span> <span class="blue">10000000</span> 00000000 00000000
+<span class="green">   65   </span> <span class="green">  128   </span> <span class="green">   0    </span> <span class="green">   0    </span>
+<span class="blue">11000010</span> <span class="blue">00101101</span> <span class="blue">01110001</span> <span class="blue">10110000</span> <span class="blue">10101100</span> 00000000 00000000 00000000 00000000 00000000 00000000 00000000
+<span class="green">  194   </span> <span class="green">   45   </span> <span class="green">  113   </span> <span class="green">  176   </span> <span class="green">  172   </span> <span class="green">   0    </span> <span class="green">   0    </span> <span class="green">   0    </span> <span class="green">   0    </span> <span class="green">   0    </span> <span class="green">   0    </span> <span class="green">   0    </span>
+00000000 <span class="blue">00001000</span> 00000000 00000000
+<span class="green">   0    </span> <span class="green">   8    </span> <span class="green">   0    </span> <span class="green">   0    </span>
+<span class="blue">11100001</span> <span class="blue">00010110</span> <span class="blue">10111000</span> <span class="blue">11011000</span>
+<span class="green">  225   </span> <span class="green">   22   </span> <span class="green">  184   </span> <span class="green">  216   </span>
+
+<span class="red">***ändrat femalt*************************************************************</span>
+<span class="red">---CARACTER.P01---</span>
+<span class="blue">11111111</span> <span class="blue">11111111</span> <span class="blue">00011000</span> <span class="blue">11011001</span> 00000000 00000000 <span class="blue">00111001</span> <span class="blue">00010000</span>
+<span class="green">  255   </span> <span class="green">  255   </span> <span class="green">   24   </span> <span class="green">  217   </span> <span class="green">   0    </span> <span class="green">   0    </span> <span class="green">   57   </span> <span class="green">   16   </span>
+<span class="red">---WAYPOINT.P01 checksum header---</span>
+00000000 <span class="blue">10000011</span> <span class="blue">00000100</span> 00000000
+<span class="green">   0    </span> <span class="green">  131   </span> <span class="green">   4    </span> <span class="green">   0    </span>
+<span class="red">---Wpt 1--------------------------------- name: </span>FEMTON<span class="red"> id: </span>FEMTO<span class="red"> lat: </span>58.000000<span class="red"> long: </span>15.000000<span class="red"> route: </span>1
+<span class="blue">01000010</span> <span class="blue">01101000</span> 00000000 00000000
+<span class="green">   66   </span> <span class="green">  104   </span> <span class="green">   0    </span> <span class="green">   0    </span>
+<span class="blue">01000001</span> <span class="blue">01110000</span> 00000000 00000000
+<span class="green">   65   </span> <span class="green">  112   </span> <span class="green">   0    </span> <span class="green">   0    </span>
+<span class="blue">10001110</span> <span class="blue">00101010</span> <span class="blue">10110001</span> <span class="blue">10110000</span> <span class="blue">10101100</span> 00000000 00000000 00000000 00000000 00000000 00000000 00000000
+<span class="green">  142   </span> <span class="green">   42   </span> <span class="green">  177   </span> <span class="green">  176   </span> <span class="green">  172   </span> <span class="green">   0    </span> <span class="green">   0    </span> <span class="green">   0    </span> <span class="green">   0    </span> <span class="green">   0    </span> <span class="green">   0    </span> <span class="green">   0    </span>
+00000000 <span class="blue">00001000</span> 00000000 00000000
+<span class="green">   0    </span> <span class="green">   8    </span> <span class="green">   0    </span> <span class="green">   0    </span>
+<span class="blue">11000111</span> <span class="blue">00010101</span> <span class="blue">01011000</span> <span class="blue">11011000</span>
+<span class="green">  199   </span> <span class="green">   21   </span> <span class="green">   88   </span> <span class="green">  216   </span>
+<span class="red">---Wpt 2--------------------------------- name: </span>SEXTON<span class="red"> id: </span>SEXTO<span class="red"> lat: </span>59.000000<span class="red"> long: </span>16.000000<span class="red"> route: </span>1
+<span class="blue">01000010</span> <span class="blue">01101100</span> 00000000 00000000
+<span class="green">   66   </span> <span class="green">  108   </span> <span class="green">   0    </span> <span class="green">   0    </span>
+<span class="blue">01000001</span> <span class="blue">10000000</span> 00000000 00000000
+<span class="green">   65   </span> <span class="green">  128   </span> <span class="green">   0    </span> <span class="green">   0    </span>
+<span class="blue">11000010</span> <span class="blue">00101101</span> <span class="blue">01110001</span> <span class="blue">10110000</span> <span class="blue">10101100</span> 00000000 00000000 00000000 00000000 00000000 00000000 00000000
+<span class="green">  194   </span> <span class="green">   45   </span> <span class="green">  113   </span> <span class="green">  176   </span> <span class="green">  172   </span> <span class="green">   0    </span> <span class="green">   0    </span> <span class="green">   0    </span> <span class="green">   0    </span> <span class="green">   0    </span> <span class="green">   0    </span> <span class="green">   0    </span>
+00000000 <span class="blue">00001000</span> 00000000 00000000
+<span class="green">   0    </span> <span class="green">   8    </span> <span class="green">   0    </span> <span class="green">   0    </span>
+<span class="blue">11100001</span> <span class="blue">00010110</span> <span class="blue">10111000</span> <span class="blue">11011000</span>
+<span class="green">  225   </span> <span class="green">   22   </span> <span class="green">  184   </span> <span class="green">  216   </span>
+
+<span class="red">***abcde_igen****************************************************************</span>
+<span class="red">---CARACTER.P01---</span>
+00000000 00000000 <span class="blue">10000000</span> <span class="blue">00101111</span> 00000000 <span class="blue">00000011</span> <span class="blue">11100110</span> <span class="blue">11000000</span>
+<span class="green">   0    </span> <span class="green">   0    </span> <span class="green">  128   </span> <span class="green">   47   </span> <span class="green">   0    </span> <span class="green">   3    </span> <span class="green">  230   </span> <span class="green">  192   </span>
+<span class="red">---WAYPOINT.P01 checksum header---</span>
+00000000 <span class="blue">10001001</span> <span class="blue">00010000</span> 00000000
+<span class="green">   0    </span> <span class="green">  137   </span> <span class="green">   16   </span> <span class="green">   0    </span>
+<span class="red">---Wpt 1--------------------------------- name: </span>AAAAA<span class="red"> id: </span>AAAAA<span class="red"> lat: </span>59.123402<span class="red"> long: </span>15.123400<span class="red"> route: </span>1
+<span class="blue">01000010</span> <span class="blue">01101100</span> <span class="blue">01111110</span> <span class="blue">01011101</span>
+<span class="green">   66   </span> <span class="green">  108   </span> <span class="green">  126   </span> <span class="green">   93   </span>
+<span class="blue">01000001</span> <span class="blue">01110001</span> <span class="blue">11111001</span> <span class="blue">01110010</span>
+<span class="green">   65   </span> <span class="green">  113   </span> <span class="green">  249   </span> <span class="green">  114   </span>
+<span class="blue">01111001</span> <span class="blue">11100111</span> <span class="blue">10011110</span> <span class="blue">01111000</span> 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000
+<span class="green">  121   </span> <span class="green">  231   </span> <span class="green">  158   </span> <span class="green">  120   </span> <span class="green">   0    </span> <span class="green">   0    </span> <span class="green">   0    </span> <span class="green">   0    </span> <span class="green">   0    </span> <span class="green">   0    </span> <span class="green">   0    </span> <span class="green">   0    </span>
+00000000 <span class="blue">00001000</span> 00000000 00000000
+<span class="green">   0    </span> <span class="green">   8    </span> <span class="green">   0    </span> <span class="green">   0    </span>
+<span class="blue">10111100</span> <span class="blue">11110011</span> <span class="blue">11001111</span> <span class="blue">00111100</span>
+<span class="green">  188   </span> <span class="green">  243   </span> <span class="green">  207   </span> <span class="green">   60   </span>
+<span class="red">---Wpt 2--------------------------------- name: </span>BBBBB<span class="red"> id: </span>BBBBB<span class="red"> lat: </span>59.123402<span class="red"> long: </span>15.123400<span class="red"> route: </span>1
+<span class="blue">01000010</span> <span class="blue">01101100</span> <span class="blue">01111110</span> <span class="blue">01011101</span>
+<span class="green">   66   </span> <span class="green">  108   </span> <span class="green">  126   </span> <span class="green">   93   </span>
+<span class="blue">01000001</span> <span class="blue">01110001</span> <span class="blue">11111001</span> <span class="blue">01110010</span>
+<span class="green">   65   </span> <span class="green">  113   </span> <span class="green">  249   </span> <span class="green">  114   </span>
+<span class="blue">01111101</span> <span class="blue">11110111</span> <span class="blue">11011111</span> <span class="blue">01111100</span> 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000
+<span class="green">  125   </span> <span class="green">  247   </span> <span class="green">  223   </span> <span class="green">  124   </span> <span class="green">   0    </span> <span class="green">   0    </span> <span class="green">   0    </span> <span class="green">   0    </span> <span class="green">   0    </span> <span class="green">   0    </span> <span class="green">   0    </span> <span class="green">   0    </span>
+00000000 <span class="blue">00001000</span> 00000000 00000000
+<span class="green">   0    </span> <span class="green">   8    </span> <span class="green">   0    </span> <span class="green">   0    </span>
+<span class="blue">10111110</span> <span class="blue">11111011</span> <span class="blue">11101111</span> <span class="blue">10111110</span>
+<span class="green">  190   </span> <span class="green">  251   </span> <span class="green">  239   </span> <span class="green">  190   </span>
+<span class="red">---Wpt 3--------------------------------- name: </span>CCCCC<span class="red"> id: </span>CCCCC<span class="red"> lat: </span>59.123402<span class="red"> long: </span>15.123400<span class="red"> route: </span>1
+<span class="blue">01000010</span> <span class="blue">01101100</span> <span class="blue">01111110</span> <span class="blue">01011101</span>
+<span class="green">   66   </span> <span class="green">  108   </span> <span class="green">  126   </span> <span class="green">   93   </span>
+<span class="blue">01000001</span> <span class="blue">01110001</span> <span class="blue">11111001</span> <span class="blue">01110010</span>
+<span class="green">   65   </span> <span class="green">  113   </span> <span class="green">  249   </span> <span class="green">  114   </span>
+<span class="blue">10000010</span> <span class="blue">00001000</span> <span class="blue">00100000</span> <span class="blue">10000000</span> 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000
+<span class="green">  130   </span> <span class="green">   8    </span> <span class="green">   32   </span> <span class="green">  128   </span> <span class="green">   0    </span> <span class="green">   0    </span> <span class="green">   0    </span> <span class="green">   0    </span> <span class="green">   0    </span> <span class="green">   0    </span> <span class="green">   0    </span> <span class="green">   0    </span>
+00000000 <span class="blue">00001000</span> 00000000 00000000
+<span class="green">   0    </span> <span class="green">   8    </span> <span class="green">   0    </span> <span class="green">   0    </span>
+<span class="blue">11000001</span> <span class="blue">00000100</span> <span class="blue">00010000</span> <span class="blue">01000000</span>
+<span class="green">  193   </span> <span class="green">   4    </span> <span class="green">   16   </span> <span class="green">   64   </span>
+<span class="red">---Wpt 4--------------------------------- name: </span>DDDDD<span class="red"> id: </span>DDDDD<span class="red"> lat: </span>59.123402<span class="red"> long: </span>15.123400<span class="red"> route: </span>1
+<span class="blue">01000010</span> <span class="blue">01101100</span> <span class="blue">01111110</span> <span class="blue">01011101</span>
+<span class="green">   66   </span> <span class="green">  108   </span> <span class="green">  126   </span> <span class="green">   93   </span>
+<span class="blue">01000001</span> <span class="blue">01110001</span> <span class="blue">11111001</span> <span class="blue">01110010</span>
+<span class="green">   65   </span> <span class="green">  113   </span> <span class="green">  249   </span> <span class="green">  114   </span>
+<span class="blue">10000110</span> <span class="blue">00011000</span> <span class="blue">01100001</span> <span class="blue">10000100</span> 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000
+<span class="green">  134   </span> <span class="green">   24   </span> <span class="green">   97   </span> <span class="green">  132   </span> <span class="green">   0    </span> <span class="green">   0    </span> <span class="green">   0    </span> <span class="green">   0    </span> <span class="green">   0    </span> <span class="green">   0    </span> <span class="green">   0    </span> <span class="green">   0    </span>
+00000000 <span class="blue">00001000</span> 00000000 00000000
+<span class="green">   0    </span> <span class="green">   8    </span> <span class="green">   0    </span> <span class="green">   0    </span>
+<span class="blue">11000011</span> <span class="blue">00001100</span> <span class="blue">00110000</span> <span class="blue">11000010</span>
+<span class="green">  195   </span> <span class="green">   12   </span> <span class="green">   48   </span> <span class="green">  194   </span>
+<span class="red">---Wpt 5--------------------------------- name: </span>EEEEE<span class="red"> id: </span>EEEEE<span class="red"> lat: </span>59.123402<span class="red"> long: </span>15.123400<span class="red"> route: </span>1
+<span class="blue">01000010</span> <span class="blue">01101100</span> <span class="blue">01111110</span> <span class="blue">01011101</span>
+<span class="green">   66   </span> <span class="green">  108   </span> <span class="green">  126   </span> <span class="green">   93   </span>
+<span class="blue">01000001</span> <span class="blue">01110001</span> <span class="blue">11111001</span> <span class="blue">01110010</span>
+<span class="green">   65   </span> <span class="green">  113   </span> <span class="green">  249   </span> <span class="green">  114   </span>
+<span class="blue">10001010</span> <span class="blue">00101000</span> <span class="blue">10100010</span> <span class="blue">10001000</span> 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000
+<span class="green">  138   </span> <span class="green">   40   </span> <span class="green">  162   </span> <span class="green">  136   </span> <span class="green">   0    </span> <span class="green">   0    </span> <span class="green">   0    </span> <span class="green">   0    </span> <span class="green">   0    </span> <span class="green">   0    </span> <span class="green">   0    </span> <span class="green">   0    </span>
+00000000 <span class="blue">00001000</span> 00000000 00000000
+<span class="green">   0    </span> <span class="green">   8    </span> <span class="green">   0    </span> <span class="green">   0    </span>
+<span class="blue">11000101</span> <span class="blue">00010100</span> <span class="blue">01010001</span> <span class="blue">01000100</span>
+<span class="green">  197   </span> <span class="green">   20   </span> <span class="green">   81   </span> <span class="green">   68   </span>
+<span class="red">---Wpt 6--------------------------------- name: </span>FFFFF<span class="red"> id: </span>FFFFF<span class="red"> lat: </span>59.123402<span class="red"> long: </span>15.123400<span class="red"> route: </span>1
+<span class="blue">01000010</span> <span class="blue">01101100</span> <span class="blue">01111110</span> <span class="blue">01011101</span>
+<span class="green">   66   </span> <span class="green">  108   </span> <span class="green">  126   </span> <span class="green">   93   </span>
+<span class="blue">01000001</span> <span class="blue">01110001</span> <span class="blue">11111001</span> <span class="blue">01110010</span>
+<span class="green">   65   </span> <span class="green">  113   </span> <span class="green">  249   </span> <span class="green">  114   </span>
+<span class="blue">10001110</span> <span class="blue">00111000</span> <span class="blue">11100011</span> <span class="blue">10001100</span> 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000
+<span class="green">  142   </span> <span class="green">   56   </span> <span class="green">  227   </span> <span class="green">  140   </span> <span class="green">   0    </span> <span class="green">   0    </span> <span class="green">   0    </span> <span class="green">   0    </span> <span class="green">   0    </span> <span class="green">   0    </span> <span class="green">   0    </span> <span class="green">   0    </span>
+00000000 <span class="blue">00001000</span> 00000000 00000000
+<span class="green">   0    </span> <span class="green">   8    </span> <span class="green">   0    </span> <span class="green">   0    </span>
+<span class="blue">11000111</span> <span class="blue">00011100</span> <span class="blue">01110001</span> <span class="blue">11000110</span>
+<span class="green">  199   </span> <span class="green">   28   </span> <span class="green">  113   </span> <span class="green">  198   </span>
+<span class="red">---Wpt 7--------------------------------- name: </span>GGGGG<span class="red"> id: </span>GGGGG<span class="red"> lat: </span>59.123402<span class="red"> long: </span>15.123400<span class="red"> route: </span>1
+<span class="blue">01000010</span> <span class="blue">01101100</span> <span class="blue">01111110</span> <span class="blue">01011101</span>
+<span class="green">   66   </span> <span class="green">  108   </span> <span class="green">  126   </span> <span class="green">   93   </span>
+<span class="blue">01000001</span> <span class="blue">01110001</span> <span class="blue">11111001</span> <span class="blue">01110010</span>
+<span class="green">   65   </span> <span class="green">  113   </span> <span class="green">  249   </span> <span class="green">  114   </span>
+<span class="blue">10010010</span> <span class="blue">01001001</span> <span class="blue">00100100</span> <span class="blue">10010000</span> 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000
+<span class="green">  146   </span> <span class="green">   73   </span> <span class="green">   36   </span> <span class="green">  144   </span> <span class="green">   0    </span> <span class="green">   0    </span> <span class="green">   0    </span> <span class="green">   0    </span> <span class="green">   0    </span> <span class="green">   0    </span> <span class="green">   0    </span> <span class="green">   0    </span>
+00000000 <span class="blue">00001000</span> 00000000 00000000
+<span class="green">   0    </span> <span class="green">   8    </span> <span class="green">   0    </span> <span class="green">   0    </span>
+<span class="blue">11001001</span> <span class="blue">00100100</span> <span class="blue">10010010</span> <span class="blue">01001000</span>
+<span class="green">  201   </span> <span class="green">   36   </span> <span class="green">  146   </span> <span class="green">   72   </span>
+<span class="red">---Wpt 8--------------------------------- name: </span>HHHHH<span class="red"> id: </span>HHHHH<span class="red"> lat: </span>59.123402<span class="red"> long: </span>15.123400<span class="red"> route: </span>1
+<span class="blue">01000010</span> <span class="blue">01101100</span> <span class="blue">01111110</span> <span class="blue">01011101</span>
+<span class="green">   66   </span> <span class="green">  108   </span> <span class="green">  126   </span> <span class="green">   93   </span>
+<span class="blue">01000001</span> <span class="blue">01110001</span> <span class="blue">11111001</span> <span class="blue">01110010</span>
+<span class="green">   65   </span> <span class="green">  113   </span> <span class="green">  249   </span> <span class="green">  114   </span>
+<span class="blue">10010110</span> <span class="blue">01011001</span> <span class="blue">01100101</span> <span class="blue">10010100</span> 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000
+<span class="green">  150   </span> <span class="green">   89   </span> <span class="green">  101   </span> <span class="green">  148   </span> <span class="green">   0    </span> <span class="green">   0    </span> <span class="green">   0    </span> <span class="green">   0    </span> <span class="green">   0    </span> <span class="green">   0    </span> <span class="green">   0    </span> <span class="green">   0    </span>
+00000000 <span class="blue">00001000</span> 00000000 00000000
+<span class="green">   0    </span> <span class="green">   8    </span> <span class="green">   0    </span> <span class="green">   0    </span>
+<span class="blue">11001011</span> <span class="blue">00101100</span> <span class="blue">10110010</span> <span class="blue">11001010</span>
+<span class="green">  203   </span> <span class="green">   44   </span> <span class="green">  178   </span> <span class="green">  202   </span>
+
+<span class="red">***aaaaabbbbbccccc_samma_latlong*********************************************</span>
+<span class="red">---CARACTER.P01---</span>
+00000000 00000000 <span class="blue">10000000</span> <span class="blue">00101111</span> 00000000 <span class="blue">00000011</span> <span class="blue">11100110</span> <span class="blue">11000000</span>
+<span class="green">   0    </span> <span class="green">   0    </span> <span class="green">  128   </span> <span class="green">   47   </span> <span class="green">   0    </span> <span class="green">   3    </span> <span class="green">  230   </span> <span class="green">  192   </span>
+<span class="red">---WAYPOINT.P01 checksum header---</span>
+00000000 <span class="blue">10001001</span> <span class="blue">00010000</span> 00000000
+<span class="green">   0    </span> <span class="green">  137   </span> <span class="green">   16   </span> <span class="green">   0    </span>
+<span class="red">---Wpt 1--------------------------------- name: </span>AAAAA<span class="red"> id: </span>AAAAA<span class="red"> lat: </span>59.123402<span class="red"> long: </span>15.123400<span class="red"> route: </span>1
+<span class="blue">01000010</span> <span class="blue">01101100</span> <span class="blue">01111110</span> <span class="blue">01011101</span>
+<span class="green">   66   </span> <span class="green">  108   </span> <span class="green">  126   </span> <span class="green">   93   </span>
+<span class="blue">01000001</span> <span class="blue">01110001</span> <span class="blue">11111001</span> <span class="blue">01110010</span>
+<span class="green">   65   </span> <span class="green">  113   </span> <span class="green">  249   </span> <span class="green">  114   </span>
+<span class="blue">01111001</span> <span class="blue">11100111</span> <span class="blue">10011110</span> <span class="blue">01111000</span> 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000
+<span class="green">  121   </span> <span class="green">  231   </span> <span class="green">  158   </span> <span class="green">  120   </span> <span class="green">   0    </span> <span class="green">   0    </span> <span class="green">   0    </span> <span class="green">   0    </span> <span class="green">   0    </span> <span class="green">   0    </span> <span class="green">   0    </span> <span class="green">   0    </span>
+00000000 <span class="blue">00001000</span> 00000000 00000000
+<span class="green">   0    </span> <span class="green">   8    </span> <span class="green">   0    </span> <span class="green">   0    </span>
+<span class="blue">10111100</span> <span class="blue">11110011</span> <span class="blue">11001111</span> <span class="blue">00111100</span>
+<span class="green">  188   </span> <span class="green">  243   </span> <span class="green">  207   </span> <span class="green">   60   </span>
+<span class="red">---Wpt 2--------------------------------- name: </span>BBBBB<span class="red"> id: </span>BBBBB<span class="red"> lat: </span>59.123402<span class="red"> long: </span>15.123400<span class="red"> route: </span>1
+<span class="blue">01000010</span> <span class="blue">01101100</span> <span class="blue">01111110</span> <span class="blue">01011101</span>
+<span class="green">   66   </span> <span class="green">  108   </span> <span class="green">  126   </span> <span class="green">   93   </span>
+<span class="blue">01000001</span> <span class="blue">01110001</span> <span class="blue">11111001</span> <span class="blue">01110010</span>
+<span class="green">   65   </span> <span class="green">  113   </span> <span class="green">  249   </span> <span class="green">  114   </span>
+<span class="blue">01111101</span> <span class="blue">11110111</span> <span class="blue">11011111</span> <span class="blue">01111100</span> 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000
+<span class="green">  125   </span> <span class="green">  247   </span> <span class="green">  223   </span> <span class="green">  124   </span> <span class="green">   0    </span> <span class="green">   0    </span> <span class="green">   0    </span> <span class="green">   0    </span> <span class="green">   0    </span> <span class="green">   0    </span> <span class="green">   0    </span> <span class="green">   0    </span>
+00000000 <span class="blue">00001000</span> 00000000 00000000
+<span class="green">   0    </span> <span class="green">   8    </span> <span class="green">   0    </span> <span class="green">   0    </span>
+<span class="blue">10111110</span> <span class="blue">11111011</span> <span class="blue">11101111</span> <span class="blue">10111110</span>
+<span class="green">  190   </span> <span class="green">  251   </span> <span class="green">  239   </span> <span class="green">  190   </span>
+<span class="red">---Wpt 3--------------------------------- name: </span>CCCCC<span class="red"> id: </span>CCCCC<span class="red"> lat: </span>59.123402<span class="red"> long: </span>15.123400<span class="red"> route: </span>1
+<span class="blue">01000010</span> <span class="blue">01101100</span> <span class="blue">01111110</span> <span class="blue">01011101</span>
+<span class="green">   66   </span> <span class="green">  108   </span> <span class="green">  126   </span> <span class="green">   93   </span>
+<span class="blue">01000001</span> <span class="blue">01110001</span> <span class="blue">11111001</span> <span class="blue">01110010</span>
+<span class="green">   65   </span> <span class="green">  113   </span> <span class="green">  249   </span> <span class="green">  114   </span>
+<span class="blue">10000010</span> <span class="blue">00001000</span> <span class="blue">00100000</span> <span class="blue">10000000</span> 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000
+<span class="green">  130   </span> <span class="green">   8    </span> <span class="green">   32   </span> <span class="green">  128   </span> <span class="green">   0    </span> <span class="green">   0    </span> <span class="green">   0    </span> <span class="green">   0    </span> <span class="green">   0    </span> <span class="green">   0    </span> <span class="green">   0    </span> <span class="green">   0    </span>
+00000000 <span class="blue">00001000</span> 00000000 00000000
+<span class="green">   0    </span> <span class="green">   8    </span> <span class="green">   0    </span> <span class="green">   0    </span>
+<span class="blue">11000001</span> <span class="blue">00000100</span> <span class="blue">00010000</span> <span class="blue">01000000</span>
+<span class="green">  193   </span> <span class="green">   4    </span> <span class="green">   16   </span> <span class="green">   64   </span>
+<span class="red">---Wpt 4--------------------------------- name: </span>DDDDD<span class="red"> id: </span>DDDDD<span class="red"> lat: </span>59.123402<span class="red"> long: </span>15.123400<span class="red"> route: </span>1
+<span class="blue">01000010</span> <span class="blue">01101100</span> <span class="blue">01111110</span> <span class="blue">01011101</span>
+<span class="green">   66   </span> <span class="green">  108   </span> <span class="green">  126   </span> <span class="green">   93   </span>
+<span class="blue">01000001</span> <span class="blue">01110001</span> <span class="blue">11111001</span> <span class="blue">01110010</span>
+<span class="green">   65   </span> <span class="green">  113   </span> <span class="green">  249   </span> <span class="green">  114   </span>
+<span class="blue">10000110</span> <span class="blue">00011000</span> <span class="blue">01100001</span> <span class="blue">10000100</span> 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000
+<span class="green">  134   </span> <span class="green">   24   </span> <span class="green">   97   </span> <span class="green">  132   </span> <span class="green">   0    </span> <span class="green">   0    </span> <span class="green">   0    </span> <span class="green">   0    </span> <span class="green">   0    </span> <span class="green">   0    </span> <span class="green">   0    </span> <span class="green">   0    </span>
+00000000 <span class="blue">00001000</span> 00000000 00000000
+<span class="green">   0    </span> <span class="green">   8    </span> <span class="green">   0    </span> <span class="green">   0    </span>
+<span class="blue">11000011</span> <span class="blue">00001100</span> <span class="blue">00110000</span> <span class="blue">11000010</span>
+<span class="green">  195   </span> <span class="green">   12   </span> <span class="green">   48   </span> <span class="green">  194   </span>
+<span class="red">---Wpt 5--------------------------------- name: </span>EEEEE<span class="red"> id: </span>EEEEE<span class="red"> lat: </span>59.123402<span class="red"> long: </span>15.123400<span class="red"> route: </span>1
+<span class="blue">01000010</span> <span class="blue">01101100</span> <span class="blue">01111110</span> <span class="blue">01011101</span>
+<span class="green">   66   </span> <span class="green">  108   </span> <span class="green">  126   </span> <span class="green">   93   </span>
+<span class="blue">01000001</span> <span class="blue">01110001</span> <span class="blue">11111001</span> <span class="blue">01110010</span>
+<span class="green">   65   </span> <span class="green">  113   </span> <span class="green">  249   </span> <span class="green">  114   </span>
+<span class="blue">10001010</span> <span class="blue">00101000</span> <span class="blue">10100010</span> <span class="blue">10001000</span> 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000
+<span class="green">  138   </span> <span class="green">   40   </span> <span class="green">  162   </span> <span class="green">  136   </span> <span class="green">   0    </span> <span class="green">   0    </span> <span class="green">   0    </span> <span class="green">   0    </span> <span class="green">   0    </span> <span class="green">   0    </span> <span class="green">   0    </span> <span class="green">   0    </span>
+00000000 <span class="blue">00001000</span> 00000000 00000000
+<span class="green">   0    </span> <span class="green">   8    </span> <span class="green">   0    </span> <span class="green">   0    </span>
+<span class="blue">11000101</span> <span class="blue">00010100</span> <span class="blue">01010001</span> <span class="blue">01000100</span>
+<span class="green">  197   </span> <span class="green">   20   </span> <span class="green">   81   </span> <span class="green">   68   </span>
+<span class="red">---Wpt 6--------------------------------- name: </span>FFFFF<span class="red"> id: </span>FFFFF<span class="red"> lat: </span>59.123402<span class="red"> long: </span>15.123400<span class="red"> route: </span>1
+<span class="blue">01000010</span> <span class="blue">01101100</span> <span class="blue">01111110</span> <span class="blue">01011101</span>
+<span class="green">   66   </span> <span class="green">  108   </span> <span class="green">  126   </span> <span class="green">   93   </span>
+<span class="blue">01000001</span> <span class="blue">01110001</span> <span class="blue">11111001</span> <span class="blue">01110010</span>
+<span class="green">   65   </span> <span class="green">  113   </span> <span class="green">  249   </span> <span class="green">  114   </span>
+<span class="blue">10001110</span> <span class="blue">00111000</span> <span class="blue">11100011</span> <span class="blue">10001100</span> 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000
+<span class="green">  142   </span> <span class="green">   56   </span> <span class="green">  227   </span> <span class="green">  140   </span> <span class="green">   0    </span> <span class="green">   0    </span> <span class="green">   0    </span> <span class="green">   0    </span> <span class="green">   0    </span> <span class="green">   0    </span> <span class="green">   0    </span> <span class="green">   0    </span>
+00000000 <span class="blue">00001000</span> 00000000 00000000
+<span class="green">   0    </span> <span class="green">   8    </span> <span class="green">   0    </span> <span class="green">   0    </span>
+<span class="blue">11000111</span> <span class="blue">00011100</span> <span class="blue">01110001</span> <span class="blue">11000110</span>
+<span class="green">  199   </span> <span class="green">   28   </span> <span class="green">  113   </span> <span class="green">  198   </span>
+<span class="red">---Wpt 7--------------------------------- name: </span>GGGGG<span class="red"> id: </span>GGGGG<span class="red"> lat: </span>59.123402<span class="red"> long: </span>15.123400<span class="red"> route: </span>1
+<span class="blue">01000010</span> <span class="blue">01101100</span> <span class="blue">01111110</span> <span class="blue">01011101</span>
+<span class="green">   66   </span> <span class="green">  108   </span> <span class="green">  126   </span> <span class="green">   93   </span>
+<span class="blue">01000001</span> <span class="blue">01110001</span> <span class="blue">11111001</span> <span class="blue">01110010</span>
+<span class="green">   65   </span> <span class="green">  113   </span> <span class="green">  249   </span> <span class="green">  114   </span>
+<span class="blue">10010010</span> <span class="blue">01001001</span> <span class="blue">00100100</span> <span class="blue">10010000</span> 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000
+<span class="green">  146   </span> <span class="green">   73   </span> <span class="green">   36   </span> <span class="green">  144   </span> <span class="green">   0    </span> <span class="green">   0    </span> <span class="green">   0    </span> <span class="green">   0    </span> <span class="green">   0    </span> <span class="green">   0    </span> <span class="green">   0    </span> <span class="green">   0    </span>
+00000000 <span class="blue">00001000</span> 00000000 00000000
+<span class="green">   0    </span> <span class="green">   8    </span> <span class="green">   0    </span> <span class="green">   0    </span>
+<span class="blue">11001001</span> <span class="blue">00100100</span> <span class="blue">10010010</span> <span class="blue">01001000</span>
+<span class="green">  201   </span> <span class="green">   36   </span> <span class="green">  146   </span> <span class="green">   72   </span>
+<span class="red">---Wpt 8--------------------------------- name: </span>HHHHH<span class="red"> id: </span>HHHHH<span class="red"> lat: </span>59.123402<span class="red"> long: </span>15.123400<span class="red"> route: </span>1
+<span class="blue">01000010</span> <span class="blue">01101100</span> <span class="blue">01111110</span> <span class="blue">01011101</span>
+<span class="green">   66   </span> <span class="green">  108   </span> <span class="green">  126   </span> <span class="green">   93   </span>
+<span class="blue">01000001</span> <span class="blue">01110001</span> <span class="blue">11111001</span> <span class="blue">01110010</span>
+<span class="green">   65   </span> <span class="green">  113   </span> <span class="green">  249   </span> <span class="green">  114   </span>
+<span class="blue">10010110</span> <span class="blue">01011001</span> <span class="blue">01100101</span> <span class="blue">10010100</span> 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000
+<span class="green">  150   </span> <span class="green">   89   </span> <span class="green">  101   </span> <span class="green">  148   </span> <span class="green">   0    </span> <span class="green">   0    </span> <span class="green">   0    </span> <span class="green">   0    </span> <span class="green">   0    </span> <span class="green">   0    </span> <span class="green">   0    </span> <span class="green">   0    </span>
+00000000 <span class="blue">00001000</span> 00000000 00000000
+<span class="green">   0    </span> <span class="green">   8    </span> <span class="green">   0    </span> <span class="green">   0    </span>
+<span class="blue">11001011</span> <span class="blue">00101100</span> <span class="blue">10110010</span> <span class="blue">11001010</span>
+<span class="green">  203   </span> <span class="green">   44   </span> <span class="green">  178   </span> <span class="green">  202   </span>
+</pre>

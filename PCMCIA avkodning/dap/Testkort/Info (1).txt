@@ -1,0 +1,189 @@
+Förklaring kortinnehåll
+
+T01
+Waypoint = 2, Airport = 0, Navaid  = 0, Route = 1
+
+T02
+Waypoint = 2, Airport = 0, Navaid  = 0, Route = 2
+
+T03
+Waypoint = 3, Airport = 0, Navaid  = 0, Route = 1
+
+T04
+Waypoint = 3, Airport = 0, Navaid  = 0, Route = 2
+
+T05
+Waypoint = 4, Airport = 0, Navaid  = 0, Route = 3
+
+T06
+Waypoint = 5, Airport = 0, Navaid  = 0, Route = 3
+
+T07
+Waypoint = 3, Airport = 1, Navaid  = 1, Route = 2
+
+T08
+Waypoint = 4, Airport = 1, Navaid  = 1, Route = 3
+
+T09
+Waypoint = 0, Airport = 1, Navaid  = 1, Route = 0
+
+T10
+Waypoint = 0, Airport = 1, Navaid  = 0, Route = 0
+
+T11
+Waypoint = 0, Airport = 0, Navaid  = 0, Route = 0
+Ingen data
+
+T12
+Waypoint = 0, Airport = 4, Navaid  = 0, Route = 0
+
+
+T20
+En Wpt: AAAAA
+
+T21
+En Wpt: AAAAB, Allt annat oförändrat
+
+T22
+En Wpt, AAAAC, Allt annat orörändrat
+
+T23
+Två Wpt: AAAAC, AAAAB
+
+T24
+En Wpt, AAAAB. Samma som T21?
+
+T25
+Två Wpt, AAAAC, AAAAB. Intressant ordning, samma som T23?
+
+
+T26 Tre rutter
+AAAAA-AAAAB
+AAAAA-QQQ1
+AAAAB-QQQ2
+
+T27
+Förändrng: Rutt 3, RUTTBBBBB går nu istället fr AAAAA som ingår i tre rutter
+
+T28
+Enbart rutten ZERO borttagen, dess WP kvar
+
+T29
+En till rutt borttagen
+
+
+T30
+100 Waypoints, samma koordinat
+
+T31
+66 Waypoints, samma koordinat
+
+T32
+65 Waypoints, samma koordinat
+
+T33
+64 Waypoints, samma koordinat
+
+T34
+63 Waypoints, samma koordinat
+
+T35 
+62 Waypoints, samma koordinat
+
+
+
+
+NEW 2025-11-11 =============================================================
+
+T40
+100 WPT, 50 APT, 0 RTE
+
+T41
+100 WPT, 50 APT, 1 RTE (APT - WPT - APT)
+
+T42
+100 WPT, 50 APT, 2 RTE (APT - WPT - APT, APT - WPT - APT)
+
+T43
+100 WPT, 50 APT, 2 RTE (APT - WPT - APT, APT - WPT - APT) wpt utbytt i route 2 till samma som i route 1
+
+T44
+100 WPT, 50 APT, 3 RTE (APT - WPT - APT, APT - WPT - APT, APT - WPT - APT) 
+
+T45
+100 WPT, 50 APT, 3 RTE (APT - WPT - APT, APT - WPT - APT, APT - WPT - WPT - APT), En wpt adderad i route03 
+
+T46
+100 WPT, 50 APT, 3 RTE (APT - WPT - APT, APT - WPT - APT, APT - WPT - WPT - WPT - APT), En wpt adderad i route03 
+
+T47
+100 WPT, 50 APT, 4 RTE (APT - WPT - APT, APT - WPT - APT, APT - WPT - WPT - WPT - APT, WPT - WPT),  
+
+T48
+100 WPT, 50 APT, 4 RTE (APT - WPT - APT, APT - WPT - APT, APT - WPT - WPT - WPT - APT, WPT - WPT - WPT),En wpt adderad i route04
+
+T49
+100 WPT, 50 APT, 4 RTE, Många wpt adderad i route04
+
+T50
+100 WPT, 50 APT, 5 RTE (APT - WPT - APT, APT - WPT - APT, APT - WPT - WPT - WPT - APT, WPT - WPT - WPT, WPT - WPT)
+
+T51
+100 WPT, 50 APT, 5 RTE (APT - WPT - APT, APT - WPT - APT, APT - WPT - WPT - WPT - APT, WPT - WPT - WPT, WPT - WPT - WPT), E wpt adderad i ROUTE05
+
+T52
+100 WPT, 50 APT, 6 RTE, Route06 50wpt i FPS men enbart 40 på kortet?
+
+T53
+100 WPT, 50 APT, 7 RTE, Route06 50wpt i FPS men enbart 40 på kortet? Gick inte generera DTD innan 10 wpt togs bort i ROUTE06
+
+T54
+100 WPT, 50 APT, 8 RTE, 
+
+T55
+100 WPT, 50 APT, 9 RTE, En axakt likadan adderad 
+
+T56
+100 WPT, 50 APT, 10 RTE, En axakt likadan adderad 
+
+T57
+99 WPT, 50 APT, 10 RTE, En wpt raderad
+ 
+T58
+98 WPT, 50 APT, 10 RTE, En wpt raderad
+
+T59
+100 WPT, 50 APT, 11 RTE, Två wpt raderad, FPS skapar nya wpt när route går tillbaka till samma wpt
+
+
+
+T60 Troligtvis samma som T59 MEN genererad datum 2023-01-01
+
+T61
+Nytt datum 2025-01-01
+
+T62
+Nytt datum 2025-02-01
+
+T63
+Nytt datum 2025-02-02
+
+T64
+Nytt datum 2025-04-06
+
+T65
+Nytt datum 2026-04-06
+
+T66
+Nytt datum 2037-04-06
+
+T67
+Nytt datum 2030-04-06
+
+T68
+Nytt datum 2030-07-09
+
+T69
+Nytt datum 2030-07-29
+
+

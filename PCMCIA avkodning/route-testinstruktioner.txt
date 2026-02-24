@@ -1,0 +1,80 @@
+Godkända 6-bit tecken är enligt:
+Tecken,Dec,6-bit
+(padding),0,000000
+-,11,001011
+0,14,001110
+1,15,001111
+2,16,010000
+3,17,010001
+4,18,010010
+5,19,010011
+6,20,010100
+7,21,010101
+8,22,010110
+9,23,010111
+A,30,011110
+B,31,011111
+C,32,100000
+D,33,100001
+E,34,100010
+F,35,100011
+G,36,100100
+H,37,100101
+I,38,100110
+J,39,100111
+K,40,101000
+L,41,101001
+M,42,101010
+N,43,101011
+O,44,101100
+P,45,101101
+Q,46,101110
+R,47,101111
+S,48,110000
+T,49,110001
+U,50,110010
+V,51,110011
+W,52,110100
+X,53,110101
+Y,54,110110
+Z,55,110111
+
+
+#ROUTE.P01
+kontrollera att File size är: 50020
+
+Filheader, kontrollera följande:
+Byte 0-12 kontrollera att det inleds med lika många ettor som antalet waypoints som kommer längre ned i filen. Och att de bara efterföljs av nollor.
+byte 13 kontrollera att det är 129+antal routes (eller bara 128 om det är 100st rutter)
+byte 14 kontrollera att det är antal routes*2
+byte 15 kontrollera att det är noll
+
+Kontrollera följande för varje route:
+Kontrollera att rutten är 500 bytes
+Om rutten är tom: kontrollera att rutt-byte 0-15, samt 17-19 är decimalt noll. Samt att rutt-byte 16 är 01001000.
+rutt-byte 0-3 kontrollera att det det är godkända tecken i 6-bit. Eller noll i 6-bit som padding där namnet är slut och byte 4-7 är noll.
+rutt-byte 3 kontrollera att den avslutas med "00".
+rutt-byte 4-7 kontrollera att det det är godkända tecken i 6-bit. Eller noll i 6-bit som padding där namnet är slut.
+rutt-byte 7 kontrollera att den avslutas med "00".
+
+rutt-byte 8-15 Kontrollera att alla byte är decimalt noll om start och slutpunkt i rutten inte är airport
+rutt-byte 8-10 Om startpunkten i rutten är en airport så kontrollera att det är 4st godkända tecken i 6-bit, och att det bara får vara padding-tecken i slutet. Annars kontrollera att alla bytes är decimalt noll.
+rutt-byte 11 Om startpunkten i rutten är en airport så kontrollera att airport-id som finns i byte 8-10 ligger som nummer ((rutt-byte 11 / 2) - 1) i airportfilen. Annars kontrollera att rutt-byte 11 är decimalt noll, det är då en jeppesen-airport.
+rutt-byte 12-14 Om startpunkten i rutten är en airport så kontrollera att det är 4st godkända tecken i 6-bit, och att det bara får vara padding-tecken i slutet. Annars kontrollera att alla bytes är decimalt noll.
+rutt-byte 15 Om startpunkten i rutten är en airport så kontrollera att airport-id som finns i byte 12-14 ligger som nummer ((rutt-byte 15 / 2) - 1) i airportfilen. Annars kontrollera att rutt-byte 15 är decimalt noll, det är då en jeppesen-airport.
+rutt-byte 16 kontrollera att bit 7-5 är "010" om rutt-byte 8-11 är decimalt noll, eller 100 om rutt-byte 8-10 inte är noll men rutt-byte 11 är noll, 101 om rutt-byte 8-10 inte är noll och rutt-byte 11 inte är noll.
+rutt-byte 16 kontrollera att bit 4-2 är "010" om rutt-byte 12-15 är decimalt noll, eller 100 om rutt-byte 12-14 inte är noll men rutt-byte 15 är noll, 101 om rutt-byte 12-14 inte är noll och rutt-byte 15 inte är noll.
+rutt-byte 16 kontrollera att bit 1-0 är "00".
+rutt-byte 17 kontrollera att den är antal punkter i rutten // 8
+rutt-byte 18 kontrollera att den är ((antal punkter i rutten % 8) * 32)
+rutt-byte 18 kontrollera att den är decimalt noll
+
+Punktlistan för rutten, kontrollera följande i varje punkt (12 bytes):
+Kontrollera att tomma punkter är rutt-punkt-byte 0-10 är decimalt noll och rutt-punkt-byte 11 är 10001100.
+Om punkten finns, kontrollera följande:
+Om punkten är en airport så kontrollera att airport-id som finns i rutt-punkt-byte 4-7 ligger som nummer ((rutt-punkt-byte 0 / 2) - 1) i airportfilen. Annars kontrollera att rutt-punkt-byte 0 är decimalt noll, det är då en jeppesen-airport.
+rutt-punkt-byte 4-7 kontrollera att det är 5st godkända tecken i 6-bit. Och att det bara får vara padding-tecken i slutet på id, inte på någon annan plats i id.
+
+rutt-punkt-byte 7 kontrollera att den avslutas med "00".
+rutt-punkt-byte 11 kontrollera att bit 7-4 (detta är punktens typ) är 0101 (user-airport) eller 0110 (waypoint) eller 0111 (user-navaid) eller 0000 (jeppessen/system-airport) eller 1000(tom punkt)
+rutt-punkt-byte 11 kontrollera att bit 3-0 är 1100.

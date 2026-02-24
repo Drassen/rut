@@ -1,0 +1,18 @@
+******* PilotHeader Loading ******
+Generation date: 31 - 10 - 2025
+Airport file size: 4020
+Navaid file size: 4020
+Waypoint file size: 2820
+Route file size: 50020
+Carac file size: 116
+Pilot Database name: DTD31102025 
+******* PilotWaypoint Loading ******
+Allocated elements: 1
+Waypoint 1 Name AAAAB           ID AAAAB Latitude 57,5 Longitude 17,33333 Used in Route 0
+******* PilotAirport Loading ******
+Allocated elements: 0
+******* PilotNavaid Loading ******
+Allocated elements: 0
+******* PilotRoute Loading ******
+Allocated elements: 0
+******* Pilot Database Loading OK ******

@@ -1,0 +1,10 @@
+Pilot Database name: DTD31102025
+******* PilotHeader Generation ******
+Generation date: 31 - 10 - 2025
+******* PilotWaypoint Generation ******
+Waypoint 1 Name AAAAC ID AAAAC Latitude 57,30m0s Longitude 17,20m0s Used in route 0
+******* PilotAirport Generation ******
+******* PilotNavaid Generation ******
+******* PilotRoute Generation ******
+******* PilotCarac Generation ******
+******* Pilot Database Generation OK ******

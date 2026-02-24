@@ -1,0 +1,112 @@
+******* PilotHeader Loading ******
+Generation date: 22 - 10 - 2025
+Airport file size: 4020
+Navaid file size: 4020
+Waypoint file size: 2820
+Route file size: 50020
+Carac file size: 116
+Pilot Database name: DTD22102025 
+******* PilotWaypoint Loading ******
+Allocated elements: 45
+Waypoint 1 Name MRP-32          ID MRP-3 Latitude 58,30931 Longitude 16,3948 Used in Route 1
+Waypoint 2 Name MRP-33          ID MRP00 Latitude 58,32001 Longitude 16,33832 Used in Route 1
+Waypoint 3 Name MRP-25          ID MRP-2 Latitude 58,32001 Longitude 16,50098 Used in Route 1
+Waypoint 4 Name MRP-24          ID MRP01 Latitude 58,32952 Longitude 16,55294 Used in Route 1
+Waypoint 5 Name MRP-31          ID MRP02 Latitude 58,3307 Longitude 16,41513 Used in Route 1
+Waypoint 6 Name MRP-26          ID MRP03 Latitude 58,33189 Longitude 16,49872 Used in Route 1
+Waypoint 7 Name MRP-34          ID MRP04 Latitude 58,3414 Longitude 16,33155 Used in Route 1
+Waypoint 8 Name MRP-23          ID MRP05 Latitude 58,34259 Longitude 16,57779 Used in Route 1
+Waypoint 9 Name MRP-30          ID MRP06 Latitude 58,34496 Longitude 16,37899 Used in Route 1
+Waypoint 10 Name MRP-27          ID MRP07 Latitude 58,35446 Longitude 16,49195 Used in Route 1
+Waypoint 11 Name MRP-22          ID MRP08 Latitude 58,35802 Longitude 16,58231 Used in Route 1
+Waypoint 12 Name MRP-48          ID MRP-4 Latitude 58,36633 Longitude 16,2457 Used in Route 1
+Waypoint 13 Name MRP-35          ID MRP09 Latitude 58,36752 Longitude 16,33155 Used in Route 1
+Waypoint 14 Name MRP-29          ID MRP10 Latitude 58,3699 Longitude 16,37899 Used in Route 1
+Waypoint 15 Name MRP-28          ID MRP11 Latitude 58,3699 Longitude 16,44676 Used in Route 1
+Waypoint 16 Name MRP-21          ID MRP12 Latitude 58,37583 Longitude 16,57327 Used in Route 1
+Waypoint 17 Name MRP-47          ID MRP13 Latitude 58,38651 Longitude 16,21633 Used in Route 1
+Waypoint 18 Name MRP-36          ID MRP14 Latitude 58,38651 Longitude 16,33607 Used in Route 1
+Waypoint 19 Name MRP-20          ID MRP15 Latitude 58,39481 Longitude 16,51228 Used in Route 1
+Waypoint 20 Name MRP-46          ID MRP16 Latitude 58,40074 Longitude 16,16211 Used in Route 1
+Waypoint 21 Name MRP-45          ID MRP17 Latitude 58,40193 Longitude 16,08982 Used in Route 1
+Waypoint 22 Name MRP-19          ID MRP-1 Latitude 58,40193 Longitude 16,46032 Used in Route 1
+Waypoint 23 Name MRP-37          ID MRP18 Latitude 58,40549 Longitude 16,31573 Used in Route 1
+Waypoint 24 Name MRP-38          ID MRP19 Latitude 58,41023 Longitude 16,28185 Used in Route 1
+Waypoint 25 Name MRP-18          ID MRP20 Latitude 58,41142 Longitude 16,41965 Used in Route 1
+Waypoint 26 Name MRP-44          ID MRP21 Latitude 58,41378 Longitude 16,0469 Used in Route 1
+Waypoint 27 Name MRP-39          ID MRP22 Latitude 58,41971 Longitude 16,23666 Used in Route 1
+Waypoint 28 Name MRP-17          ID MRP23 Latitude 58,4209 Longitude 16,3948 Used in Route 1
+Waypoint 29 Name MRP-40          ID MRP24 Latitude 58,42327 Longitude 16,19826 Used in Route 1
+Waypoint 30 Name MRP-43          ID MRP25 Latitude 58,42801 Longitude 16,08304 Used in Route 1
+Waypoint 31 Name MRP-16          ID MRP26 Latitude 58,42801 Longitude 16,34736 Used in Route 1
+Waypoint 32 Name MRP-42          ID MRP27 Latitude 58,42919 Longitude 16,13726 Used in Route 1
+Waypoint 33 Name MRP-41          ID MRP28 Latitude 58,42919 Longitude 16,15985 Used in Route 1
+Waypoint 34 Name MRP-15          ID MRP29 Latitude 58,43393 Longitude 16,28862 Used in Route 1
+Waypoint 35 Name MRP-08          ID MRP-0 Latitude 58,43749 Longitude 15,98816 Used in Route 1
+Waypoint 36 Name MRP-14          ID MRP30 Latitude 58,44223 Longitude 16,25022 Used in Route 1
+Waypoint 37 Name MRP-09          ID MRP31 Latitude 58,4446 Longitude 16,00849 Used in Route 1
+Waypoint 38 Name MRP-13          ID MRP32 Latitude 58,45288 Longitude 16,20955 Used in Route 1
+Waypoint 39 Name MRP-10          ID MRP33 Latitude 58,45644 Longitude 16,05819 Used in Route 1
+Waypoint 40 Name MRP-12          ID MRP34 Latitude 58,45644 Longitude 16,15533 Used in Route 1
+Waypoint 41 Name MRP-11          ID MRP35 Latitude 58,46117 Longitude 16,10789 Used in Route 1
+Waypoint 42 Name AAAAA           ID AAAAA Latitude 59,1234 Longitude 15,1234 Used in Route 1
+Waypoint 43 Name BBBBB           ID BBBBB Latitude 59,1234 Longitude 15,1234 Used in Route 1
+Waypoint 44 Name LONGNAMEWAYPOIN ID LONGN Latitude 59 Longitude 5 Used in Route 2
+Waypoint 45 Name SECONDLONGNAMEW ID SECON Latitude 5 Longitude 18 Used in Route 2
+******* PilotAirport Loading ******
+Allocated elements: 0
+******* PilotNavaid Loading ******
+Allocated elements: 0
+******* PilotRoute Loading ******
+Allocated elements: 4
+Route 1 ID ALMRNITR00 - From Airport      To Airport     
+Route 1 Fix 1 Index 44 - Type PilotWaypoint - FirstID LONGN SecondID      NavaidCat None
+Route 1 Fix 2 Index 45 - Type PilotWaypoint - FirstID SECON SecondID      NavaidCat None
+Route 2 ID FP-497     - From Airport      To Airport     
+Route 2 Fix 1 Index 44 - Type PilotWaypoint - FirstID LONGN SecondID      NavaidCat None
+Route 2 Fix 2 Index 45 - Type PilotWaypoint - FirstID SECON SecondID      NavaidCat None
+Route 3 ID FP-498     - From Airport      To Airport     
+Route 3 Fix 1 Index 42 - Type PilotWaypoint - FirstID AAAAA SecondID      NavaidCat None
+Route 3 Fix 2 Index 43 - Type PilotWaypoint - FirstID BBBBB SecondID      NavaidCat None
+Route 4 ID FP-499     - From Airport      To Airport     
+Route 4 Fix 1 Index 35 - Type PilotWaypoint - FirstID MRP-0 SecondID      NavaidCat None
+Route 4 Fix 2 Index 37 - Type PilotWaypoint - FirstID MRP31 SecondID      NavaidCat None
+Route 4 Fix 3 Index 39 - Type PilotWaypoint - FirstID MRP33 SecondID      NavaidCat None
+Route 4 Fix 4 Index 41 - Type PilotWaypoint - FirstID MRP35 SecondID      NavaidCat None
+Route 4 Fix 5 Index 40 - Type PilotWaypoint - FirstID MRP34 SecondID      NavaidCat None
+Route 4 Fix 6 Index 38 - Type PilotWaypoint - FirstID MRP32 SecondID      NavaidCat None
+Route 4 Fix 7 Index 36 - Type PilotWaypoint - FirstID MRP30 SecondID      NavaidCat None
+Route 4 Fix 8 Index 34 - Type PilotWaypoint - FirstID MRP29 SecondID      NavaidCat None
+Route 4 Fix 9 Index 31 - Type PilotWaypoint - FirstID MRP26 SecondID      NavaidCat None
+Route 4 Fix 10 Index 28 - Type PilotWaypoint - FirstID MRP23 SecondID      NavaidCat None
+Route 4 Fix 11 Index 25 - Type PilotWaypoint - FirstID MRP20 SecondID      NavaidCat None
+Route 4 Fix 12 Index 22 - Type PilotWaypoint - FirstID MRP-1 SecondID      NavaidCat None
+Route 4 Fix 13 Index 19 - Type PilotWaypoint - FirstID MRP15 SecondID      NavaidCat None
+Route 4 Fix 14 Index 16 - Type PilotWaypoint - FirstID MRP12 SecondID      NavaidCat None
+Route 4 Fix 15 Index 11 - Type PilotWaypoint - FirstID MRP08 SecondID      NavaidCat None
+Route 4 Fix 16 Index 8 - Type PilotWaypoint - FirstID MRP05 SecondID      NavaidCat None
+Route 4 Fix 17 Index 4 - Type PilotWaypoint - FirstID MRP01 SecondID      NavaidCat None
+Route 4 Fix 18 Index 3 - Type PilotWaypoint - FirstID MRP-2 SecondID      NavaidCat None
+Route 4 Fix 19 Index 6 - Type PilotWaypoint - FirstID MRP03 SecondID      NavaidCat None
+Route 4 Fix 20 Index 10 - Type PilotWaypoint - FirstID MRP07 SecondID      NavaidCat None
+Route 4 Fix 21 Index 15 - Type PilotWaypoint - FirstID MRP11 SecondID      NavaidCat None
+Route 4 Fix 22 Index 14 - Type PilotWaypoint - FirstID MRP10 SecondID      NavaidCat None
+Route 4 Fix 23 Index 9 - Type PilotWaypoint - FirstID MRP06 SecondID      NavaidCat None
+Route 4 Fix 24 Index 5 - Type PilotWaypoint - FirstID MRP02 SecondID      NavaidCat None
+Route 4 Fix 25 Index 1 - Type PilotWaypoint - FirstID MRP-3 SecondID      NavaidCat None
+Route 4 Fix 26 Index 2 - Type PilotWaypoint - FirstID MRP00 SecondID      NavaidCat None
+Route 4 Fix 27 Index 7 - Type PilotWaypoint - FirstID MRP04 SecondID      NavaidCat None
+Route 4 Fix 28 Index 13 - Type PilotWaypoint - FirstID MRP09 SecondID      NavaidCat None
+Route 4 Fix 29 Index 18 - Type PilotWaypoint - FirstID MRP14 SecondID      NavaidCat None
+Route 4 Fix 30 Index 23 - Type PilotWaypoint - FirstID MRP18 SecondID      NavaidCat None
+Route 4 Fix 31 Index 24 - Type PilotWaypoint - FirstID MRP19 SecondID      NavaidCat None
+Route 4 Fix 32 Index 27 - Type PilotWaypoint - FirstID MRP22 SecondID      NavaidCat None
+Route 4 Fix 33 Index 29 - Type PilotWaypoint - FirstID MRP24 SecondID      NavaidCat None
+Route 4 Fix 34 Index 33 - Type PilotWaypoint - FirstID MRP28 SecondID      NavaidCat None
+Route 4 Fix 35 Index 32 - Type PilotWaypoint - FirstID MRP27 SecondID      NavaidCat None
+Route 4 Fix 36 Index 30 - Type PilotWaypoint - FirstID MRP25 SecondID      NavaidCat None
+Route 4 Fix 37 Index 26 - Type PilotWaypoint - FirstID MRP21 SecondID      NavaidCat None
+Route 4 Fix 38 Index 21 - Type PilotWaypoint - FirstID MRP17 SecondID      NavaidCat None
+Route 4 Fix 39 Index 20 - Type PilotWaypoint - FirstID MRP16 SecondID      NavaidCat None
+Route 4 Fix 40 Index 17 - Type PilotWaypoint - FirstID MRP13 SecondID      NavaidCat None
+******* Pilot Database Loading OK ******

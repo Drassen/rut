@@ -1,0 +1,34 @@
+#CARACTER.P01
+kontrollera att File size är: 50020
+
+byte 0,2 kontrollera att dessa bytes är "01010101"
+byte 1,3 kontrollera att dessa bytes är "10101010"
+
+byte 4-7 kontrollera att det i 6-bit står "DTD", följt av 2 siffror.
+byte 7 kontrollera att bit 1-0 är "00"
+byte 8-11 kontrollera att det är siffror eller padding i 6-bit.
+byte 11 kontrollera att bit 1-0 är "10"
+byte 12+13 kontrollera att bit 15-11 är ett binärt nummer >0 och <32.
+byte 12+13 kontrollera att de bit 10-7 är ett binärt nummer >=0 och <13.
+byte 12+13 kontrollera att de bit 6-5 är "00"
+byte 12+13 kontrollera att de bit 4-0 är ett binärt nummer >=0 och <40.
+byte 14 kontrollera att det är "01000000"
+byte 15 kontrollera att det är noll
+byte 16,28,40,52 kontrollera att det är "10000000"
+byte 17-27,29-39,41-51,53-63, 64-67 kontrollera att alla bytes är noll
+
+byte 68-71 kontrollera att det är (Signed 32-bit) Sum(Alla Byte[1,2] i waypoint-filen som Signed 16-bit) (Big Endian)
+byte 72-75 kontrollera att det är (Signed 32-bit) Sum(Alla Byte[3,4] i waypoint-filen som Signed 16-bit) (Big Endian)
+byte 76-79 kontrollera att alla bytes är noll
+
+byte 80-83 kontrollera att det är (Signed 32-bit) Sum(Alla Byte[1,2] i airport-filen som Signed 16-bit) (Big Endian)
+byte 84-87 kontrollera att det är (Signed 32-bit) Sum(Alla Byte[3,4] i airport-filen som Signed 16-bit) (Big Endian)
+byte 88-91 kontrollera att alla bytes är noll
+
+byte 92-95 kontrollera att det är (Signed 32-bit) Sum(Alla Byte[1,2] i navaids-filen som Signed 16-bit) (Big Endian)
+byte 96-99 kontrollera att det är (Signed 32-bit) Sum(Alla Byte[3,4] i navaids-filen som Signed 16-bit) (Big Endian)
+byte 100-103 kontrollera att alla bytes är noll
+
+byte 104-107 kontrollera att det är (Signed 32-bit) Sum(Alla Byte[1,2] i routes-filen som Signed 16-bit) (Big Endian)
+byte 108-111 kontrollera att det är (Signed 32-bit) Sum(Alla Byte[3,4] i routes-filen som Signed 16-bit) (Big Endian)
+byte 112-115 kontrollera att alla bytes är noll

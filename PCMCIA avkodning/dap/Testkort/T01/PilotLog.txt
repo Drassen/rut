@@ -1,0 +1,14 @@
+Pilot Database name: DTD29102025
+******* PilotHeader Generation ******
+Generation date: 29 - 10 - 2025
+******* PilotWaypoint Generation ******
+Waypoint 1 Name AAAAA ID AAAAA Latitude 60,0m0s Longitude 15,0m0s Used in route 1
+Waypoint 2 Name BBBBB ID BBBBB Latitude 61,0m0s Longitude 15,0m0s Used in route 1
+******* PilotAirport Generation ******
+******* PilotNavaid Generation ******
+******* PilotRoute Generation ******
+Route 1 ID RUTT - From Airport  To Airport 
+Route 1 Fix 1 Index 1 - Type PilotWaypoint - FirstID AAAAA SecondID AAAAA NavaidCat None
+Route 1 Fix 2 Index 2 - Type PilotWaypoint - FirstID BBBBB SecondID BBBBB NavaidCat None
+******* PilotCarac Generation ******
+******* Pilot Database Generation OK ******

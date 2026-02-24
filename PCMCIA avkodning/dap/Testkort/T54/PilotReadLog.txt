@@ -1,0 +1,256 @@
+******* PilotHeader Loading ******
+Generation date: 11 - 11 - 2025
+Airport file size: 4020
+Navaid file size: 4020
+Waypoint file size: 2820
+Route file size: 50020
+Carac file size: 116
+Pilot Database name: DTD11112025 
+******* PilotWaypoint Loading ******
+Allocated elements: 100
+Waypoint 1 Name WPT00           ID WPT00 Latitude 55 Longitude 15 Used in Route 2
+Waypoint 2 Name WPT01           ID WPT01 Latitude 55,08333 Longitude 15 Used in Route 2
+Waypoint 3 Name WPT02           ID WPT02 Latitude 55,16667 Longitude 15 Used in Route 2
+Waypoint 4 Name WPT03           ID WPT03 Latitude 55,25 Longitude 15 Used in Route 1
+Waypoint 5 Name WPT04           ID WPT04 Latitude 55,33333 Longitude 15 Used in Route 1
+Waypoint 6 Name WPT05           ID WPT05 Latitude 55,41667 Longitude 15 Used in Route 1
+Waypoint 7 Name WPT06           ID WPT06 Latitude 55,5 Longitude 15 Used in Route 1
+Waypoint 8 Name WPT07           ID WPT07 Latitude 55,58333 Longitude 15 Used in Route 1
+Waypoint 9 Name WPT08           ID WPT08 Latitude 55,66667 Longitude 15 Used in Route 1
+Waypoint 10 Name WPT09           ID WPT09 Latitude 55,75 Longitude 15 Used in Route 1
+Waypoint 11 Name WPT10           ID WPT10 Latitude 55,83333 Longitude 15 Used in Route 1
+Waypoint 12 Name WPT11           ID WPT11 Latitude 55,91667 Longitude 15 Used in Route 1
+Waypoint 13 Name WPT12           ID WPT12 Latitude 56 Longitude 15 Used in Route 1
+Waypoint 14 Name WPT13           ID WPT13 Latitude 56,08333 Longitude 15 Used in Route 1
+Waypoint 15 Name WPT14           ID WPT14 Latitude 56,16667 Longitude 15 Used in Route 1
+Waypoint 16 Name WPT15           ID WPT15 Latitude 56,25 Longitude 15 Used in Route 1
+Waypoint 17 Name WPT16           ID WPT16 Latitude 56,33333 Longitude 15 Used in Route 1
+Waypoint 18 Name WPT17           ID WPT17 Latitude 56,41667 Longitude 15 Used in Route 1
+Waypoint 19 Name WPT18           ID WPT18 Latitude 56,5 Longitude 15 Used in Route 1
+Waypoint 20 Name WPT19           ID WPT19 Latitude 56,58333 Longitude 15 Used in Route 1
+Waypoint 21 Name WPT20           ID WPT20 Latitude 56,66667 Longitude 15 Used in Route 1
+Waypoint 22 Name WPT21           ID WPT21 Latitude 56,75 Longitude 15 Used in Route 0
+Waypoint 23 Name WPT22           ID WPT22 Latitude 56,83333 Longitude 15 Used in Route 0
+Waypoint 24 Name WPT23           ID WPT23 Latitude 56,91667 Longitude 15 Used in Route 0
+Waypoint 25 Name WPT24           ID WPT24 Latitude 57 Longitude 15 Used in Route 0
+Waypoint 26 Name WPT25           ID WPT25 Latitude 57,08333 Longitude 15 Used in Route 0
+Waypoint 27 Name WPT26           ID WPT26 Latitude 57,16667 Longitude 15 Used in Route 0
+Waypoint 28 Name WPT27           ID WPT27 Latitude 57,25 Longitude 15 Used in Route 0
+Waypoint 29 Name WPT28           ID WPT28 Latitude 57,33333 Longitude 15 Used in Route 0
+Waypoint 30 Name WPT29           ID WPT29 Latitude 57,41667 Longitude 15 Used in Route 0
+Waypoint 31 Name WPT30           ID WPT30 Latitude 57,5 Longitude 15 Used in Route 0
+Waypoint 32 Name WPT31           ID WPT31 Latitude 57,58333 Longitude 15 Used in Route 0
+Waypoint 33 Name WPT32           ID WPT32 Latitude 57,66667 Longitude 15 Used in Route 0
+Waypoint 34 Name WPT33           ID WPT33 Latitude 57,75 Longitude 15 Used in Route 0
+Waypoint 35 Name WPT34           ID WPT34 Latitude 57,83333 Longitude 15 Used in Route 0
+Waypoint 36 Name WPT35           ID WPT35 Latitude 57,91667 Longitude 15 Used in Route 0
+Waypoint 37 Name WPT36           ID WPT36 Latitude 58 Longitude 15 Used in Route 0
+Waypoint 38 Name WPT37           ID WPT37 Latitude 58,08333 Longitude 15 Used in Route 0
+Waypoint 39 Name WPT38           ID WPT38 Latitude 58,16667 Longitude 15 Used in Route 0
+Waypoint 40 Name WPT39           ID WPT39 Latitude 58,25 Longitude 15 Used in Route 0
+Waypoint 41 Name WPT40           ID WPT40 Latitude 58,33333 Longitude 15 Used in Route 0
+Waypoint 42 Name WPT41           ID WPT41 Latitude 58,41667 Longitude 15 Used in Route 0
+Waypoint 43 Name WPT42           ID WPT42 Latitude 58,5 Longitude 15 Used in Route 0
+Waypoint 44 Name WPT43           ID WPT43 Latitude 58,58333 Longitude 15 Used in Route 0
+Waypoint 45 Name WPT44           ID WPT44 Latitude 58,66667 Longitude 15 Used in Route 0
+Waypoint 46 Name WPT45           ID WPT45 Latitude 58,75 Longitude 15 Used in Route 0
+Waypoint 47 Name WPT46           ID WPT46 Latitude 58,83333 Longitude 15 Used in Route 0
+Waypoint 48 Name WPT47           ID WPT47 Latitude 58,91667 Longitude 15 Used in Route 0
+Waypoint 49 Name WPT48           ID WPT48 Latitude 59 Longitude 15 Used in Route 0
+Waypoint 50 Name WPT49           ID WPT49 Latitude 59,08333 Longitude 15 Used in Route 2
+Waypoint 51 Name WPT50           ID WPT50 Latitude 59,16667 Longitude 15 Used in Route 6
+Waypoint 52 Name WPT51           ID WPT51 Latitude 59,25 Longitude 15 Used in Route 2
+Waypoint 53 Name WPT52           ID WPT52 Latitude 59,33333 Longitude 15 Used in Route 3
+Waypoint 54 Name WPT53           ID WPT53 Latitude 59,41667 Longitude 15 Used in Route 3
+Waypoint 55 Name WPT54           ID WPT54 Latitude 59,5 Longitude 15 Used in Route 2
+Waypoint 56 Name WPT55           ID WPT55 Latitude 59,58333 Longitude 15 Used in Route 2
+Waypoint 57 Name WPT56           ID WPT56 Latitude 59,66667 Longitude 15 Used in Route 2
+Waypoint 58 Name WPT57           ID WPT57 Latitude 59,75 Longitude 15 Used in Route 2
+Waypoint 59 Name WPT58           ID WPT58 Latitude 59,83333 Longitude 15 Used in Route 2
+Waypoint 60 Name WPT59           ID WPT59 Latitude 59,91667 Longitude 15 Used in Route 1
+Waypoint 61 Name WPT60           ID WPT60 Latitude 60 Longitude 15 Used in Route 1
+Waypoint 62 Name WPT61           ID WPT61 Latitude 60,08333 Longitude 15 Used in Route 1
+Waypoint 63 Name WPT62           ID WPT62 Latitude 60,16667 Longitude 15 Used in Route 1
+Waypoint 64 Name WPT63           ID WPT63 Latitude 60,25 Longitude 15 Used in Route 1
+Waypoint 65 Name WPT64           ID WPT64 Latitude 60,33333 Longitude 15 Used in Route 1
+Waypoint 66 Name WPT65           ID WPT65 Latitude 60,41667 Longitude 15 Used in Route 1
+Waypoint 67 Name WPT66           ID WPT66 Latitude 60,5 Longitude 15 Used in Route 1
+Waypoint 68 Name WPT67           ID WPT67 Latitude 60,58333 Longitude 15 Used in Route 1
+Waypoint 69 Name WPT68           ID WPT68 Latitude 60,66667 Longitude 15 Used in Route 1
+Waypoint 70 Name WPT69           ID WPT69 Latitude 60,75 Longitude 15 Used in Route 1
+Waypoint 71 Name WPT70           ID WPT70 Latitude 60,83333 Longitude 15 Used in Route 1
+Waypoint 72 Name WPT71           ID WPT71 Latitude 60,91667 Longitude 15 Used in Route 1
+Waypoint 73 Name WPT72           ID WPT72 Latitude 61 Longitude 15 Used in Route 1
+Waypoint 74 Name WPT73           ID WPT73 Latitude 61,08333 Longitude 15 Used in Route 1
+Waypoint 75 Name WPT74           ID WPT74 Latitude 61,16667 Longitude 15 Used in Route 1
+Waypoint 76 Name WPT75           ID WPT75 Latitude 61,25 Longitude 15 Used in Route 1
+Waypoint 77 Name WPT76           ID WPT76 Latitude 61,33333 Longitude 15 Used in Route 1
+Waypoint 78 Name WPT77           ID WPT77 Latitude 61,41667 Longitude 15 Used in Route 1
+Waypoint 79 Name WPT78           ID WPT78 Latitude 61,5 Longitude 15 Used in Route 1
+Waypoint 80 Name WPT79           ID WPT79 Latitude 61,58333 Longitude 15 Used in Route 1
+Waypoint 81 Name WPT80           ID WPT80 Latitude 61,66667 Longitude 15 Used in Route 1
+Waypoint 82 Name WPT81           ID WPT81 Latitude 61,75 Longitude 15 Used in Route 1
+Waypoint 83 Name WPT82           ID WPT82 Latitude 61,83333 Longitude 15 Used in Route 1
+Waypoint 84 Name WPT83           ID WPT83 Latitude 61,91667 Longitude 15 Used in Route 1
+Waypoint 85 Name WPT84           ID WPT84 Latitude 62 Longitude 15 Used in Route 1
+Waypoint 86 Name WPT85           ID WPT85 Latitude 62,08333 Longitude 15 Used in Route 1
+Waypoint 87 Name WPT86           ID WPT86 Latitude 62,16667 Longitude 15 Used in Route 1
+Waypoint 88 Name WPT87           ID WPT87 Latitude 62,25 Longitude 15 Used in Route 1
+Waypoint 89 Name WPT88           ID WPT88 Latitude 62,33333 Longitude 15 Used in Route 1
+Waypoint 90 Name WPT89           ID WPT89 Latitude 62,41667 Longitude 15 Used in Route 1
+Waypoint 91 Name WPT90           ID WPT90 Latitude 62,5 Longitude 15 Used in Route 0
+Waypoint 92 Name WPT91           ID WPT91 Latitude 62,58333 Longitude 15 Used in Route 0
+Waypoint 93 Name WPT92           ID WPT92 Latitude 62,66667 Longitude 15 Used in Route 0
+Waypoint 94 Name WPT93           ID WPT93 Latitude 62,75 Longitude 15 Used in Route 0
+Waypoint 95 Name WPT94           ID WPT94 Latitude 62,83333 Longitude 15 Used in Route 0
+Waypoint 96 Name WPT95           ID WPT95 Latitude 62,91667 Longitude 15 Used in Route 0
+Waypoint 97 Name WPT96           ID WPT96 Latitude 63 Longitude 15 Used in Route 0
+Waypoint 98 Name WPT97           ID WPT97 Latitude 63,08333 Longitude 15 Used in Route 0
+Waypoint 99 Name WPT98           ID WPT98 Latitude 63,16667 Longitude 15 Used in Route 0
+Waypoint 100 Name WPT99           ID WPT99 Latitude 63,25 Longitude 15 Used in Route 0
+******* PilotAirport Loading ******
+Allocated elements: 50
+Airport 1 Name AA00            IcaoID AA00 Latitude 60 Longitude 14 LongestRunway/Validity 0 / Defined MagneticVariation/Validity 0 / Defined Elevation 0 UsedInRoute 1
+Airport 2 Name AA01            IcaoID AA01 Latitude 60,01667 Longitude 14 LongestRunway/Validity 0 / Defined MagneticVariation/Validity 0 / Defined Elevation 0 UsedInRoute 1
+Airport 3 Name AA02            IcaoID AA02 Latitude 60,03333 Longitude 14 LongestRunway/Validity 0 / Defined MagneticVariation/Validity 0 / Defined Elevation 0 UsedInRoute 1
+Airport 4 Name AB00            IcaoID AB00 Latitude 60 Longitude 16 LongestRunway/Validity 0 / Defined MagneticVariation/Validity 0 / Defined Elevation 0 UsedInRoute 1
+Airport 5 Name AB01            IcaoID AB01 Latitude 60,01667 Longitude 16 LongestRunway/Validity 0 / Defined MagneticVariation/Validity 0 / Defined Elevation 0 UsedInRoute 1
+Airport 6 Name AB02            IcaoID AB02 Latitude 60,03333 Longitude 16 LongestRunway/Validity 0 / Defined MagneticVariation/Validity 0 / Defined Elevation 0 UsedInRoute 1
+Airport 7 Name AA03            IcaoID AA03 Latitude 60,05 Longitude 14 LongestRunway/Validity 0 / Defined MagneticVariation/Validity 0 / Defined Elevation 0 UsedInRoute 0
+Airport 8 Name AA04            IcaoID AA04 Latitude 60,06667 Longitude 14 LongestRunway/Validity 0 / Defined MagneticVariation/Validity 0 / Defined Elevation 0 UsedInRoute 0
+Airport 9 Name AA05            IcaoID AA05 Latitude 60,08333 Longitude 14 LongestRunway/Validity 0 / Defined MagneticVariation/Validity 0 / Defined Elevation 0 UsedInRoute 0
+Airport 10 Name AA06            IcaoID AA06 Latitude 60,1 Longitude 14 LongestRunway/Validity 0 / Defined MagneticVariation/Validity 0 / Defined Elevation 0 UsedInRoute 0
+Airport 11 Name AA07            IcaoID AA07 Latitude 60,11666 Longitude 14 LongestRunway/Validity 0 / Defined MagneticVariation/Validity 0 / Defined Elevation 0 UsedInRoute 0
+Airport 12 Name AA08            IcaoID AA08 Latitude 60,13334 Longitude 14 LongestRunway/Validity 0 / Defined MagneticVariation/Validity 0 / Defined Elevation 0 UsedInRoute 0
+Airport 13 Name AA09            IcaoID AA09 Latitude 60,15 Longitude 14 LongestRunway/Validity 0 / Defined MagneticVariation/Validity 0 / Defined Elevation 0 UsedInRoute 0
+Airport 14 Name AA10            IcaoID AA10 Latitude 60,16667 Longitude 14 LongestRunway/Validity 0 / Defined MagneticVariation/Validity 0 / Defined Elevation 0 UsedInRoute 0
+Airport 15 Name AA11            IcaoID AA11 Latitude 60,18333 Longitude 14 LongestRunway/Validity 0 / Defined MagneticVariation/Validity 0 / Defined Elevation 0 UsedInRoute 0
+Airport 16 Name AA12            IcaoID AA12 Latitude 60,2 Longitude 14 LongestRunway/Validity 0 / Defined MagneticVariation/Validity 0 / Defined Elevation 0 UsedInRoute 0
+Airport 17 Name AA13            IcaoID AA13 Latitude 60,21667 Longitude 14 LongestRunway/Validity 0 / Defined MagneticVariation/Validity 0 / Defined Elevation 0 UsedInRoute 0
+Airport 18 Name AA14            IcaoID AA14 Latitude 60,23333 Longitude 14 LongestRunway/Validity 0 / Defined MagneticVariation/Validity 0 / Defined Elevation 0 UsedInRoute 0
+Airport 19 Name AA15            IcaoID AA15 Latitude 60,25 Longitude 14 LongestRunway/Validity 0 / Defined MagneticVariation/Validity 0 / Defined Elevation 0 UsedInRoute 0
+Airport 20 Name AA16            IcaoID AA16 Latitude 60,26667 Longitude 14 LongestRunway/Validity 0 / Defined MagneticVariation/Validity 0 / Defined Elevation 0 UsedInRoute 0
+Airport 21 Name AA17            IcaoID AA17 Latitude 60,28333 Longitude 14 LongestRunway/Validity 0 / Defined MagneticVariation/Validity 0 / Defined Elevation 0 UsedInRoute 0
+Airport 22 Name AA18            IcaoID AA18 Latitude 60,3 Longitude 14 LongestRunway/Validity 0 / Defined MagneticVariation/Validity 0 / Defined Elevation 0 UsedInRoute 0
+Airport 23 Name AA19            IcaoID AA19 Latitude 60,31667 Longitude 14 LongestRunway/Validity 0 / Defined MagneticVariation/Validity 0 / Defined Elevation 0 UsedInRoute 0
+Airport 24 Name AA20            IcaoID AA20 Latitude 60,33333 Longitude 14 LongestRunway/Validity 0 / Defined MagneticVariation/Validity 0 / Defined Elevation 0 UsedInRoute 0
+Airport 25 Name AA21            IcaoID AA21 Latitude 60,35 Longitude 14 LongestRunway/Validity 0 / Defined MagneticVariation/Validity 0 / Defined Elevation 0 UsedInRoute 0
+Airport 26 Name AA22            IcaoID AA22 Latitude 60,36666 Longitude 14 LongestRunway/Validity 0 / Defined MagneticVariation/Validity 0 / Defined Elevation 0 UsedInRoute 0
+Airport 27 Name AA23            IcaoID AA23 Latitude 60,38334 Longitude 14 LongestRunway/Validity 0 / Defined MagneticVariation/Validity 0 / Defined Elevation 0 UsedInRoute 0
+Airport 28 Name AA24            IcaoID AA24 Latitude 60,4 Longitude 14 LongestRunway/Validity 0 / Defined MagneticVariation/Validity 0 / Defined Elevation 0 UsedInRoute 0
+Airport 29 Name AB03            IcaoID AB03 Latitude 60,05 Longitude 16 LongestRunway/Validity 0 / Defined MagneticVariation/Validity 0 / Defined Elevation 0 UsedInRoute 0
+Airport 30 Name AB04            IcaoID AB04 Latitude 60,06667 Longitude 16 LongestRunway/Validity 0 / Defined MagneticVariation/Validity 0 / Defined Elevation 0 UsedInRoute 0
+Airport 31 Name AB05            IcaoID AB05 Latitude 60,08333 Longitude 16 LongestRunway/Validity 0 / Defined MagneticVariation/Validity 0 / Defined Elevation 0 UsedInRoute 0
+Airport 32 Name AB06            IcaoID AB06 Latitude 60,1 Longitude 16 LongestRunway/Validity 0 / Defined MagneticVariation/Validity 0 / Defined Elevation 0 UsedInRoute 0
+Airport 33 Name AB07            IcaoID AB07 Latitude 60,11666 Longitude 16 LongestRunway/Validity 0 / Defined MagneticVariation/Validity 0 / Defined Elevation 0 UsedInRoute 0
+Airport 34 Name AB08            IcaoID AB08 Latitude 60,13334 Longitude 16 LongestRunway/Validity 0 / Defined MagneticVariation/Validity 0 / Defined Elevation 0 UsedInRoute 0
+Airport 35 Name AB09            IcaoID AB09 Latitude 60,15 Longitude 16 LongestRunway/Validity 0 / Defined MagneticVariation/Validity 0 / Defined Elevation 0 UsedInRoute 0
+Airport 36 Name AB10            IcaoID AB10 Latitude 60,16667 Longitude 16 LongestRunway/Validity 0 / Defined MagneticVariation/Validity 0 / Defined Elevation 0 UsedInRoute 0
+Airport 37 Name AB11            IcaoID AB11 Latitude 60,18333 Longitude 16 LongestRunway/Validity 0 / Defined MagneticVariation/Validity 0 / Defined Elevation 0 UsedInRoute 0
+Airport 38 Name AB12            IcaoID AB12 Latitude 60,2 Longitude 16 LongestRunway/Validity 0 / Defined MagneticVariation/Validity 0 / Defined Elevation 0 UsedInRoute 0
+Airport 39 Name AB13            IcaoID AB13 Latitude 60,21667 Longitude 16 LongestRunway/Validity 0 / Defined MagneticVariation/Validity 0 / Defined Elevation 0 UsedInRoute 0
+Airport 40 Name AB14            IcaoID AB14 Latitude 60,23333 Longitude 16 LongestRunway/Validity 0 / Defined MagneticVariation/Validity 0 / Defined Elevation 0 UsedInRoute 0
+Airport 41 Name AB15            IcaoID AB15 Latitude 60,25 Longitude 16 LongestRunway/Validity 0 / Defined MagneticVariation/Validity 0 / Defined Elevation 0 UsedInRoute 0
+Airport 42 Name AB16            IcaoID AB16 Latitude 60,26667 Longitude 16 LongestRunway/Validity 0 / Defined MagneticVariation/Validity 0 / Defined Elevation 0 UsedInRoute 0
+Airport 43 Name AB17            IcaoID AB17 Latitude 60,28333 Longitude 16 LongestRunway/Validity 0 / Defined MagneticVariation/Validity 0 / Defined Elevation 0 UsedInRoute 0
+Airport 44 Name AB18            IcaoID AB18 Latitude 60,3 Longitude 16 LongestRunway/Validity 0 / Defined MagneticVariation/Validity 0 / Defined Elevation 0 UsedInRoute 0
+Airport 45 Name AB19            IcaoID AB19 Latitude 60,31667 Longitude 16 LongestRunway/Validity 0 / Defined MagneticVariation/Validity 0 / Defined Elevation 0 UsedInRoute 0
+Airport 46 Name AB20            IcaoID AB20 Latitude 60,33333 Longitude 16 LongestRunway/Validity 0 / Defined MagneticVariation/Validity 0 / Defined Elevation 0 UsedInRoute 0
+Airport 47 Name AB21            IcaoID AB21 Latitude 60,35 Longitude 16 LongestRunway/Validity 0 / Defined MagneticVariation/Validity 0 / Defined Elevation 0 UsedInRoute 0
+Airport 48 Name AB22            IcaoID AB22 Latitude 60,36666 Longitude 16 LongestRunway/Validity 0 / Defined MagneticVariation/Validity 0 / Defined Elevation 0 UsedInRoute 0
+Airport 49 Name AB23            IcaoID AB23 Latitude 60,38334 Longitude 16 LongestRunway/Validity 0 / Defined MagneticVariation/Validity 0 / Defined Elevation 0 UsedInRoute 0
+Airport 50 Name AB24            IcaoID AB24 Latitude 60,4 Longitude 16 LongestRunway/Validity 0 / Defined MagneticVariation/Validity 0 / Defined Elevation 0 UsedInRoute 0
+******* PilotNavaid Loading ******
+Allocated elements: 0
+******* PilotRoute Loading ******
+Allocated elements: 8
+Route 1 ID ROUTE01    - From Airport AA00 To Airport AB00
+Route 1 Fix 1 Index 51 - Type PilotWaypoint - FirstID WPT50 SecondID WPT5 NavaidCat None
+Route 2 ID ROUTE02    - From Airport AA01 To Airport AB01
+Route 2 Fix 1 Index 51 - Type PilotWaypoint - FirstID WPT50 SecondID WPT5 NavaidCat None
+Route 3 ID ROUTE03    - From Airport AA02 To Airport AB02
+Route 3 Fix 1 Index 53 - Type PilotWaypoint - FirstID WPT52 SecondID WPT5 NavaidCat None
+Route 3 Fix 2 Index 51 - Type PilotWaypoint - FirstID WPT50 SecondID WPT5 NavaidCat None
+Route 3 Fix 3 Index 54 - Type PilotWaypoint - FirstID WPT53 SecondID WPT5 NavaidCat None
+Route 4 ID ROUTE04    - From Airport      To Airport     
+Route 4 Fix 1 Index 1 - Type PilotWaypoint - FirstID WPT00 SecondID WPT0 NavaidCat None
+Route 4 Fix 2 Index 2 - Type PilotWaypoint - FirstID WPT01 SecondID WPT0 NavaidCat None
+Route 4 Fix 3 Index 3 - Type PilotWaypoint - FirstID WPT02 SecondID WPT0 NavaidCat None
+Route 4 Fix 4 Index 4 - Type PilotWaypoint - FirstID WPT03 SecondID WPT0 NavaidCat None
+Route 4 Fix 5 Index 5 - Type PilotWaypoint - FirstID WPT04 SecondID WPT0 NavaidCat None
+Route 4 Fix 6 Index 6 - Type PilotWaypoint - FirstID WPT05 SecondID WPT0 NavaidCat None
+Route 4 Fix 7 Index 7 - Type PilotWaypoint - FirstID WPT06 SecondID WPT0 NavaidCat None
+Route 4 Fix 8 Index 8 - Type PilotWaypoint - FirstID WPT07 SecondID WPT0 NavaidCat None
+Route 4 Fix 9 Index 9 - Type PilotWaypoint - FirstID WPT08 SecondID WPT0 NavaidCat None
+Route 4 Fix 10 Index 10 - Type PilotWaypoint - FirstID WPT09 SecondID WPT0 NavaidCat None
+Route 4 Fix 11 Index 11 - Type PilotWaypoint - FirstID WPT10 SecondID WPT1 NavaidCat None
+Route 4 Fix 12 Index 12 - Type PilotWaypoint - FirstID WPT11 SecondID WPT1 NavaidCat None
+Route 4 Fix 13 Index 13 - Type PilotWaypoint - FirstID WPT12 SecondID WPT1 NavaidCat None
+Route 4 Fix 14 Index 14 - Type PilotWaypoint - FirstID WPT13 SecondID WPT1 NavaidCat None
+Route 4 Fix 15 Index 15 - Type PilotWaypoint - FirstID WPT14 SecondID WPT1 NavaidCat None
+Route 4 Fix 16 Index 16 - Type PilotWaypoint - FirstID WPT15 SecondID WPT1 NavaidCat None
+Route 4 Fix 17 Index 17 - Type PilotWaypoint - FirstID WPT16 SecondID WPT1 NavaidCat None
+Route 4 Fix 18 Index 18 - Type PilotWaypoint - FirstID WPT17 SecondID WPT1 NavaidCat None
+Route 4 Fix 19 Index 19 - Type PilotWaypoint - FirstID WPT18 SecondID WPT1 NavaidCat None
+Route 4 Fix 20 Index 20 - Type PilotWaypoint - FirstID WPT19 SecondID WPT1 NavaidCat None
+Route 4 Fix 21 Index 21 - Type PilotWaypoint - FirstID WPT20 SecondID WPT2 NavaidCat None
+Route 5 ID ROUTE05    - From Airport      To Airport     
+Route 5 Fix 1 Index 3 - Type PilotWaypoint - FirstID WPT02 SecondID WPT0 NavaidCat None
+Route 5 Fix 2 Index 2 - Type PilotWaypoint - FirstID WPT01 SecondID WPT0 NavaidCat None
+Route 5 Fix 3 Index 1 - Type PilotWaypoint - FirstID WPT00 SecondID WPT0 NavaidCat None
+Route 6 ID ROUTE06    - From Airport      To Airport     
+Route 6 Fix 1 Index 51 - Type PilotWaypoint - FirstID WPT50 SecondID WPT5 NavaidCat None
+Route 6 Fix 2 Index 52 - Type PilotWaypoint - FirstID WPT51 SecondID WPT5 NavaidCat None
+Route 6 Fix 3 Index 53 - Type PilotWaypoint - FirstID WPT52 SecondID WPT5 NavaidCat None
+Route 6 Fix 4 Index 54 - Type PilotWaypoint - FirstID WPT53 SecondID WPT5 NavaidCat None
+Route 6 Fix 5 Index 55 - Type PilotWaypoint - FirstID WPT54 SecondID WPT5 NavaidCat None
+Route 6 Fix 6 Index 56 - Type PilotWaypoint - FirstID WPT55 SecondID WPT5 NavaidCat None
+Route 6 Fix 7 Index 57 - Type PilotWaypoint - FirstID WPT56 SecondID WPT5 NavaidCat None
+Route 6 Fix 8 Index 58 - Type PilotWaypoint - FirstID WPT57 SecondID WPT5 NavaidCat None
+Route 6 Fix 9 Index 59 - Type PilotWaypoint - FirstID WPT58 SecondID WPT5 NavaidCat None
+Route 6 Fix 10 Index 60 - Type PilotWaypoint - FirstID WPT59 SecondID WPT5 NavaidCat None
+Route 6 Fix 11 Index 61 - Type PilotWaypoint - FirstID WPT60 SecondID WPT6 NavaidCat None
+Route 6 Fix 12 Index 62 - Type PilotWaypoint - FirstID WPT61 SecondID WPT6 NavaidCat None
+Route 6 Fix 13 Index 63 - Type PilotWaypoint - FirstID WPT62 SecondID WPT6 NavaidCat None
+Route 6 Fix 14 Index 64 - Type PilotWaypoint - FirstID WPT63 SecondID WPT6 NavaidCat None
+Route 6 Fix 15 Index 65 - Type PilotWaypoint - FirstID WPT64 SecondID WPT6 NavaidCat None
+Route 6 Fix 16 Index 66 - Type PilotWaypoint - FirstID WPT65 SecondID WPT6 NavaidCat None
+Route 6 Fix 17 Index 67 - Type PilotWaypoint - FirstID WPT66 SecondID WPT6 NavaidCat None
+Route 6 Fix 18 Index 68 - Type PilotWaypoint - FirstID WPT67 SecondID WPT6 NavaidCat None
+Route 6 Fix 19 Index 69 - Type PilotWaypoint - FirstID WPT68 SecondID WPT6 NavaidCat None
+Route 6 Fix 20 Index 70 - Type PilotWaypoint - FirstID WPT69 SecondID WPT6 NavaidCat None
+Route 6 Fix 21 Index 71 - Type PilotWaypoint - FirstID WPT70 SecondID WPT7 NavaidCat None
+Route 6 Fix 22 Index 72 - Type PilotWaypoint - FirstID WPT71 SecondID WPT7 NavaidCat None
+Route 6 Fix 23 Index 73 - Type PilotWaypoint - FirstID WPT72 SecondID WPT7 NavaidCat None
+Route 6 Fix 24 Index 74 - Type PilotWaypoint - FirstID WPT73 SecondID WPT7 NavaidCat None
+Route 6 Fix 25 Index 75 - Type PilotWaypoint - FirstID WPT74 SecondID WPT7 NavaidCat None
+Route 6 Fix 26 Index 76 - Type PilotWaypoint - FirstID WPT75 SecondID WPT7 NavaidCat None
+Route 6 Fix 27 Index 77 - Type PilotWaypoint - FirstID WPT76 SecondID WPT7 NavaidCat None
+Route 6 Fix 28 Index 78 - Type PilotWaypoint - FirstID WPT77 SecondID WPT7 NavaidCat None
+Route 6 Fix 29 Index 79 - Type PilotWaypoint - FirstID WPT78 SecondID WPT7 NavaidCat None
+Route 6 Fix 30 Index 80 - Type PilotWaypoint - FirstID WPT79 SecondID WPT7 NavaidCat None
+Route 6 Fix 31 Index 81 - Type PilotWaypoint - FirstID WPT80 SecondID WPT8 NavaidCat None
+Route 6 Fix 32 Index 82 - Type PilotWaypoint - FirstID WPT81 SecondID WPT8 NavaidCat None
+Route 6 Fix 33 Index 83 - Type PilotWaypoint - FirstID WPT82 SecondID WPT8 NavaidCat None
+Route 6 Fix 34 Index 84 - Type PilotWaypoint - FirstID WPT83 SecondID WPT8 NavaidCat None
+Route 6 Fix 35 Index 85 - Type PilotWaypoint - FirstID WPT84 SecondID WPT8 NavaidCat None
+Route 6 Fix 36 Index 86 - Type PilotWaypoint - FirstID WPT85 SecondID WPT8 NavaidCat None
+Route 6 Fix 37 Index 87 - Type PilotWaypoint - FirstID WPT86 SecondID WPT8 NavaidCat None
+Route 6 Fix 38 Index 88 - Type PilotWaypoint - FirstID WPT87 SecondID WPT8 NavaidCat None
+Route 6 Fix 39 Index 89 - Type PilotWaypoint - FirstID WPT88 SecondID WPT8 NavaidCat None
+Route 6 Fix 40 Index 90 - Type PilotWaypoint - FirstID WPT89 SecondID WPT8 NavaidCat None
+Route 7 ID ROUTE07    - From Airport      To Airport     
+Route 7 Fix 1 Index 50 - Type PilotWaypoint - FirstID WPT49 SecondID WPT4 NavaidCat None
+Route 7 Fix 2 Index 51 - Type PilotWaypoint - FirstID WPT50 SecondID WPT5 NavaidCat None
+Route 7 Fix 3 Index 52 - Type PilotWaypoint - FirstID WPT51 SecondID WPT5 NavaidCat None
+Route 7 Fix 4 Index 53 - Type PilotWaypoint - FirstID WPT52 SecondID WPT5 NavaidCat None
+Route 7 Fix 5 Index 54 - Type PilotWaypoint - FirstID WPT53 SecondID WPT5 NavaidCat None
+Route 7 Fix 6 Index 55 - Type PilotWaypoint - FirstID WPT54 SecondID WPT5 NavaidCat None
+Route 7 Fix 7 Index 56 - Type PilotWaypoint - FirstID WPT55 SecondID WPT5 NavaidCat None
+Route 7 Fix 8 Index 57 - Type PilotWaypoint - FirstID WPT56 SecondID WPT5 NavaidCat None
+Route 7 Fix 9 Index 58 - Type PilotWaypoint - FirstID WPT57 SecondID WPT5 NavaidCat None
+Route 7 Fix 10 Index 59 - Type PilotWaypoint - FirstID WPT58 SecondID WPT5 NavaidCat None
+Route 8 ID ROUTE08    - From Airport      To Airport     
+Route 8 Fix 1 Index 50 - Type PilotWaypoint - FirstID WPT49 SecondID WPT4 NavaidCat None
+Route 8 Fix 2 Index 51 - Type PilotWaypoint - FirstID WPT50 SecondID WPT5 NavaidCat None
+******* Pilot Database Loading OK ******

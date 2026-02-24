@@ -1,0 +1,30 @@
+******* PilotHeader Loading ******
+Generation date: 4 - 10 - 2025
+Airport file size: 4020
+Navaid file size: 4020
+Waypoint file size: 2820
+Route file size: 50020
+Carac file size: 116
+Pilot Database name: DTD4102025  
+******* PilotWaypoint Loading ******
+Allocated elements: 2
+Waypoint 1 Name FEMTON          ID FEMTO Latitude 58 Longitude 15 Used in Route 1
+Waypoint 2 Name SEXTON          ID SEXTO Latitude 59 Longitude 16 Used in Route 1
+******* PilotAirport Loading ******
+Allocated elements: 0
+******* PilotNavaid Loading ******
+Allocated elements: 4
+Navaid 1 Name 010             ID 010  Frequency 0 Latitude 58,35391 Longitude 11,81693 MagneticVariation 0 Elevation 125 - UsedInRoute 1 Category None FigureOfMerit ExtendedAltitudeUse
+Navaid 2 Name 101             ID 101  Frequency 0 Latitude 58,70108 Longitude 15,62448 MagneticVariation 0 Elevation 190 - UsedInRoute 1 Category None FigureOfMerit ExtendedAltitudeUse
+Navaid 3 Name 102             ID 102  Frequency 0 Latitude 58,54589 Longitude 15,69399 MagneticVariation 0 Elevation 302 - UsedInRoute 1 Category None FigureOfMerit ExtendedAltitudeUse
+Navaid 4 Name 103             ID 103  Frequency 0 Latitude 58,88659 Longitude 15,58564 MagneticVariation 0 Elevation 243 - UsedInRoute 1 Category None FigureOfMerit ExtendedAltitudeUse
+******* PilotRoute Loading ******
+Allocated elements: 1
+Route 1 ID UDDARNA    - From Airport      To Airport     
+Route 1 Fix 1 Index 1 - Type PilotWaypoint - FirstID FEMTO SecondID      NavaidCat None
+Route 1 Fix 2 Index 2 - Type PilotWaypoint - FirstID SEXTO SecondID      NavaidCat None
+Route 1 Fix 3 Index 1 - Type PilotNavaid - FirstID 010   SecondID      NavaidCat None
+Route 1 Fix 4 Index 2 - Type PilotNavaid - FirstID 101   SecondID      NavaidCat None
+Route 1 Fix 5 Index 3 - Type PilotNavaid - FirstID 102   SecondID      NavaidCat None
+Route 1 Fix 6 Index 4 - Type PilotNavaid - FirstID 103   SecondID      NavaidCat None
+******* Pilot Database Loading OK ******

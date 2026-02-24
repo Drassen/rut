@@ -1,0 +1,33 @@
+#AIRPORT.P01
+File size ska vara: 4020
+
+Filheader:
+Byte 0-12 antal apt som ettor, max 100st
+11110000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000
+byte 13-15 checksum
+-byte 13 (129+antal apt) OBS. byte 13 är 128 om det är 100st.
+-byte 14 (antal apt*2)
+00000000 10000010 00000010 00000000 
+
+#Ny airport:
+byte 0-3 airport ICAO Id i 6bit (ex. ESCF) 
+10001011 00001000 00100011 00000000 
+byte 4-11 airport name i 6bit, max 10 tecken. ex. MALMEN 
+-varje 4byte block(efter 5 tecken) avslutas med 00
+10101001 11101010 01101010 10001000 
+10101100 00000000 00000000 00000000 
+byte 12-15 padding
+00000000 00000000 00000000 00000000 
+byte 16-19 
+-byte 17 användande av airporten i rutter: 6=används inte, 14=används, 30=används i flera
+00000000 00000110 00000000 00000000 
+byte 20-23 latitud i Big endian float
+01000010 01101001 10010101 10011110 
+byte 24-27 longitud i Big endian float
+01000001 01111000 01011001 11100010
+byte 28-31 longest runway? (Används inte.)
+00000000 00000000 00000000 00000000 
+byte 32-35 magnetic variation i Big endian float
+01000000 11100000 00000000 00000000 
+byte 36-39 elevation i Big endian float
+01000011 10011010 10000000 01111100

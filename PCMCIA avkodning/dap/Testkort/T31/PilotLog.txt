@@ -1,0 +1,75 @@
+Pilot Database name: DTD4112025
+******* PilotHeader Generation ******
+Generation date: 4 - 11 - 2025
+******* PilotWaypoint Generation ******
+Waypoint 1 Name AA000 ID AA000 Latitude 57,30m0s Longitude 17,20m0s Used in route 0
+Waypoint 2 Name AA001 ID AA001 Latitude 57,30m0s Longitude 17,20m0s Used in route 0
+Waypoint 3 Name AA002 ID AA002 Latitude 57,30m0s Longitude 17,20m0s Used in route 0
+Waypoint 4 Name AA003 ID AA003 Latitude 57,30m0s Longitude 17,20m0s Used in route 0
+Waypoint 5 Name AA004 ID AA004 Latitude 57,30m0s Longitude 17,20m0s Used in route 0
+Waypoint 6 Name AA005 ID AA005 Latitude 57,30m0s Longitude 17,20m0s Used in route 0
+Waypoint 7 Name AA006 ID AA006 Latitude 57,30m0s Longitude 17,20m0s Used in route 0
+Waypoint 8 Name AA007 ID AA007 Latitude 57,30m0s Longitude 17,20m0s Used in route 0
+Waypoint 9 Name AA008 ID AA008 Latitude 57,30m0s Longitude 17,20m0s Used in route 0
+Waypoint 10 Name AA009 ID AA009 Latitude 57,30m0s Longitude 17,20m0s Used in route 0
+Waypoint 11 Name AA010 ID AA010 Latitude 57,30m0s Longitude 17,20m0s Used in route 0
+Waypoint 12 Name AA011 ID AA011 Latitude 57,30m0s Longitude 17,20m0s Used in route 0
+Waypoint 13 Name AA012 ID AA012 Latitude 57,30m0s Longitude 17,20m0s Used in route 0
+Waypoint 14 Name AA013 ID AA013 Latitude 57,30m0s Longitude 17,20m0s Used in route 0
+Waypoint 15 Name AA014 ID AA014 Latitude 57,30m0s Longitude 17,20m0s Used in route 0
+Waypoint 16 Name AA015 ID AA015 Latitude 57,30m0s Longitude 17,20m0s Used in route 0
+Waypoint 17 Name AA016 ID AA016 Latitude 57,30m0s Longitude 17,20m0s Used in route 0
+Waypoint 18 Name AA017 ID AA017 Latitude 57,30m0s Longitude 17,20m0s Used in route 0
+Waypoint 19 Name AA018 ID AA018 Latitude 57,30m0s Longitude 17,20m0s Used in route 0
+Waypoint 20 Name AA019 ID AA019 Latitude 57,30m0s Longitude 17,20m0s Used in route 0
+Waypoint 21 Name AA020 ID AA020 Latitude 57,30m0s Longitude 17,20m0s Used in route 0
+Waypoint 22 Name AA021 ID AA021 Latitude 57,30m0s Longitude 17,20m0s Used in route 0
+Waypoint 23 Name AA022 ID AA022 Latitude 57,30m0s Longitude 17,20m0s Used in route 0
+Waypoint 24 Name AA023 ID AA023 Latitude 57,30m0s Longitude 17,20m0s Used in route 0
+Waypoint 25 Name AA024 ID AA024 Latitude 57,30m0s Longitude 17,20m0s Used in route 0
+Waypoint 26 Name AA025 ID AA025 Latitude 57,30m0s Longitude 17,20m0s Used in route 0
+Waypoint 27 Name AA026 ID AA026 Latitude 57,30m0s Longitude 17,20m0s Used in route 0
+Waypoint 28 Name AA027 ID AA027 Latitude 57,30m0s Longitude 17,20m0s Used in route 0
+Waypoint 29 Name AA028 ID AA028 Latitude 57,30m0s Longitude 17,20m0s Used in route 0
+Waypoint 30 Name AA029 ID AA029 Latitude 57,30m0s Longitude 17,20m0s Used in route 0
+Waypoint 31 Name AA030 ID AA030 Latitude 57,30m0s Longitude 17,20m0s Used in route 0
+Waypoint 32 Name AA031 ID AA031 Latitude 57,30m0s Longitude 17,20m0s Used in route 0
+Waypoint 33 Name AA032 ID AA032 Latitude 57,30m0s Longitude 17,20m0s Used in route 0
+Waypoint 34 Name AA033 ID AA033 Latitude 57,30m0s Longitude 17,20m0s Used in route 0
+Waypoint 35 Name AA034 ID AA034 Latitude 57,30m0s Longitude 17,20m0s Used in route 0
+Waypoint 36 Name AA035 ID AA035 Latitude 57,30m0s Longitude 17,20m0s Used in route 0
+Waypoint 37 Name AA036 ID AA036 Latitude 57,30m0s Longitude 17,20m0s Used in route 0
+Waypoint 38 Name AA037 ID AA037 Latitude 57,30m0s Longitude 17,20m0s Used in route 0
+Waypoint 39 Name AA038 ID AA038 Latitude 57,30m0s Longitude 17,20m0s Used in route 0
+Waypoint 40 Name AA039 ID AA039 Latitude 57,30m0s Longitude 17,20m0s Used in route 0
+Waypoint 41 Name AA040 ID AA040 Latitude 57,30m0s Longitude 17,20m0s Used in route 0
+Waypoint 42 Name AA041 ID AA041 Latitude 57,30m0s Longitude 17,20m0s Used in route 0
+Waypoint 43 Name AA042 ID AA042 Latitude 57,30m0s Longitude 17,20m0s Used in route 0
+Waypoint 44 Name AA043 ID AA043 Latitude 57,30m0s Longitude 17,20m0s Used in route 0
+Waypoint 45 Name AA044 ID AA044 Latitude 57,30m0s Longitude 17,20m0s Used in route 0
+Waypoint 46 Name AA045 ID AA045 Latitude 57,30m0s Longitude 17,20m0s Used in route 0
+Waypoint 47 Name AA046 ID AA046 Latitude 57,30m0s Longitude 17,20m0s Used in route 0
+Waypoint 48 Name AA047 ID AA047 Latitude 57,30m0s Longitude 17,20m0s Used in route 0
+Waypoint 49 Name AA048 ID AA048 Latitude 57,30m0s Longitude 17,20m0s Used in route 0
+Waypoint 50 Name AA049 ID AA049 Latitude 57,30m0s Longitude 17,20m0s Used in route 0
+Waypoint 51 Name AA050 ID AA050 Latitude 57,30m0s Longitude 17,20m0s Used in route 0
+Waypoint 52 Name AA051 ID AA051 Latitude 57,30m0s Longitude 17,20m0s Used in route 0
+Waypoint 53 Name AA052 ID AA052 Latitude 57,30m0s Longitude 17,20m0s Used in route 0
+Waypoint 54 Name AA053 ID AA053 Latitude 57,30m0s Longitude 17,20m0s Used in route 0
+Waypoint 55 Name AA054 ID AA054 Latitude 57,30m0s Longitude 17,20m0s Used in route 0
+Waypoint 56 Name AA055 ID AA055 Latitude 57,30m0s Longitude 17,20m0s Used in route 0
+Waypoint 57 Name AA056 ID AA056 Latitude 57,30m0s Longitude 17,20m0s Used in route 0
+Waypoint 58 Name AA057 ID AA057 Latitude 57,30m0s Longitude 17,20m0s Used in route 0
+Waypoint 59 Name AA058 ID AA058 Latitude 57,30m0s Longitude 17,20m0s Used in route 0
+Waypoint 60 Name AA059 ID AA059 Latitude 57,30m0s Longitude 17,20m0s Used in route 0
+Waypoint 61 Name AA060 ID AA060 Latitude 57,30m0s Longitude 17,20m0s Used in route 0
+Waypoint 62 Name AA061 ID AA061 Latitude 57,30m0s Longitude 17,20m0s Used in route 0
+Waypoint 63 Name AA062 ID AA062 Latitude 57,30m0s Longitude 17,20m0s Used in route 0
+Waypoint 64 Name AA063 ID AA063 Latitude 57,30m0s Longitude 17,20m0s Used in route 0
+Waypoint 65 Name AA064 ID AA064 Latitude 57,30m0s Longitude 17,20m0s Used in route 0
+Waypoint 66 Name AA065 ID AA065 Latitude 57,30m0s Longitude 17,20m0s Used in route 0
+******* PilotAirport Generation ******
+******* PilotNavaid Generation ******
+******* PilotRoute Generation ******
+******* PilotCarac Generation ******
+******* Pilot Database Generation OK ******

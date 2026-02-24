@@ -1,0 +1,25 @@
+******* PilotHeader Loading ******
+Generation date: 31 - 10 - 2025
+Airport file size: 4020
+Navaid file size: 4020
+Waypoint file size: 2820
+Route file size: 50020
+Carac file size: 116
+Pilot Database name: DTD31102025 
+******* PilotWaypoint Loading ******
+Allocated elements: 3
+Waypoint 1 Name AAAAA           ID AAAAA Latitude 57,5 Longitude 17,33333 Used in Route 1
+Waypoint 2 Name AAAAC           ID AAAAC Latitude 57,5 Longitude 17,33333 Used in Route 0
+Waypoint 3 Name AAAAB           ID AAAAB Latitude 57,5 Longitude 17,33333 Used in Route 0
+******* PilotAirport Loading ******
+Allocated elements: 2
+Airport 1 Name QQQ1            IcaoID QQQ1 Latitude 59 Longitude 16 LongestRunway/Validity 0 / Defined MagneticVariation/Validity 0 / Defined Elevation 0 UsedInRoute 0
+Airport 2 Name QQQ2            IcaoID QQQ2 Latitude 59,16667 Longitude 16,16667 LongestRunway/Validity 0 / Defined MagneticVariation/Validity 0 / Defined Elevation 0 UsedInRoute 1
+******* PilotNavaid Loading ******
+Allocated elements: 0
+******* PilotRoute Loading ******
+Allocated elements: 1
+Route 1 ID RUTTBBBBB  - From Airport      To Airport QQQ2
+Route 1 Fix 1 Index 1 - Type PilotWaypoint - FirstID AAAAA SecondID AAAA NavaidCat None
+Route 1 Fix 2 Index 2 - Type PilotAirport - FirstID QQQ2  SecondID QQQ2 NavaidCat None
+******* Pilot Database Loading OK ******

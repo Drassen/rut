@@ -1,0 +1,28 @@
+#AIRPORT.P01
+kontrollera att File size är: 4020
+
+Filheader, kontrollera följande:
+Byte 0-12 kontrollera att det inleds med lika många ettor som antalet airports som kommer längre ned i filen. Och att de bara efterföljs av nollor.
+byte 13 kontrollera att det är 129+antal airports (eller bara 128 om det är 100st airports)
+byte 14 kontrollera att det är antal airports*2
+byte 15 kontrollera att det är noll
+
+Kontrollera följande för varje airport:
+airport-byte 0-2 kontrollera att det det är godkända tecken i 6-bit eller noll i 6-bit.
+airport-byte 3 kontrollera att den är noll
+airport-byte 4-7 kontrollera att det det är godkända tecken i 6-bit eller noll i 6-bit.
+airport-byte 7 kontrollera att den avslutas med "00".
+airport-byte 8-11 kontrollera att det det är godkända tecken i 6-bit eller noll i 6-bit.
+airport-byte 11 kontrollera att den avslutas med "00".
+airport-byte 12-15 kontrollera att det det är godkända tecken i 6-bit eller noll i 6-bit.
+airport-byte 15 kontrollera att den avslutas med "00".
+airport-byte 16,18,19 kontrollera att dessa bytes är noll.
+airport-byte 17 kontrollera att den är 6 eller 14 eller 30.
+airport-byte 17 kontrollera att denna airports id inte finns i någon rutt om den är 6
+airport-byte 17 kontrollera att denna airports id finns i någon rutt om den är 14
+airport-byte 17 kontrollera att denna airports id finns i flera rutt om den är 30
+navaid-byte 18-21 kontrollera att det är en signed big-endian float.
+navaid-byte 22-25 kontrollera att det är en signed big-endian float.
+navaid-byte 26-29 kontrollera att det är en signed big-endian float.
+navaid-byte 30-33 kontrollera att det är en signed big-endian float.
+navaid-byte 34-37 kontrollera att det är en signed big-endian float.

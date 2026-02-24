@@ -1,0 +1,183 @@
+Kontext:
+Jag vill tillverka en ios app som kan konvertera mellan olika rutt-format för att kunna skapa korrekta datakort som kan användas i olika helikoptrar.
+Olika helikoptrar har olika typer av navigationsdatorer och därför behövs olika format. 
+Jag vill även kunna lägga till nya format i efterhand.
+Man ska kunna importera olika format till appen. Därför behövs det ett generiskt objekt med flera under-objekt som appen använder för att på ett modulärt sätt kunna skapa nya konverteringsformat i framtiden.
+
+Detaljer kring appens format:
+-Den ska vara gjord för ios 18 sdk eller senare. (enheterna kör ios 26 eller senare)
+-Den ska bara kunna användas på iphone och ipad, inte på mac eller något annat.
+-Jag vill ha ett fullständigt projekt i zip-format så att jag kan bygga appen direkt i xcode.
+-Appen ska heta Ruttis
+-adressen är ruttis.serveraren.com
+-Språket som används i appen är engelska, både i kod, kommentarer, samt texter.
+-varje format som kan importeras i appen ska ha en egen swiftfil där import till det generiska navigationsobjektet sker.
+-varje format som kan exporteras från appen ska ha en egen swiftfil där export från det generiska navigationsobjektet sker.
+-Det ska finnas en egen specifikationsfil för navigationsobjektet så att man kan ge den tillsammans med en filformatsspecifikation till en AI-bot för att kunna skapa nya swiftfiler för import eller export för ett nytt format.
+
+-felmeddelanden ska visas som toasts i appen samt loggas i en egen fil.
+-Appen ska inte kunna hantera import eller export av zip filer
+-Appen ska kunna göra multi file export för att kunna exportera/spara flera filer samtidigt till en valfri plats i filsystemet
+
+Format för import och export:
+-FPL filer från foreflight
+-GPX filer från garmin
+-filer från A109-helikoptrar. (PILOTE.HD, CARACTER.P01, WAYPOINT.P01, AIRPORT.P01, NAVAID.P01, ROUTE.P01)
+-RTE filer från garmin.
+-Appens eget filformat .RUT (Appens generiska navigationsobjekt befolkat med data)
+
+Beskrivning av appen:
+Appen ska ha en "Importera" knapp där man kan välja en eller flera filer som ska importeras.
+Men det ska också gå att importera genom att dela filer till appen från andra appar.
+Nedanför knappen ska det finnas en kort förklarande text om hur man gör, denna text finns bara om inget är importerat. 
+
+När något har importerats korrekt visas huvudvyn.
+Huvudvyn har samma importera-knapp högst upp.
+-För varje rutt som är importerad och lagts till i navigationsobjektet ska denna visas som en egen färgad ruta(ruttobjekt) med ruttens namn i samt ett close-kryss. 
+-När man klickar på ett ruttobjekt blir den rutten aktiv och övriga rutter inaktiva. det är bara en aktiv rutt som kan modifieras.
+-Klickar man på ett ruttobjekt som redan är aktivt kommer en ruttdialog fram där man kan ändra namnet samt save eller cancel.
+-När man klickar på en close-kryss på ett ruttobjekt försvinner den rutten och dess waypoints(som bara används av den rutten) från ui samt navigationsobjekt, ruttobjekt och waypointobjekt.
+Nedanför finns det en karta som visar det som importerats.
+Kartan har en listbox på kartan med valmöjlighet att visa alla olika möjliga karttyper. exempelvis hybrid, vanlig och satellit. Hybrid är standard.
+Alla airports i Airport-collection ska visas som markers på kartan med en airport-ikon samt id, z nivån ska vara låg.
+Alla navaids i Navaid-collection ska visas som markers på kartan med en mast-ikon samt id, z nivån ska vara låg.
+En rutt visas på kartan som en polyline, med avståndet utskrivet i nautiska mil mellan varje punkt. 
+Vid varje punkt finns en marker med en siffra som visar vilket löpnummer punkten har i rutten.
+Vid markern visas också punktens namn. markern ska vara grön om det är en waypoint, grå om det är en navaid eller en airport.
+
+Om en rutt importeras utan medföljande airport fil så behöver user-airport-objektet befolkas av data från själva rutten. 
+Alla punkter i en rutt som är 4 bokstäver och börjar på E är en airport. Ex. ESSA.
+
+aktiva/inaktiva rutter:
+-Aktiv rutt visas i sin starka färg både på ruttrutan och dess polyline. 
+-Aktiv polyline är något bredare.
+-Aktiv rutt på kartan visar markers, punktnamn, leg-avstånd
+-Z nivån ska vara hög för aktiv rutt, dess markers och texter på kartan.
+-Inaktiv rutt visas i svagare färg både på ruttrutan och dess polyline. 
+-Inaktiv polyline är något smalare.
+-Inaktiv rutt på kartan visar inte markers, punktnamn, leg-avstånd
+-Z nivån ska vara medal för inaktiv rutt.
+
+När man kort-klickar på en waypointmarker för en aktiv rutt dyker det upp ett val där man kan välja waypoint-typ.
+När man valt waypoint-typ ska alla waypoints i rutten som har en waypoint-typ döpas om automatiskt eftersom de har löpnummer som kan ha påverkats.
+När något döps om ska waypointens id ändras.
+waypoint-typer:
+TGT - TGT** (trekant som ikon i valmenyn samt som marker på kartan)
+WPT - WPT** (cirkel som ikon i valmenyn samt som marker på kartan)
+IP - IP** (fyrkant som ikon i valmenyn samt som marker på kartan)
+HLD - HLD** (cirkel som ikon i valmenyn samt som marker på kartan)
+CLI - CLI** (pil upp som ikon i valmenyn samt som marker på kartan)
+DES - DES** (pil ned som ikon i valmenyn samt som marker på kartan)
+** innebär ett löpnummer för rutten. Varje waypointtyp har ett eget löpnummer.
+Airports och navaids kan vara en del av en rutt, men de är inte waypoints så de kan inte döpas om.
+En rutt kan alltså ex. se ut så här: ESCF-SKED-WPT01-WPT02-CLI01-WPT03-DES01-WPT04-IP01-TGT01-WPT05-HLD01-IP02-TGT02-WPT06-SPEL-ESCF
+
+Det finns ett textfält vid val av waypoint-typ längst ned så att man kan välja ett eget namn. typen ska heta NONE. ikonen ska vara en plats-droppe. 
+Waypoints som läses in och saknar typ och som börjar på F följt av siffror ska tolkas som WPT. annars tolkas de som NONE och behåller sitt namn. och man ska kunna hålla in länge på en waypoint så ska den "lossna" och man ska då kunna dra och släppa den på en ny plats så den får en ny koordinat.
+
+
+Under kartan finns det en format-väljare och en Exportera-knapp. när man klickar på exportera-knappen så öppnas en ruta där man väljer var filen/filerna ska exporteras.
+
+En rutt är en färdväg som samanbinds av punkter. 
+Tecken som är tilåtna i id samt namn är: bokstäver i versaler, bindestreck, samt siffror.
+
+Beskrivning av det generiska navigationsobjektet i appen:
+ -Ett skapelsedatum
+ -en lista med rutt-objekt
+ -en lista med user-airport-objekt
+ -en lista med user-navaid-objekt
+ -en lista med user-waypoint-objekt
+-Rutt-objekt ska innehålla:
+ -lista med pekare till punkter som rutten innehåller (kan vara user-airport/user-navaid/user-waypoint/system-airport/system-navaid)
+ -namn (max 15 tecken)
+ -id (5 tecken, unikt bland rutter)
+-user-airport-objekt ska innehålla
+ -namn (max 15 tecken)
+ -id (4 tecken, unikt bland user-airports)
+ -lat (signed float)
+ -lng (signed float)
+ -elevation (signed float)
+ -magnetic variation (signed float)
+-user-navaid-objekt ska innehålla
+ -namn (max 15 tecken)
+ -id (2 eller 3 tecken, unikt bland navaids)
+ -lat (signed float)
+ -lng (signed float)
+ -elevation (signed float)
+ -magnetic variation (signed float)
+ -frekvens (signed float)
+-user-waypoint-objekt ska innehålla
+ -namn (max 15 tecken)
+ -id (5 tecken, unikt bland waypoints)
+ -typ (TGT, WPT, IP, HLD, CLI, DES)
+ -lat (signed float)
+ -lng (signed float)
+ -elevation (signed float)
+
+lista på A109 filer:
+PILOTE.HD, AIRPORT.P01, NAVAID.P01, ROUTE.P01, WAYPOINT.P01, CARACTER.P01
+
+
+
+
+
+Verifieringsscript:
+Du ska göra ett pythonscript som ska verifiera att alla filer är korrekta enligt följande fil-mallar.
+-filerna ska ha rätt storlek
+-padding ska vara på rätt plats i filerna
+-Värden som finns i filerna ska vara inom rätt intervall, eller ha rätt värden om det är specifierat vad värden kan vara.
+-alla checksummor och beräkningar ska kontrolleras så att de stämmer, även om beräkningarna innefattar flera filer.
+-Alla tester som görs i alla filer ska listas med GODKÄND i grönt eller FEL i rött och anledning.
+-Alla 6-bit tecken som används i filerna ska vara korrekta enligt 6-bit encoding tabellen.
+
+#6-bit encoding:
+
+Tecken,Dec,6-bit
+(padding),0,000000
+-,11,001011
+0,14,001110
+1,15,001111
+2,16,010000
+3,17,010001
+4,18,010010
+5,19,010011
+6,20,010100
+7,21,010101
+8,22,010110
+9,23,010111
+A,30,011110
+B,31,011111
+C,32,100000
+D,33,100001
+E,34,100010
+F,35,100011
+G,36,100100
+H,37,100101
+I,38,100110
+J,39,100111
+K,40,101000
+L,41,101001
+M,42,101010
+N,43,101011
+O,44,101100
+P,45,101101
+Q,46,101110
+R,47,101111
+S,48,110000
+T,49,110001
+U,50,110010
+V,51,110011
+W,52,110100
+X,53,110101
+Y,54,110110
+Z,55,110111
+
+
+
+
+
+
+
+
+
+

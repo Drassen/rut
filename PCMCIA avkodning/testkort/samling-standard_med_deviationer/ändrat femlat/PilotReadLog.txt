@@ -1,0 +1,22 @@
+******* PilotHeader Loading ******
+Generation date: 4 - 10 - 2025
+Airport file size: 4020
+Navaid file size: 4020
+Waypoint file size: 2820
+Route file size: 50020
+Carac file size: 116
+Pilot Database name: DTD4102025  
+******* PilotWaypoint Loading ******
+Allocated elements: 2
+Waypoint 1 Name FEMTON          ID FEMTO Latitude 57 Longitude 15 Used in Route 1
+Waypoint 2 Name SEXTON          ID SEXTO Latitude 59 Longitude 16 Used in Route 1
+******* PilotAirport Loading ******
+Allocated elements: 0
+******* PilotNavaid Loading ******
+Allocated elements: 0
+******* PilotRoute Loading ******
+Allocated elements: 1
+Route 1 ID UDDARNA    - From Airport      To Airport     
+Route 1 Fix 1 Index 1 - Type PilotWaypoint - FirstID FEMTO SecondID      NavaidCat None
+Route 1 Fix 2 Index 2 - Type PilotWaypoint - FirstID SEXTO SecondID      NavaidCat None
+******* Pilot Database Loading OK ******

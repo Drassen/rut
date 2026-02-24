@@ -1,0 +1,14 @@
+#PILOTE.HD
+kontrollera att File size är: 116
+
+#DTDDMÅÅÅÅ decimalt 8bit ascii + mellanslag som padding
+Byte 0-2 kontrollera att det är texten "DTD" i 8bit ASCII
+Byte 3-11 kontrollera att det är siffror eller mellanslag i 8bit ASCII.
+Byte 12-15 kontrollera att det är ett nummer mellan 1990 och 2040 i 32bit Big Ending.
+Byte 16-19 kontrollera att det är ett nummer >0 och <13 i 32bit Big Ending.
+Byte 20-23 kontrollera att det är ett nummer >0 och <32 i 32bit Big Ending.
+Byte 24-27 kontrollera att det är nummret 4020 i 32bit Big Ending.
+Byte 28-31 kontrollera att det är nummret 4020 i 32bit Big Ending.
+Byte 32-35 kontrollera att det är nummret 2820 i 32bit Big Ending.
+Byte 36-39 kontrollera att det är nummret 50020 i 32bit Big Ending.
+Byte 40-43 kontrollera att det är nummret 116 i 32bit Big Ending.

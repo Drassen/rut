@@ -1,0 +1,9 @@
+Pilot Database name: DTD30102025
+******* PilotHeader Generation ******
+Generation date: 30 - 10 - 2025
+******* PilotWaypoint Generation ******
+******* PilotAirport Generation ******
+******* PilotNavaid Generation ******
+******* PilotRoute Generation ******
+******* PilotCarac Generation ******
+******* Pilot Database Generation OK ******

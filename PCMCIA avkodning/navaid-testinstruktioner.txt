@@ -1,0 +1,28 @@
+#NAVAID.P01
+kontrollera att File size är: 4020
+
+Filheader, kontrollera följande:
+Byte 0-12 kontrollera att det inleds med lika många ettor som antalet navaids som kommer längre ned i filen. Och att de bara efterföljs av nollor.
+byte 13 kontrollera att det är 129+antal navaids (eller bara 128 om det är 100st navaids)
+byte 14 kontrollera att det är antal navaids*2
+byte 15 kontrollera att det är noll
+
+Kontrollera följande för varje navaid:
+navaid-byte 0 kontrollera att det är "11100000".
+navaid-byte 1,3 kontrollera att dessa bytes är noll.
+navaid-byte 2 kontrollera att den är "00110000" eller "01110000" eller "11110000".
+navaid-byte 2 kontrollera att denna navaids id inte finns i någon rutt om navaid-byte 2 är 00110000
+navaid-byte 2 kontrollera att denna navaids id finns i någon rutt om navaid-byte 2 är 01110000
+navaid-byte 2 kontrollera att denna navaids id finns i flera ruttr om navaid-byte 2 är 11110000
+navaid-byte 4-7 kontrollera att det det är godkända tecken i 6-bit eller noll i 6-bit.
+navaid-byte 8-11 kontrollera att det det är godkända tecken i 6-bit eller noll i 6-bit.
+navaid-byte 11 kontrollera att den avslutas med "00".
+navaid-byte 12-15 kontrollera att det det är godkända tecken i 6-bit eller noll i 6-bit.
+navaid-byte 15 kontrollera att den avslutas med "00".
+navaid-byte 16-19 kontrollera att det det är godkända tecken i 6-bit eller noll i 6-bit.
+navaid-byte 19 kontrollera att den avslutas med "00".
+navaid-byte 20-23 kontrollera att det är en signed big-endian float.
+navaid-byte 24-27 kontrollera att det är en signed big-endian float.
+navaid-byte 28-31 kontrollera att det är en signed big-endian float.
+navaid-byte 32-35 kontrollera att det är en signed big-endian float.
+navaid-byte 36-39 kontrollera att det är en signed big-endian float.

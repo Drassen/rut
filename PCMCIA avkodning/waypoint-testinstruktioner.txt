@@ -1,0 +1,25 @@
+#WAYPOINT.P01
+kontrollera att File size är: 2820
+
+Filheader, kontrollera följande:
+Byte 0-12 kontrollera att det inleds med lika många ettor som antalet waypoints som kommer längre ned i filen. Och att de bara efterföljs av nollor.
+byte 13 kontrollera att det är 129+antal waypoints (eller bara 128 om det är 100st waypoints)
+byte 14 kontrollera att det är antal waypoints*2
+byte 15 kontrollera att det är noll
+
+Kontrollera följande för varje waypoint:
+Kontrollera att waypointen är 28 bytes
+waypoint-byte 0-3 kontrollera att det är en signed big-endian float.
+waypoint-byte 4-7 kontrollera att det är en signed big-endian float.
+waypoint-byte 8-11 kontrollera att det det är godkända tecken i 6-bit eller noll i 6-bit.
+waypoint-byte 11 kontrollera att den avslutas med "00".
+waypoint-byte 12-15 kontrollera att det det är godkända tecken i 6-bit eller noll i 6-bit.
+waypoint-byte 15 kontrollera att den avslutas med "00".
+waypoint-byte 16-19 kontrollera att det det är godkända tecken i 6-bit eller noll i 6-bit.
+waypoint-byte 19 kontrollera att den avslutas med "00".
+waypoint-byte 20,22,23 kontrollera att dessa bytes är noll.
+waypoint-byte 21 kontrollera att denna byte är noll eller en decimalsiffra delbar med 8. (ex. 8,16,24,osv.)
+waypoint-byte 21 kontrollera att, om den inte är noll, så ska denna waypoints id finnas med i waypoint nummer(waypoint-byte 21 / 8).
+waypoint-byte 24-27 kontrollera att det är 5st godkända tecken i 6-bit med start på bit 6 i waypoint-byte 24.
+waypoint-byte 24 kontrollera att bit 7 är "1" (padding)
+waypoint-byte 27 kontrollera att bit 0 är "0" (padding)

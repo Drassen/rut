@@ -1,0 +1,10 @@
+Pilot Database name: DTD30102025
+******* PilotHeader Generation ******
+Generation date: 30 - 10 - 2025
+******* PilotWaypoint Generation ******
+******* PilotAirport Generation ******
+Airport 1 Name TTTT IcaoID TTTT Latitude 60,0m0s Longitude 18,0m0s LongestRunway 0 MagneticVariation 0 Elevation 0 Used in route 0
+******* PilotNavaid Generation ******
+******* PilotRoute Generation ******
+******* PilotCarac Generation ******
+******* Pilot Database Generation OK ******

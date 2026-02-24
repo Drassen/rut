@@ -1,0 +1,24 @@
+Pilot Database name: DTD31102025
+******* PilotHeader Generation ******
+Generation date: 31 - 10 - 2025
+******* PilotWaypoint Generation ******
+Waypoint 1 Name AAAAA ID AAAAA Latitude 57,30m0s Longitude 17,20m0s Used in route 2
+Waypoint 2 Name AAAAC ID AAAAC Latitude 57,30m0s Longitude 17,20m0s Used in route 0
+Waypoint 3 Name AAAAB ID AAAAB Latitude 57,30m0s Longitude 17,20m0s Used in route 2
+******* PilotAirport Generation ******
+Airport 1 Name QQQ1 IcaoID QQQ1 Latitude 59,0m0s Longitude 16,0m0s LongestRunway 0 MagneticVariation 0 Elevation 0 Used in route 0
+Airport 2 Name QQQ100000000000 IcaoID QQQ0 Latitude 59,0m0s Longitude 16,0m0s LongestRunway 0 MagneticVariation 0 Elevation 0 Used in route 1
+Airport 3 Name QQQ2 IcaoID QQQ2 Latitude 59,10m0s Longitude 16,10m0s LongestRunway 0 MagneticVariation 0 Elevation 0 Used in route 1
+******* PilotNavaid Generation ******
+******* PilotRoute Generation ******
+Route 1 ID ZERO - From Airport  To Airport 
+Route 1 Fix 1 Index 1 - Type PilotWaypoint - FirstID AAAAA SecondID AAAAA NavaidCat None
+Route 1 Fix 2 Index 3 - Type PilotWaypoint - FirstID AAAAB SecondID AAAAB NavaidCat None
+Route 2 ID RUTTAAAAA - From Airport  To Airport QQQ1
+Route 2 Fix 1 Index 1 - Type PilotWaypoint - FirstID AAAAA SecondID AAAAA NavaidCat None
+Route 2 Fix 2 Index 2 - Type PilotAirport - FirstID QQQ1 SecondID QQQ1 NavaidCat None
+Route 3 ID RUTTBBBBB - From Airport  To Airport QQQ2
+Route 3 Fix 1 Index 3 - Type PilotWaypoint - FirstID AAAAB SecondID AAAAB NavaidCat None
+Route 3 Fix 2 Index 3 - Type PilotAirport - FirstID QQQ2 SecondID QQQ2 NavaidCat None
+******* PilotCarac Generation ******
+******* Pilot Database Generation OK ******

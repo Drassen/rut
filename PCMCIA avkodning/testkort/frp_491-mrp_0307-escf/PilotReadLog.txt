@@ -1,0 +1,49 @@
+******* PilotHeader Loading ******
+Generation date: 3 - 10 - 2025
+Airport file size: 4020
+Navaid file size: 4020
+Waypoint file size: 2820
+Route file size: 50020
+Carac file size: 116
+Pilot Database name: DTD3102025  
+******* PilotWaypoint Loading ******
+Allocated elements: 5
+Waypoint 1 Name MRP-03          ID MRP-0 Latitude 58,33569 Longitude 15,41287 Used in Route 1
+Waypoint 2 Name MRP-02          ID MRP00 Latitude 58,44341 Longitude 15,41739 Used in Route 1
+Waypoint 3 Name MRP-01          ID MRP01 Latitude 58,46851 Longitude 15,47884 Used in Route 1
+Waypoint 4 Name MRP-05          ID MRP02 Latitude 58,47467 Longitude 16,06892 Used in Route 1
+Waypoint 5 Name MRP-04          ID MRP03 Latitude 58,51346 Longitude 15,90175 Used in Route 1
+******* PilotAirport Loading ******
+Allocated elements: 6
+Airport 1 Name MALMEN          IcaoID ESCF Latitude 58,39611 Longitude 15,52194 LongestRunway/Validity 0 / Undefined MagneticVariation/Validity 7 / Defined Elevation 309,0038 UsedInRoute 0
+Airport 2 Name SAAB            IcaoID ESSL Latitude 58,40639 Longitude 15,67972 LongestRunway/Validity 0 / Undefined MagneticVariation/Validity 6 / Defined Elevation 178,0022 UsedInRoute 0
+Airport 3 Name KUNGSANGEN      IcaoID ESSP Latitude 58,58611 Longitude 16,24639 LongestRunway/Validity 0 / Undefined MagneticVariation/Validity 6 / Defined Elevation 32,00039 UsedInRoute 0
+Airport 4 Name TOLE            IcaoID TOLE Latitude 58,41511 Longitude 15,45008 LongestRunway/Validity 0 / Undefined MagneticVariation/Validity 6,460842 / Defined Elevation 240 UsedInRoute 1
+Airport 5 Name ALVE            IcaoID ALVE Latitude 58,4465 Longitude 15,33006 LongestRunway/Validity 0 / Undefined MagneticVariation/Validity 6,423658 / Defined Elevation 226,378 UsedInRoute 1
+Airport 6 Name HACK            IcaoID HACK Latitude 58,34377 Longitude 15,5821 LongestRunway/Validity 0 / Undefined MagneticVariation/Validity 6,495212 / Defined Elevation 325 UsedInRoute 1
+******* PilotNavaid Loading ******
+Allocated elements: 4
+Navaid 1 Name 401             ID 401  Frequency 0 Latitude 58,54552 Longitude 15,48683 MagneticVariation 0 Elevation 279 - UsedInRoute 1 Category None FigureOfMerit ExtendedAltitudeUse
+Navaid 2 Name 403             ID 403  Frequency 0 Latitude 58,49112 Longitude 15,31728 MagneticVariation 0 Elevation 279 - UsedInRoute 1 Category None FigureOfMerit ExtendedAltitudeUse
+Navaid 3 Name 102             ID 102  Frequency 0 Latitude 58,54589 Longitude 15,69399 MagneticVariation 0 Elevation 302 - UsedInRoute 1 Category None FigureOfMerit ExtendedAltitudeUse
+Navaid 4 Name 104             ID 104  Frequency 0 Latitude 58,541 Longitude 15,85082 MagneticVariation 0 Elevation 118 - UsedInRoute 1 Category None FigureOfMerit ExtendedAltitudeUse
+******* PilotRoute Loading ******
+Allocated elements: 3
+Route 1 ID APTAPT     - From Airport ESCF To Airport ESSP
+Route 2 ID FYRA       - From Airport ESSL To Airport     
+Route 2 Fix 1 Index 0 - Type Airport - FirstID ESSL  SecondID      NavaidCat None
+Route 2 Fix 2 Index 1 - Type PilotNavaid - FirstID 401   SecondID      NavaidCat None
+Route 2 Fix 3 Index 2 - Type PilotNavaid - FirstID 403   SecondID      NavaidCat None
+Route 2 Fix 4 Index 3 - Type PilotWaypoint - FirstID MRP01 SecondID      NavaidCat None
+Route 2 Fix 5 Index 2 - Type PilotWaypoint - FirstID MRP00 SecondID      NavaidCat None
+Route 3 ID ELVA       - From Airport ESCF To Airport ESSP
+Route 3 Fix 1 Index 4 - Type PilotAirport - FirstID TOLE  SecondID      NavaidCat None
+Route 3 Fix 2 Index 5 - Type PilotAirport - FirstID ALVE  SecondID      NavaidCat None
+Route 3 Fix 3 Index 1 - Type PilotWaypoint - FirstID MRP-0 SecondID      NavaidCat None
+Route 3 Fix 4 Index 6 - Type PilotAirport - FirstID HACK  SecondID      NavaidCat None
+Route 3 Fix 5 Index 0 - Type Airport - FirstID ESSL  SecondID      NavaidCat None
+Route 3 Fix 6 Index 3 - Type PilotNavaid - FirstID 102   SecondID      NavaidCat None
+Route 3 Fix 7 Index 4 - Type PilotNavaid - FirstID 104   SecondID      NavaidCat None
+Route 3 Fix 8 Index 5 - Type PilotWaypoint - FirstID MRP03 SecondID      NavaidCat None
+Route 3 Fix 9 Index 4 - Type PilotWaypoint - FirstID MRP02 SecondID      NavaidCat None
+******* Pilot Database Loading OK ******

@@ -1,0 +1,48 @@
+******* PilotHeader Loading ******
+Generation date: 8 - 9 - 2025
+Airport file size: 4020
+Navaid file size: 4020
+Waypoint file size: 2820
+Route file size: 50020
+Carac file size: 116
+Pilot Database name: DTD892025   
+******* PilotWaypoint Loading ******
+Allocated elements: 10
+Waypoint 1 Name MRP-15          ID MRP-1 Latitude 56,18849 Longitude 15,59391 Used in Route 1
+Waypoint 2 Name MRP-14          ID MRP00 Latitude 56,18911 Longitude 15,60669 Used in Route 1
+Waypoint 3 Name MRP-13          ID MRP01 Latitude 56,19367 Longitude 15,70463 Used in Route 1
+Waypoint 4 Name MRP-12          ID MRP02 Latitude 56,20726 Longitude 15,81069 Used in Route 1
+Waypoint 5 Name MRP-16          ID MRP03 Latitude 56,24501 Longitude 15,45174 Used in Route 1
+Waypoint 6 Name MRP-11          ID MRP04 Latitude 56,24771 Longitude 15,8426 Used in Route 1
+Waypoint 7 Name MRP-09          ID MRP-0 Latitude 56,28364 Longitude 15,67826 Used in Route 1
+Waypoint 8 Name MRP-08          ID MRP05 Latitude 56,2915 Longitude 15,5239 Used in Route 1
+Waypoint 9 Name MRP-10          ID MRP06 Latitude 56,29834 Longitude 15,77178 Used in Route 1
+Waypoint 10 Name FALT            ID FALT  Latitude 58,15542 Longitude 15,89644 Used in Route 0
+******* PilotAirport Loading ******
+Allocated elements: 6
+Airport 1 Name MALMEN          IcaoID ESCF Latitude 58,39611 Longitude 15,52194 LongestRunway/Validity 0 / Undefined MagneticVariation/Validity 7 / Defined Elevation 309,0038 UsedInRoute 0
+Airport 2 Name SPEL            IcaoID SPEL Latitude 58,28475 Longitude 15,33691 LongestRunway/Validity 0 / Undefined MagneticVariation/Validity 6,384977 / Defined Elevation 347,769 UsedInRoute 1
+Airport 3 Name BACK            IcaoID BACK Latitude 56,34539 Longitude 15,12037 LongestRunway/Validity 0 / Undefined MagneticVariation/Validity 6,007182 / Defined Elevation 203 UsedInRoute 1
+Airport 4 Name ESDF            IcaoID ESDF Latitude 56,27152 Longitude 15,27992 LongestRunway/Validity 0 / Undefined MagneticVariation/Validity 6,046952 / Defined Elevation 177 UsedInRoute 3
+Airport 5 Name TVIN            IcaoID TVIN Latitude 56,32228 Longitude 15,44661 LongestRunway/Validity 0 / Undefined MagneticVariation/Validity 6,107648 / Defined Elevation 253 UsedInRoute 1
+Airport 6 Name LIST            IcaoID LIST Latitude 56,19857 Longitude 15,41335 LongestRunway/Validity 0 / Undefined MagneticVariation/Validity 6,078162 / Defined Elevation 79 UsedInRoute 1
+******* PilotNavaid Loading ******
+Allocated elements: 0
+******* PilotRoute Loading ******
+Allocated elements: 2
+Route 1 ID TILLRBY    - From Airport ESCF To Airport ESDF
+Route 1 Fix 1 Index 2 - Type PilotAirport - FirstID SPEL  SecondID      NavaidCat None
+Route 1 Fix 2 Index 3 - Type PilotAirport - FirstID BACK  SecondID      NavaidCat None
+Route 2 ID RBYRUTT    - From Airport ESDF To Airport ESDF
+Route 2 Fix 1 Index 5 - Type PilotAirport - FirstID TVIN  SecondID      NavaidCat None
+Route 2 Fix 2 Index 8 - Type PilotWaypoint - FirstID MRP05 SecondID      NavaidCat None
+Route 2 Fix 3 Index 7 - Type PilotWaypoint - FirstID MRP-0 SecondID      NavaidCat None
+Route 2 Fix 4 Index 9 - Type PilotWaypoint - FirstID MRP06 SecondID      NavaidCat None
+Route 2 Fix 5 Index 6 - Type PilotWaypoint - FirstID MRP04 SecondID      NavaidCat None
+Route 2 Fix 6 Index 4 - Type PilotWaypoint - FirstID MRP02 SecondID      NavaidCat None
+Route 2 Fix 7 Index 3 - Type PilotWaypoint - FirstID MRP01 SecondID      NavaidCat None
+Route 2 Fix 8 Index 2 - Type PilotWaypoint - FirstID MRP00 SecondID      NavaidCat None
+Route 2 Fix 9 Index 1 - Type PilotWaypoint - FirstID MRP-1 SecondID      NavaidCat None
+Route 2 Fix 10 Index 5 - Type PilotWaypoint - FirstID MRP03 SecondID      NavaidCat None
+Route 2 Fix 11 Index 6 - Type PilotAirport - FirstID LIST  SecondID      NavaidCat None
+******* Pilot Database Loading OK ******

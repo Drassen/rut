@@ -1,0 +1,213 @@
+******* PilotHeader Loading ******
+Generation date: 7 - 11 - 2025
+Airport file size: 4020
+Navaid file size: 4020
+Waypoint file size: 2820
+Route file size: 50020
+Carac file size: 116
+Pilot Database name: DTD7112025  
+******* PilotWaypoint Loading ******
+Allocated elements: 1
+Waypoint 1 Name A1111           ID A1111 Latitude 0 Longitude 0 Used in Route 1
+******* PilotAirport Loading ******
+Allocated elements: 93
+Airport 1 Name VIBY            IcaoID VIBY Latitude 58,37445 Longitude 15,32487 LongestRunway/Validity 0 / Undefined MagneticVariation/Validity 6,423804 / Defined Elevation 262,4672 UsedInRoute 0
+Airport 2 Name OSTR            IcaoID OSTR Latitude 58,48687 Longitude 15,74712 LongestRunway/Validity 0 / Undefined MagneticVariation/Validity 6,592309 / Defined Elevation 111,5486 UsedInRoute 0
+Airport 3 Name ALVE            IcaoID ALVE Latitude 58,4465 Longitude 15,33006 LongestRunway/Validity 0 / Undefined MagneticVariation/Validity 6,437764 / Defined Elevation 226,378 UsedInRoute 0
+Airport 4 Name VIKI            IcaoID VIKI Latitude 58,3712 Longitude 15,4242 LongestRunway/Validity 0 / Undefined MagneticVariation/Validity 6,458298 / Defined Elevation 276 UsedInRoute 0
+Airport 5 Name SNAV            IcaoID SNAV Latitude 58,5099 Longitude 15,57193 LongestRunway/Validity 0 / Undefined MagneticVariation/Validity 6,534325 / Defined Elevation 127,9528 UsedInRoute 0
+Airport 6 Name GIST            IcaoID GIST Latitude 58,45484 Longitude 15,84814 LongestRunway/Validity 0 / Undefined MagneticVariation/Validity 6,622294 / Defined Elevation 167,3228 UsedInRoute 0
+Airport 7 Name SPET            IcaoID SPET Latitude 58,29721 Longitude 15,85896 LongestRunway/Validity 0 / Undefined MagneticVariation/Validity 6,59813 / Defined Elevation 190,2887 UsedInRoute 0
+Airport 8 Name LJUN            IcaoID LJUN Latitude 58,52415 Longitude 15,38606 LongestRunway/Validity 0 / Undefined MagneticVariation/Validity 6,470793 / Defined Elevation 269,0289 UsedInRoute 0
+Airport 9 Name ESCF            IcaoID ESCF Latitude 58,40129 Longitude 15,52576 LongestRunway/Validity 0 / Undefined MagneticVariation/Validity 6,499252 / Defined Elevation 282,1522 UsedInRoute 0
+Airport 10 Name TOLE            IcaoID TOLE Latitude 58,41511 Longitude 15,45008 LongestRunway/Validity 0 / Undefined MagneticVariation/Validity 6,474902 / Defined Elevation 240 UsedInRoute 0
+Airport 11 Name SKED            IcaoID SKED Latitude 58,28437 Longitude 15,57129 LongestRunway/Validity 0 / Undefined MagneticVariation/Validity 6,495187 / Defined Elevation 380,5774 UsedInRoute 0
+Airport 12 Name AMYN            IcaoID AMYN Latitude 58,44371 Longitude 15,62298 LongestRunway/Validity 0 / Undefined MagneticVariation/Validity 6,540897 / Defined Elevation 108,2677 UsedInRoute 0
+Airport 13 Name HACK            IcaoID HACK Latitude 58,34377 Longitude 15,5821 LongestRunway/Validity 0 / Undefined MagneticVariation/Validity 6,509199 / Defined Elevation 325 UsedInRoute 0
+Airport 14 Name SPEL            IcaoID SPEL Latitude 58,28475 Longitude 15,33691 LongestRunway/Validity 0 / Undefined MagneticVariation/Validity 6,412995 / Defined Elevation 347,769 UsedInRoute 0
+Airport 15 Name HOVE            IcaoID HOVE Latitude 58,30975 Longitude 15,7335 LongestRunway/Validity 0 / Undefined MagneticVariation/Validity 6,556424 / Defined Elevation 285,4331 UsedInRoute 0
+Airport 16 Name LIND            IcaoID LIND Latitude 56,12015 Longitude 15,34577 LongestRunway/Validity 0 / Undefined MagneticVariation/Validity 6,070558 / Defined Elevation 0 UsedInRoute 0
+Airport 17 Name BRAK            IcaoID BRAK Latitude 56,2164 Longitude 15,09685 LongestRunway/Validity 0 / Undefined MagneticVariation/Validity 6,006424 / Defined Elevation 75 UsedInRoute 0
+Airport 18 Name ERIN            IcaoID ERIN Latitude 56,45831 Longitude 15,37312 LongestRunway/Validity 0 / Undefined MagneticVariation/Validity 6,131064 / Defined Elevation 384 UsedInRoute 0
+Airport 19 Name SODE            IcaoID SODE Latitude 56,14941 Longitude 15,58986 LongestRunway/Validity 0 / Undefined MagneticVariation/Validity 6,151754 / Defined Elevation 0 UsedInRoute 0
+Airport 20 Name LIST            IcaoID LIST Latitude 56,19857 Longitude 15,41335 LongestRunway/Validity 0 / Undefined MagneticVariation/Validity 6,103816 / Defined Elevation 79 UsedInRoute 0
+Airport 21 Name SALT            IcaoID SALT Latitude 56,12781 Longitude 15,11766 LongestRunway/Validity 0 / Undefined MagneticVariation/Validity 5,999866 / Defined Elevation 0 UsedInRoute 0
+Airport 22 Name BACK            IcaoID BACK Latitude 56,34539 Longitude 15,12037 LongestRunway/Validity 0 / Undefined MagneticVariation/Validity 6,033134 / Defined Elevation 203 UsedInRoute 0
+Airport 23 Name TVIN            IcaoID TVIN Latitude 56,32228 Longitude 15,44661 LongestRunway/Validity 0 / Undefined MagneticVariation/Validity 6,133421 / Defined Elevation 253 UsedInRoute 0
+Airport 24 Name MOFA            IcaoID MOFA Latitude 58,35599 Longitude 14,19862 LongestRunway/Validity 0 / Undefined MagneticVariation/Validity 6,021059 / Defined Elevation 518 UsedInRoute 0
+Airport 25 Name NESS            IcaoID NESS Latitude 58,47699 Longitude 14,82771 LongestRunway/Validity 0 / Undefined MagneticVariation/Validity 6,264184 / Defined Elevation 292 UsedInRoute 0
+Airport 26 Name MOSS            IcaoID MOSS Latitude 58,52499 Longitude 14,2427 LongestRunway/Validity 0 / Undefined MagneticVariation/Validity 6,062026 / Defined Elevation 328 UsedInRoute 0
+Airport 27 Name ESIA            IcaoID ESIA Latitude 58,51439 Longitude 14,5096 LongestRunway/Validity 0 / Undefined MagneticVariation/Validity 6,156286 / Defined Elevation 299 UsedInRoute 0
+Airport 28 Name GRAN            IcaoID GRAN Latitude 58,6332 Longitude 14,54135 LongestRunway/Validity 0 / Undefined MagneticVariation/Validity 6,186155 / Defined Elevation 394 UsedInRoute 0
+Airport 29 Name SVAR            IcaoID SVAR Latitude 59,37279 Longitude 17,7438 LongestRunway/Validity 0 / Undefined MagneticVariation/Validity 7,482007 / Defined Elevation 69 UsedInRoute 0
+Airport 30 Name FRIH            IcaoID FRIH Latitude 59,34401 Longitude 18,1288 LongestRunway/Validity 0 / Undefined MagneticVariation/Validity 7,614617 / Defined Elevation 0 UsedInRoute 0
+Airport 31 Name BOSO            IcaoID BOSO Latitude 59,38473 Longitude 18,16425 LongestRunway/Validity 0 / Undefined MagneticVariation/Validity 7,636657 / Defined Elevation 0 UsedInRoute 0
+Airport 32 Name KANA            IcaoID KANA Latitude 59,35273 Longitude 17,85679 LongestRunway/Validity 0 / Undefined MagneticVariation/Validity 7,518444 / Defined Elevation 69 UsedInRoute 0
+Airport 33 Name GOLF            IcaoID GOLF Latitude 59,34414 Longitude 17,93927 LongestRunway/Validity 0 / Undefined MagneticVariation/Validity 7,546315 / Defined Elevation 59 UsedInRoute 0
+Airport 34 Name RINK            IcaoID RINK Latitude 59,38862 Longitude 17,9417 LongestRunway/Validity 0 / Undefined MagneticVariation/Validity 7,55714 / Defined Elevation 30 UsedInRoute 0
+Airport 35 Name KUNG            IcaoID KUNG Latitude 59,29496 Longitude 17,88419 LongestRunway/Validity 0 / Undefined MagneticVariation/Validity 7,515506 / Defined Elevation 52 UsedInRoute 0
+Airport 36 Name ESHT            IcaoID ESHT Latitude 59,34074 Longitude 18,10388 LongestRunway/Validity 0 / Undefined MagneticVariation/Validity 7,6049 / Defined Elevation 33 UsedInRoute 0
+Airport 37 Name KROG            IcaoID KROG Latitude 59,3774 Longitude 18,015 LongestRunway/Validity 0 / Undefined MagneticVariation/Validity 7,581115 / Defined Elevation 3 UsedInRoute 0
+Airport 38 Name EDSV            IcaoID EDSV Latitude 59,42676 Longitude 18,01161 LongestRunway/Validity 0 / Undefined MagneticVariation/Validity 7,591011 / Defined Elevation 157 UsedInRoute 0
+Airport 39 Name LAMB            IcaoID LAMB Latitude 59,3528 Longitude 17,8121 LongestRunway/Validity 0 / Undefined MagneticVariation/Validity 7,502307 / Defined Elevation 3 UsedInRoute 0
+Airport 40 Name BALL            IcaoID BALL Latitude 59,36023 Longitude 17,96257 LongestRunway/Validity 0 / Undefined MagneticVariation/Validity 7,558325 / Defined Elevation 13 UsedInRoute 0
+Airport 41 Name MESS            IcaoID MESS Latitude 59,2775 Longitude 18,0181 LongestRunway/Validity 0 / Undefined MagneticVariation/Validity 7,559789 / Defined Elevation 66 UsedInRoute 0
+Airport 42 Name ALVN            IcaoID ALVN Latitude 59,29547 Longitude 17,74552 LongestRunway/Validity 0 / Undefined MagneticVariation/Validity 7,465638 / Defined Elevation 3 UsedInRoute 0
+Airport 43 Name SOLV            IcaoID SOLV Latitude 59,36806 Longitude 17,94165 LongestRunway/Validity 0 / Undefined MagneticVariation/Validity 7,552522 / Defined Elevation 3 UsedInRoute 0
+Airport 44 Name BJOR            IcaoID BJOR Latitude 59,31018 Longitude 17,94117 LongestRunway/Validity 0 / Undefined MagneticVariation/Validity 7,539418 / Defined Elevation 62 UsedInRoute 0
+Airport 45 Name LIVG            IcaoID LIVG Latitude 59,51863 Longitude 17,78213 LongestRunway/Validity 0 / Undefined MagneticVariation/Validity 7,528182 / Defined Elevation 56 UsedInRoute 0
+Airport 46 Name VADA            IcaoID VADA Latitude 59,5879 Longitude 18,21535 LongestRunway/Validity 0 / Undefined MagneticVariation/Validity 7,701777 / Defined Elevation 7 UsedInRoute 0
+Airport 47 Name ODEN            IcaoID ODEN Latitude 59,66398 Longitude 17,84745 LongestRunway/Validity 0 / Undefined MagneticVariation/Validity 7,584552 / Defined Elevation 62 UsedInRoute 0
+Airport 48 Name VASS            IcaoID VASS Latitude 59,70643 Longitude 17,74284 LongestRunway/Validity 0 / Undefined MagneticVariation/Validity 7,555594 / Defined Elevation 92 UsedInRoute 0
+Airport 49 Name MARK            IcaoID MARK Latitude 59,60714 Longitude 18,06335 LongestRunway/Validity 0 / Undefined MagneticVariation/Validity 7,650741 / Defined Elevation 43 UsedInRoute 0
+Airport 50 Name SKED            IcaoID SK00 Latitude 59,77008 Longitude 18,26021 LongestRunway/Validity 0 / Undefined MagneticVariation/Validity 7,760468 / Defined Elevation 49 UsedInRoute 0
+Airport 51 Name BALI            IcaoID BALI Latitude 59,94605 Longitude 17,48256 LongestRunway/Validity 0 / Undefined MagneticVariation/Validity 7,512201 / Defined Elevation 102 UsedInRoute 0
+Airport 52 Name UPPS            IcaoID UPPS Latitude 59,78939 Longitude 17,60381 LongestRunway/Validity 0 / Undefined MagneticVariation/Validity 7,522692 / Defined Elevation 75 UsedInRoute 0
+Airport 53 Name LABY            IcaoID LABY Latitude 59,84404 Longitude 17,52434 LongestRunway/Validity 0 / Undefined MagneticVariation/Validity 7,505282 / Defined Elevation 95 UsedInRoute 0
+Airport 54 Name FROT            IcaoID FROT Latitude 59,90302 Longitude 17,84525 LongestRunway/Validity 0 / Undefined MagneticVariation/Validity 7,637709 / Defined Elevation 79 UsedInRoute 0
+Airport 55 Name JUMK            IcaoID JUMK Latitude 59,95544 Longitude 17,4024 LongestRunway/Validity 0 / Undefined MagneticVariation/Validity 7,484296 / Defined Elevation 128 UsedInRoute 0
+Airport 56 Name VAKS            IcaoID VAKS Latitude 59,88209 Longitude 17,68523 LongestRunway/Validity 0 / Undefined MagneticVariation/Validity 7,573527 / Defined Elevation 62 UsedInRoute 0
+Airport 57 Name BJOK            IcaoID BJOK Latitude 60,03407 Longitude 17,60995 LongestRunway/Validity 0 / Undefined MagneticVariation/Validity 7,579426 / Defined Elevation 105 UsedInRoute 0
+Airport 58 Name SKOG            IcaoID SKOG Latitude 59,83278 Longitude 17,31322 LongestRunway/Validity 0 / Undefined MagneticVariation/Validity 7,424313 / Defined Elevation 85 UsedInRoute 0
+Airport 59 Name STOR            IcaoID STOR Latitude 59,96226 Longitude 17,67594 LongestRunway/Validity 0 / Undefined MagneticVariation/Validity 7,588024 / Defined Elevation 72 UsedInRoute 0
+Airport 60 Name DANM            IcaoID DANM Latitude 59,83357 Longitude 17,75358 LongestRunway/Validity 0 / Undefined MagneticVariation/Validity 7,58802 / Defined Elevation 89 UsedInRoute 0
+Airport 61 Name ROND            IcaoID ROND Latitude 59,84293 Longitude 17,71081 LongestRunway/Validity 0 / Undefined MagneticVariation/Validity 7,574262 / Defined Elevation 30 UsedInRoute 0
+Airport 62 Name VATT            IcaoID VATT Latitude 60,01686 Longitude 17,7458 LongestRunway/Validity 0 / Undefined MagneticVariation/Validity 7,62642 / Defined Elevation 131 UsedInRoute 0
+Airport 63 Name SKUT            IcaoID SKUT Latitude 59,99779 Longitude 17,51778 LongestRunway/Validity 0 / Undefined MagneticVariation/Validity 7,536816 / Defined Elevation 95 UsedInRoute 0
+Airport 64 Name TOFT            IcaoID TOFT Latitude 57,58539 Longitude 18,16538 LongestRunway/Validity 0 / Undefined MagneticVariation/Validity 7,241972 / Defined Elevation 0 UsedInRoute 0
+Airport 65 Name ENDR            IcaoID ENDR Latitude 57,59994 Longitude 18,47388 LongestRunway/Validity 0 / Undefined MagneticVariation/Validity 7,346334 / Defined Elevation 141 UsedInRoute 0
+Airport 66 Name KARL            IcaoID KARL Latitude 57,72165 Longitude 18,221 LongestRunway/Validity 0 / Undefined MagneticVariation/Validity 7,289256 / Defined Elevation 0 UsedInRoute 0
+Airport 67 Name LOKR            IcaoID LOKR Latitude 57,68545 Longitude 18,52734 LongestRunway/Validity 0 / Undefined MagneticVariation/Validity 7,382505 / Defined Elevation 164 UsedInRoute 0
+Airport 68 Name ESED            IcaoID ESED Latitude 62,40806 Longitude 17,30215 LongestRunway/Validity 0 / Undefined MagneticVariation/Validity 6,35902 / Defined Elevation 406,8242 UsedInRoute 0
+Airport 69 Name ESHK            IcaoID ESHK Latitude 59,35083 Longitude 18,03483 LongestRunway/Validity 0 / Undefined MagneticVariation/Validity 6,13161 / Defined Elevation 98,42519 UsedInRoute 0
+Airport 70 Name ESHL            IcaoID ESHL Latitude 59,2185 Longitude 17,93383 LongestRunway/Validity 0 / Undefined MagneticVariation/Validity 6,07136 / Defined Elevation 180,4462 UsedInRoute 0
+Airport 71 Name ESHQ            IcaoID ESHQ Latitude 59,27472 Longitude 15,22908 LongestRunway/Validity 0 / Undefined MagneticVariation/Validity 6,542812 / Defined Elevation 165 UsedInRoute 0
+Airport 72 Name ESJL            IcaoID ESJL Latitude 58,401 Longitude 15,61833 LongestRunway/Validity 0 / Undefined MagneticVariation/Validity 5,09074 / Defined Elevation 252,6247 UsedInRoute 0
+Airport 73 Name ESHU            IcaoID ESHU Latitude 59,84717 Longitude 17,64133 LongestRunway/Validity 0 / Undefined MagneticVariation/Validity 6,06382 / Defined Elevation 49,2126 UsedInRoute 0
+Airport 74 Name ESJM            IcaoID ESJM Latitude 61,017 Longitude 14,58383 LongestRunway/Validity 0 / Undefined MagneticVariation/Validity 6,597098 / Defined Elevation 646 UsedInRoute 0
+Airport 75 Name ESHC            IcaoID ESHC Latitude 59,30845 Longitude 18,05474 LongestRunway/Validity 0 / Undefined MagneticVariation/Validity 6,13066 / Defined Elevation 3,28084 UsedInRoute 0
+Airport 76 Name ESHD            IcaoID ESHD Latitude 59,39133 Longitude 18,03367 LongestRunway/Validity 0 / Undefined MagneticVariation/Validity 6,13802 / Defined Elevation 3,28084 UsedInRoute 0
+Airport 77 Name ESEW            IcaoID ESEW Latitude 59,616 Longitude 16,5825 LongestRunway/Validity 0 / Undefined MagneticVariation/Validity 5,61703 / Defined Elevation 78,74016 UsedInRoute 0
+Airport 78 Name SF02            IcaoID SF02 Latitude 63,17191 Longitude 16,98636 LongestRunway/Validity 0 / Undefined MagneticVariation/Validity 8,056275 / Defined Elevation 420 UsedInRoute 0
+Airport 79 Name SF13            IcaoID SF13 Latitude 58,39682 Longitude 15,39997 LongestRunway/Validity 0 / Undefined MagneticVariation/Validity 6,454094 / Defined Elevation 262 UsedInRoute 0
+Airport 80 Name SF08            IcaoID SF08 Latitude 59,35119 Longitude 17,94842 LongestRunway/Validity 0 / Undefined MagneticVariation/Validity 7,551193 / Defined Elevation 30 UsedInRoute 0
+Airport 81 Name SF15            IcaoID SF15 Latitude 57,06899 Longitude 16,4662 LongestRunway/Validity 0 / Undefined MagneticVariation/Validity 6,585476 / Defined Elevation 20 UsedInRoute 0
+Airport 82 Name SF10            IcaoID SF10 Latitude 58,36911 Longitude 11,77794 LongestRunway/Validity 0 / Undefined MagneticVariation/Validity 5,146781 / Defined Elevation 180 UsedInRoute 0
+Airport 83 Name SF05            IcaoID SF05 Latitude 61,27002 Longitude 17,09214 LongestRunway/Validity 0 / Undefined MagneticVariation/Validity 7,656425 / Defined Elevation 85 UsedInRoute 0
+Airport 84 Name SF12            IcaoID SF12 Latitude 57,82064 Longitude 14,0711 LongestRunway/Validity 0 / Undefined MagneticVariation/Validity 5,898503 / Defined Elevation 755 UsedInRoute 0
+Airport 85 Name SF07            IcaoID SF07 Latitude 59,58114 Longitude 16,62666 LongestRunway/Validity 0 / Undefined MagneticVariation/Validity 7,116988 / Defined Elevation 7 UsedInRoute 0
+Airport 86 Name SF14            IcaoID SF14 Latitude 57,53325 Longitude 15,85611 LongestRunway/Validity 0 / Undefined MagneticVariation/Validity 6,464361 / Defined Elevation 354 UsedInRoute 0
+Airport 87 Name SF09            IcaoID SF09 Latitude 59,2907 Longitude 14,70474 LongestRunway/Validity 0 / Undefined MagneticVariation/Validity 6,351144 / Defined Elevation 502 UsedInRoute 0
+Airport 88 Name SF04            IcaoID SF04 Latitude 61,38347 Longitude 13,71196 LongestRunway/Validity 0 / Undefined MagneticVariation/Validity 6,302159 / Defined Elevation 1493 UsedInRoute 0
+Airport 89 Name SF03            IcaoID SF03 Latitude 62,40745 Longitude 17,23577 LongestRunway/Validity 0 / Undefined MagneticVariation/Validity 7,979565 / Defined Elevation 23 UsedInRoute 0
+Airport 90 Name SF01            IcaoID SF01 Latitude 63,73549 Longitude 15,45733 LongestRunway/Validity 0 / Undefined MagneticVariation/Validity 7,504537 / Defined Elevation 1122 UsedInRoute 0
+Airport 91 Name SF16            IcaoID SF16 Latitude 55,84814 Longitude 13,32324 LongestRunway/Validity 0 / Undefined MagneticVariation/Validity 5,394335 / Defined Elevation 276 UsedInRoute 0
+Airport 92 Name SF11            IcaoID SF11 Latitude 58,05116 Longitude 13,09658 LongestRunway/Validity 0 / Undefined MagneticVariation/Validity 5,586378 / Defined Elevation 433 UsedInRoute 0
+Airport 93 Name SF06            IcaoID SF06 Latitude 60,42999 Longitude 15,49099 LongestRunway/Validity 0 / Undefined MagneticVariation/Validity 6,85068 / Defined Elevation 505 UsedInRoute 0
+******* PilotNavaid Loading ******
+Allocated elements: 100
+Navaid 1 Name 226             ID 226  Frequency 0 Latitude 58,28494 Longitude 16,44171 MagneticVariation 0 Elevation 184 - UsedInRoute 0 Category None FigureOfMerit ExtendedAltitudeUse
+Navaid 2 Name 321             ID 321  Frequency 0 Latitude 58,17764 Longitude 15,37358 MagneticVariation 0 Elevation 522 - UsedInRoute 0 Category None FigureOfMerit ExtendedAltitudeUse
+Navaid 3 Name 211             ID 211  Frequency 0 Latitude 58,24152 Longitude 15,90564 MagneticVariation 0 Elevation 285 - UsedInRoute 0 Category None FigureOfMerit ExtendedAltitudeUse
+Navaid 4 Name 406             ID 406  Frequency 0 Latitude 58,66739 Longitude 15,05163 MagneticVariation 0 Elevation 410 - UsedInRoute 0 Category None FigureOfMerit ExtendedAltitudeUse
+Navaid 5 Name 405             ID 405  Frequency 0 Latitude 58,68083 Longitude 15,48092 MagneticVariation 0 Elevation 190,2887 - UsedInRoute 0 Category None FigureOfMerit ExtendedAltitudeUse
+Navaid 6 Name 424             ID 424  Frequency 0 Latitude 58,84291 Longitude 15,46029 MagneticVariation 0 Elevation 301,8373 - UsedInRoute 0 Category None FigureOfMerit ExtendedAltitudeUse
+Navaid 7 Name 229             ID 229  Frequency 0 Latitude 57,83471 Longitude 15,59522 MagneticVariation 0 Elevation 581 - UsedInRoute 0 Category None FigureOfMerit ExtendedAltitudeUse
+Navaid 8 Name 316             ID 316  Frequency 0 Latitude 58,18729 Longitude 15,21066 MagneticVariation 0 Elevation 466 - UsedInRoute 0 Category None FigureOfMerit ExtendedAltitudeUse
+Navaid 9 Name 214             ID 214  Frequency 0 Latitude 58,29191 Longitude 16,28813 MagneticVariation 0 Elevation 131 - UsedInRoute 0 Category None FigureOfMerit ExtendedAltitudeUse
+Navaid 10 Name 410             ID 410  Frequency 0 Latitude 58,72347 Longitude 15,28641 MagneticVariation 0 Elevation 322 - UsedInRoute 0 Category None FigureOfMerit ExtendedAltitudeUse
+Navaid 11 Name 111             ID 111  Frequency 0 Latitude 58,89993 Longitude 15,75378 MagneticVariation 0 Elevation 177 - UsedInRoute 0 Category None FigureOfMerit ExtendedAltitudeUse
+Navaid 12 Name S02             ID S02  Frequency 0 Latitude 61,12314 Longitude 13,94416 MagneticVariation 0 Elevation 1565 - UsedInRoute 0 Category None FigureOfMerit ExtendedAltitudeUse
+Navaid 13 Name 419             ID 419  Frequency 0 Latitude 58,62613 Longitude 15,23929 MagneticVariation 0 Elevation 252,6247 - UsedInRoute 0 Category None FigureOfMerit ExtendedAltitudeUse
+Navaid 14 Name 317             ID 317  Frequency 0 Latitude 58,03028 Longitude 15,51477 MagneticVariation 0 Elevation 374 - UsedInRoute 0 Category None FigureOfMerit ExtendedAltitudeUse
+Navaid 15 Name 324             ID 324  Frequency 0 Latitude 57,92992 Longitude 15,42522 MagneticVariation 0 Elevation 568 - UsedInRoute 0 Category None FigureOfMerit ExtendedAltitudeUse
+Navaid 16 Name 202             ID 202  Frequency 0 Latitude 58,00997 Longitude 15,82614 MagneticVariation 0 Elevation 299 - UsedInRoute 0 Category None FigureOfMerit ExtendedAltitudeUse
+Navaid 17 Name S42             ID S42  Frequency 0 Latitude 61,00127 Longitude 14,10076 MagneticVariation 0 Elevation 1506 - UsedInRoute 0 Category None FigureOfMerit ExtendedAltitudeUse
+Navaid 18 Name 409             ID 409  Frequency 0 Latitude 58,70392 Longitude 15,29451 MagneticVariation 0 Elevation 190,2887 - UsedInRoute 0 Category None FigureOfMerit ExtendedAltitudeUse
+Navaid 19 Name 413             ID 413  Frequency 0 Latitude 58,78698 Longitude 15,39099 MagneticVariation 0 Elevation 292 - UsedInRoute 0 Category None FigureOfMerit ExtendedAltitudeUse
+Navaid 20 Name 421             ID 421  Frequency 0 Latitude 58,93912 Longitude 15,25675 MagneticVariation 0 Elevation 380,5774 - UsedInRoute 0 Category None FigureOfMerit ExtendedAltitudeUse
+Navaid 21 Name 114             ID 114  Frequency 0 Latitude 58,96496 Longitude 15,65483 MagneticVariation 0 Elevation 276 - UsedInRoute 0 Category None FigureOfMerit ExtendedAltitudeUse
+Navaid 22 Name 303             ID 303  Frequency 0 Latitude 58,07714 Longitude 15,25642 MagneticVariation 0 Elevation 535 - UsedInRoute 0 Category None FigureOfMerit ExtendedAltitudeUse
+Navaid 23 Name 116             ID 116  Frequency 0 Latitude 58,76187 Longitude 16,40581 MagneticVariation 0 Elevation 174 - UsedInRoute 0 Category None FigureOfMerit ExtendedAltitudeUse
+Navaid 24 Name 221             ID 221  Frequency 0 Latitude 57,99219 Longitude 16,21339 MagneticVariation 0 Elevation 177 - UsedInRoute 0 Category None FigureOfMerit ExtendedAltitudeUse
+Navaid 25 Name 307             ID 307  Frequency 0 Latitude 58,29118 Longitude 15,03453 MagneticVariation 0 Elevation 479 - UsedInRoute 0 Category None FigureOfMerit ExtendedAltitudeUse
+Navaid 26 Name 103             ID 103  Frequency 0 Latitude 58,88659 Longitude 15,58564 MagneticVariation 0 Elevation 243 - UsedInRoute 0 Category None FigureOfMerit ExtendedAltitudeUse
+Navaid 27 Name 225             ID 225  Frequency 0 Latitude 58,12686 Longitude 16,40592 MagneticVariation 0 Elevation 121 - UsedInRoute 0 Category None FigureOfMerit ExtendedAltitudeUse
+Navaid 28 Name 418             ID 418  Frequency 0 Latitude 58,74007 Longitude 15,52786 MagneticVariation 0 Elevation 203 - UsedInRoute 0 Category None FigureOfMerit ExtendedAltitudeUse
+Navaid 29 Name 209             ID 209  Frequency 0 Latitude 58,12239 Longitude 15,79908 MagneticVariation 0 Elevation 338 - UsedInRoute 0 Category None FigureOfMerit ExtendedAltitudeUse
+Navaid 30 Name 101             ID 101  Frequency 0 Latitude 58,70108 Longitude 15,62448 MagneticVariation 0 Elevation 190 - UsedInRoute 0 Category None FigureOfMerit ExtendedAltitudeUse
+Navaid 31 Name 401             ID 401  Frequency 0 Latitude 58,54552 Longitude 15,48683 MagneticVariation 0 Elevation 279 - UsedInRoute 0 Category None FigureOfMerit ExtendedAltitudeUse
+Navaid 32 Name 205             ID 205  Frequency 0 Latitude 58,05843 Longitude 15,96275 MagneticVariation 0 Elevation 430 - UsedInRoute 0 Category None FigureOfMerit ExtendedAltitudeUse
+Navaid 33 Name 208             ID 208  Frequency 0 Latitude 58,11997 Longitude 15,81573 MagneticVariation 0 Elevation 364 - UsedInRoute 0 Category None FigureOfMerit ExtendedAltitudeUse
+Navaid 34 Name 404             ID 404  Frequency 0 Latitude 58,45075 Longitude 15,16119 MagneticVariation 0 Elevation 325 - UsedInRoute 0 Category None FigureOfMerit ExtendedAltitudeUse
+Navaid 35 Name 106             ID 106  Frequency 0 Latitude 58,79902 Longitude 15,62573 MagneticVariation 0 Elevation 233 - UsedInRoute 0 Category None FigureOfMerit ExtendedAltitudeUse
+Navaid 36 Name 423             ID 423  Frequency 0 Latitude 58,77229 Longitude 15,28568 MagneticVariation 0 Elevation 410 - UsedInRoute 0 Category None FigureOfMerit ExtendedAltitudeUse
+Navaid 37 Name 429             ID 429  Frequency 0 Latitude 58,78006 Longitude 15,0225 MagneticVariation 0 Elevation 351 - UsedInRoute 0 Category None FigureOfMerit ExtendedAltitudeUse
+Navaid 38 Name 310             ID 310  Frequency 0 Latitude 58,03105 Longitude 15,47848 MagneticVariation 0 Elevation 472 - UsedInRoute 0 Category None FigureOfMerit ExtendedAltitudeUse
+Navaid 39 Name 109             ID 109  Frequency 0 Latitude 58,82386 Longitude 15,86462 MagneticVariation 0 Elevation 190 - UsedInRoute 0 Category None FigureOfMerit ExtendedAltitudeUse
+Navaid 40 Name 311             ID 311  Frequency 0 Latitude 58,21137 Longitude 14,86586 MagneticVariation 0 Elevation 479,0026 - UsedInRoute 0 Category None FigureOfMerit ExtendedAltitudeUse
+Navaid 41 Name 315             ID 315  Frequency 0 Latitude 58,20503 Longitude 15,30711 MagneticVariation 0 Elevation 453 - UsedInRoute 0 Category None FigureOfMerit ExtendedAltitudeUse
+Navaid 42 Name 110             ID 110  Frequency 0 Latitude 58,61613 Longitude 15,72172 MagneticVariation 0 Elevation 223,0971 - UsedInRoute 0 Category None FigureOfMerit ExtendedAltitudeUse
+Navaid 43 Name 228             ID 228  Frequency 0 Latitude 57,80693 Longitude 15,88074 MagneticVariation 0 Elevation 440 - UsedInRoute 0 Category None FigureOfMerit ExtendedAltitudeUse
+Navaid 44 Name 117             ID 117  Frequency 0 Latitude 58,94133 Longitude 15,83098 MagneticVariation 0 Elevation 154 - UsedInRoute 0 Category None FigureOfMerit ExtendedAltitudeUse
+Navaid 45 Name 213             ID 213  Frequency 0 Latitude 58,2179 Longitude 16,15216 MagneticVariation 0 Elevation 233 - UsedInRoute 0 Category None FigureOfMerit ExtendedAltitudeUse
+Navaid 46 Name 408             ID 408  Frequency 0 Latitude 58,69911 Longitude 15,28198 MagneticVariation 0 Elevation 282 - UsedInRoute 0 Category None FigureOfMerit ExtendedAltitudeUse
+Navaid 47 Name 412             ID 412  Frequency 0 Latitude 58,6919 Longitude 15,13914 MagneticVariation 0 Elevation 377 - UsedInRoute 0 Category None FigureOfMerit ExtendedAltitudeUse
+Navaid 48 Name 301             ID 301  Frequency 0 Latitude 58,1567 Longitude 15,25071 MagneticVariation 0 Elevation 466 - UsedInRoute 0 Category None FigureOfMerit ExtendedAltitudeUse
+Navaid 49 Name 318             ID 318  Frequency 0 Latitude 58,18744 Longitude 15,25642 MagneticVariation 0 Elevation 489 - UsedInRoute 0 Category None FigureOfMerit ExtendedAltitudeUse
+Navaid 50 Name 219             ID 219  Frequency 0 Latitude 58,15874 Longitude 16,28587 MagneticVariation 0 Elevation 226 - UsedInRoute 0 Category None FigureOfMerit ExtendedAltitudeUse
+Navaid 51 Name 312             ID 312  Frequency 0 Latitude 57,75871 Longitude 15,15642 MagneticVariation 0 Elevation 830,0525 - UsedInRoute 0 Category None FigureOfMerit ExtendedAltitudeUse
+Navaid 52 Name 322             ID 322  Frequency 0 Latitude 57,82786 Longitude 15,44333 MagneticVariation 0 Elevation 568 - UsedInRoute 0 Category None FigureOfMerit ExtendedAltitudeUse
+Navaid 53 Name 113             ID 113  Frequency 0 Latitude 58,95433 Longitude 15,92743 MagneticVariation 0 Elevation 154 - UsedInRoute 0 Category None FigureOfMerit ExtendedAltitudeUse
+Navaid 54 Name S41             ID S41  Frequency 0 Latitude 61,01075 Longitude 14,08942 MagneticVariation 0 Elevation 1424 - UsedInRoute 0 Category None FigureOfMerit ExtendedAltitudeUse
+Navaid 55 Name 204             ID 204  Frequency 0 Latitude 57,96254 Longitude 15,89237 MagneticVariation 0 Elevation 348 - UsedInRoute 0 Category None FigureOfMerit ExtendedAltitudeUse
+Navaid 56 Name S01             ID S01  Frequency 0 Latitude 61,2685 Longitude 13,62504 MagneticVariation 0 Elevation 1381 - UsedInRoute 0 Category None FigureOfMerit ExtendedAltitudeUse
+Navaid 57 Name 327             ID 327  Frequency 0 Latitude 58,15372 Longitude 15,36243 MagneticVariation 0 Elevation 574 - UsedInRoute 0 Category None FigureOfMerit ExtendedAltitudeUse
+Navaid 58 Name 215             ID 215  Frequency 0 Latitude 57,83477 Longitude 15,70567 MagneticVariation 0 Elevation 515 - UsedInRoute 0 Category None FigureOfMerit ExtendedAltitudeUse
+Navaid 59 Name 305             ID 305  Frequency 0 Latitude 58,14223 Longitude 15,08679 MagneticVariation 0 Elevation 509 - UsedInRoute 0 Category None FigureOfMerit ExtendedAltitudeUse
+Navaid 60 Name 210             ID 210  Frequency 0 Latitude 58,05257 Longitude 16,4951 MagneticVariation 0 Elevation 154 - UsedInRoute 0 Category None FigureOfMerit ExtendedAltitudeUse
+Navaid 61 Name 224             ID 224  Frequency 0 Latitude 58,27433 Longitude 16,042 MagneticVariation 0 Elevation 256 - UsedInRoute 0 Category None FigureOfMerit ExtendedAltitudeUse
+Navaid 62 Name 416             ID 416  Frequency 0 Latitude 58,82898 Longitude 15,23531 MagneticVariation 0 Elevation 427 - UsedInRoute 0 Category None FigureOfMerit ExtendedAltitudeUse
+Navaid 63 Name S07             ID S07  Frequency 0 Latitude 61,21535 Longitude 13,55645 MagneticVariation 0 Elevation 1519 - UsedInRoute 0 Category None FigureOfMerit ExtendedAltitudeUse
+Navaid 64 Name 422             ID 422  Frequency 0 Latitude 58,82381 Longitude 15,01454 MagneticVariation 0 Elevation 305 - UsedInRoute 0 Category None FigureOfMerit ExtendedAltitudeUse
+Navaid 65 Name 430             ID 430  Frequency 0 Latitude 58,94205 Longitude 15,28967 MagneticVariation 0 Elevation 390 - UsedInRoute 0 Category None FigureOfMerit ExtendedAltitudeUse
+Navaid 66 Name 104             ID 104  Frequency 0 Latitude 58,541 Longitude 15,85082 MagneticVariation 0 Elevation 118 - UsedInRoute 0 Category None FigureOfMerit ExtendedAltitudeUse
+Navaid 67 Name 207             ID 207  Frequency 0 Latitude 58,0788 Longitude 16,00478 MagneticVariation 0 Elevation 433 - UsedInRoute 0 Category None FigureOfMerit ExtendedAltitudeUse
+Navaid 68 Name 403             ID 403  Frequency 0 Latitude 58,49112 Longitude 15,31728 MagneticVariation 0 Elevation 279 - UsedInRoute 0 Category None FigureOfMerit ExtendedAltitudeUse
+Navaid 69 Name 309             ID 309  Frequency 0 Latitude 58,2042 Longitude 14,88929 MagneticVariation 0 Elevation 508,5302 - UsedInRoute 0 Category None FigureOfMerit ExtendedAltitudeUse
+Navaid 70 Name 328             ID 328  Frequency 0 Latitude 57,91597 Longitude 15,35962 MagneticVariation 0 Elevation 518 - UsedInRoute 0 Category None FigureOfMerit ExtendedAltitudeUse
+Navaid 71 Name 108             ID 108  Frequency 0 Latitude 58,76856 Longitude 15,98209 MagneticVariation 0 Elevation 226 - UsedInRoute 0 Category None FigureOfMerit ExtendedAltitudeUse
+Navaid 72 Name 407             ID 407  Frequency 0 Latitude 58,75227 Longitude 15,13537 MagneticVariation 0 Elevation 427 - UsedInRoute 0 Category None FigureOfMerit ExtendedAltitudeUse
+Navaid 73 Name S06             ID S06  Frequency 0 Latitude 61,10938 Longitude 13,82172 MagneticVariation 0 Elevation 1339 - UsedInRoute 0 Category None FigureOfMerit ExtendedAltitudeUse
+Navaid 74 Name 227             ID 227  Frequency 0 Latitude 57,95941 Longitude 16,12724 MagneticVariation 0 Elevation 289 - UsedInRoute 0 Category None FigureOfMerit ExtendedAltitudeUse
+Navaid 75 Name 427             ID 427  Frequency 0 Latitude 58,791 Longitude 15,23542 MagneticVariation 0 Elevation 456 - UsedInRoute 0 Category None FigureOfMerit ExtendedAltitudeUse
+Navaid 76 Name 212             ID 212  Frequency 0 Latitude 58,26156 Longitude 15,97053 MagneticVariation 0 Elevation 269 - UsedInRoute 0 Category None FigureOfMerit ExtendedAltitudeUse
+Navaid 77 Name 314             ID 314  Frequency 0 Latitude 58,17817 Longitude 15,38363 MagneticVariation 0 Elevation 528 - UsedInRoute 0 Category None FigureOfMerit ExtendedAltitudeUse
+Navaid 78 Name S03             ID S03  Frequency 0 Latitude 61,09591 Longitude 13,9517 MagneticVariation 0 Elevation 1496 - UsedInRoute 0 Category None FigureOfMerit ExtendedAltitudeUse
+Navaid 79 Name S05             ID S05  Frequency 0 Latitude 60,98716 Longitude 13,91263 MagneticVariation 0 Elevation 1122 - UsedInRoute 0 Category None FigureOfMerit ExtendedAltitudeUse
+Navaid 80 Name 320             ID 320  Frequency 0 Latitude 57,96758 Longitude 15,22949 MagneticVariation 0 Elevation 610 - UsedInRoute 0 Category None FigureOfMerit ExtendedAltitudeUse
+Navaid 81 Name 112             ID 112  Frequency 0 Latitude 58,88667 Longitude 15,8692 MagneticVariation 0 Elevation 161 - UsedInRoute 0 Category None FigureOfMerit ExtendedAltitudeUse
+Navaid 82 Name 230             ID 230  Frequency 0 Latitude 58,14509 Longitude 15,56468 MagneticVariation 0 Elevation 538 - UsedInRoute 0 Category None FigureOfMerit ExtendedAltitudeUse
+Navaid 83 Name 319             ID 319  Frequency 0 Latitude 57,87262 Longitude 15,41284 MagneticVariation 0 Elevation 794 - UsedInRoute 0 Category None FigureOfMerit ExtendedAltitudeUse
+Navaid 84 Name 216             ID 216  Frequency 0 Latitude 58,29708 Longitude 16,31134 MagneticVariation 0 Elevation 210 - UsedInRoute 0 Category None FigureOfMerit ExtendedAltitudeUse
+Navaid 85 Name 411             ID 411  Frequency 0 Latitude 58,71106 Longitude 15,134 MagneticVariation 0 Elevation 381 - UsedInRoute 0 Category None FigureOfMerit ExtendedAltitudeUse
+Navaid 86 Name 415             ID 415  Frequency 0 Latitude 58,83846 Longitude 15,17943 MagneticVariation 0 Elevation 413,3858 - UsedInRoute 0 Category None FigureOfMerit ExtendedAltitudeUse
+Navaid 87 Name 115             ID 115  Frequency 0 Latitude 58,84604 Longitude 16,00115 MagneticVariation 0 Elevation 187 - UsedInRoute 0 Category None FigureOfMerit ExtendedAltitudeUse
+Navaid 88 Name 304             ID 304  Frequency 0 Latitude 57,99908 Longitude 15,23757 MagneticVariation 0 Elevation 531 - UsedInRoute 0 Category None FigureOfMerit ExtendedAltitudeUse
+Navaid 89 Name 201             ID 201  Frequency 0 Latitude 58,22645 Longitude 16,46698 MagneticVariation 0 Elevation 194 - UsedInRoute 0 Category None FigureOfMerit ExtendedAltitudeUse
+Navaid 90 Name 222             ID 222  Frequency 0 Latitude 57,98987 Longitude 16,22576 MagneticVariation 0 Elevation 197 - UsedInRoute 0 Category None FigureOfMerit ExtendedAltitudeUse
+Navaid 91 Name 414             ID 414  Frequency 0 Latitude 58,82864 Longitude 15,40962 MagneticVariation 0 Elevation 315 - UsedInRoute 0 Category None FigureOfMerit ExtendedAltitudeUse
+Navaid 92 Name 203             ID 203  Frequency 0 Latitude 57,99559 Longitude 15,81492 MagneticVariation 0 Elevation 322 - UsedInRoute 0 Category None FigureOfMerit ExtendedAltitudeUse
+Navaid 93 Name 325             ID 325  Frequency 0 Latitude 58,21842 Longitude 14,90836 MagneticVariation 0 Elevation 557,7428 - UsedInRoute 0 Category None FigureOfMerit ExtendedAltitudeUse
+Navaid 94 Name 402             ID 402  Frequency 0 Latitude 58,50104 Longitude 15,28259 MagneticVariation 0 Elevation 299 - UsedInRoute 0 Category None FigureOfMerit ExtendedAltitudeUse
+Navaid 95 Name 206             ID 206  Frequency 0 Latitude 58,04955 Longitude 16,04656 MagneticVariation 0 Elevation 341 - UsedInRoute 0 Category None FigureOfMerit ExtendedAltitudeUse
+Navaid 96 Name 420             ID 420  Frequency 0 Latitude 58,88493 Longitude 15,18253 MagneticVariation 0 Elevation 397 - UsedInRoute 0 Category None FigureOfMerit ExtendedAltitudeUse
+Navaid 97 Name 428             ID 428  Frequency 0 Latitude 59,00856 Longitude 15,25203 MagneticVariation 0 Elevation 341 - UsedInRoute 0 Category None FigureOfMerit ExtendedAltitudeUse
+Navaid 98 Name 102             ID 102  Frequency 0 Latitude 58,54589 Longitude 15,69399 MagneticVariation 0 Elevation 302 - UsedInRoute 0 Category None FigureOfMerit ExtendedAltitudeUse
+Navaid 99 Name 107             ID 107  Frequency 0 Latitude 58,8273 Longitude 15,77102 MagneticVariation 0 Elevation 174 - UsedInRoute 0 Category None FigureOfMerit ExtendedAltitudeUse
+Navaid 100 Name 426             ID 426  Frequency 0 Latitude 58,83165 Longitude 14,79337 MagneticVariation 0 Elevation 413 - UsedInRoute 0 Category None FigureOfMerit ExtendedAltitudeUse
+******* PilotRoute Loading ******
+Allocated elements: 1
+Route 1 ID A          - From Airport      To Airport     
+Route 1 Fix 1 Index 1 - Type PilotWaypoint - FirstID A1111 SecondID      NavaidCat None
+******* Pilot Database Loading OK ******

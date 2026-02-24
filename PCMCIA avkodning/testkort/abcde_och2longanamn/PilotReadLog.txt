@@ -1,0 +1,47 @@
+******* PilotHeader Loading ******
+Generation date: 21 - 10 - 2025
+Airport file size: 4020
+Navaid file size: 4020
+Waypoint file size: 2820
+Route file size: 50020
+Carac file size: 116
+Pilot Database name: DTD21102025 
+******* PilotWaypoint Loading ******
+Allocated elements: 12
+Waypoint 1 Name AAAAA           ID AAAAA Latitude 59,1234 Longitude 15,1234 Used in Route 1 00001000
+Waypoint 2 Name BBBBB           ID BBBBB Latitude 59,1234 Longitude 15,1234 Used in Route 1 00001000
+Waypoint 3 Name CCCCC           ID CCCCC Latitude 59,1234 Longitude 15,1234 Used in Route 1 00001000
+Waypoint 4 Name DDDDD           ID DDDDD Latitude 59,1234 Longitude 15,1234 Used in Route 1 00001000
+Waypoint 5 Name EEEEE           ID EEEEE Latitude 59,1234 Longitude 15,1234 Used in Route 1 00001000
+Waypoint 6 Name FFFFF           ID FFFFF Latitude 59,1234 Longitude 15,1234 Used in Route 1 00001000
+Waypoint 7 Name GGGGG           ID GGGGG Latitude 59,1234 Longitude 15,1234 Used in Route 1 00001000
+Waypoint 8 Name HHHHH           ID HHHHH Latitude 59,1234 Longitude 15,1234 Used in Route 1 00001000
+Waypoint 9 Name AAAAA           ID AAA00 Latitude 59,1234 Longitude 15,1234 Used in Route 1 00001000
+Waypoint 10 Name BBBBB           ID BBB00 Latitude 59,1234 Longitude 15,1234 Used in Route 1 00001000
+Waypoint 11 Name LONGNAMEWAYPOIN ID LONGN Latitude 59 Longitude 5 Used in Route 2 00010000
+Waypoint 12 Name SECONDLONGNAMEW ID SECON Latitude 5 Longitude 18 Used in Route 2 00010000
+******* PilotAirport Loading ******
+Allocated elements: 0
+******* PilotNavaid Loading ******
+Allocated elements: 0
+******* PilotRoute Loading ******
+Allocated elements: 4
+Route 1 ID ABCDE      - From Airport      To Airport     
+Route 1 Fix 1 Index 1 - Type PilotWaypoint - FirstID AAAAA SecondID      NavaidCat None
+Route 1 Fix 2 Index 2 - Type PilotWaypoint - FirstID BBBBB SecondID      NavaidCat None
+Route 1 Fix 3 Index 3 - Type PilotWaypoint - FirstID CCCCC SecondID      NavaidCat None
+Route 1 Fix 4 Index 4 - Type PilotWaypoint - FirstID DDDDD SecondID      NavaidCat None
+Route 1 Fix 5 Index 5 - Type PilotWaypoint - FirstID EEEEE SecondID      NavaidCat None
+Route 1 Fix 6 Index 6 - Type PilotWaypoint - FirstID FFFFF SecondID      NavaidCat None
+Route 1 Fix 7 Index 7 - Type PilotWaypoint - FirstID GGGGG SecondID      NavaidCat None
+Route 1 Fix 8 Index 8 - Type PilotWaypoint - FirstID HHHHH SecondID      NavaidCat None
+Route 2 ID FP-496     - From Airport      To Airport     
+Route 2 Fix 1 Index 11 - Type PilotWaypoint - FirstID LONGN SecondID      NavaidCat None
+Route 2 Fix 2 Index 12 - Type PilotWaypoint - FirstID SECON SecondID      NavaidCat None
+Route 3 ID FP-497     - From Airport      To Airport     
+Route 3 Fix 1 Index 11 - Type PilotWaypoint - FirstID LONGN SecondID      NavaidCat None
+Route 3 Fix 2 Index 12 - Type PilotWaypoint - FirstID SECON SecondID      NavaidCat None
+Route 4 ID FP-498     - From Airport      To Airport     
+Route 4 Fix 1 Index 9 - Type PilotWaypoint - FirstID AAA00 SecondID      NavaidCat None
+Route 4 Fix 2 Index 10 - Type PilotWaypoint - FirstID BBB00 SecondID      NavaidCat None
+******* Pilot Database Loading OK ******
