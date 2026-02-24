@@ -19,7 +19,9 @@ byte 4-11 airport name i 6bit, max 10 tecken. ex. MALMEN
 byte 12-15 padding
 00000000 00000000 00000000 00000000 
 byte 16-19 
--byte 17 användande av airporten i rutter: 6=används inte, 14=används, 30=används i flera
+-byte 17 användande av airporten i rutter: 6=används inte, 14=används (i 1 rutt), 30=används i flera rutter
+ OBS: räknas en gång per rutt oavsett hur många gånger airporten förekommer i den rutten.
+ Gäller även airporter som enbart finns i logistical header (bytes 8-15) utan att vara en punkt i punktlistan.
 00000000 00000110 00000000 00000000 
 byte 20-23 latitud i Big endian float
 01000010 01101001 10010101 10011110 

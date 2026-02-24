@@ -567,16 +567,12 @@ private extension A109PCMCIAExportService {
     static func usageCountsForAirports(routes: [Route]) -> [String: Int] {
         var counts: [String: Int] = [:]
         for route in routes {
-            if let first = route.pointRefs.first, first.kind == .userAirport {
-                counts[first.refId, default: 0] += 1
+            var seenInRoute = Set<String>()
+            for ref in route.pointRefs where ref.kind == .userAirport {
+                seenInRoute.insert(ref.refId)
             }
-            if let last = route.pointRefs.last, last.kind == .userAirport {
-                counts[last.refId, default: 0] += 1
-            }
-            for ref in route.pointRefs {
-                if ref.kind == .userAirport {
-                    counts[ref.refId, default: 0] += 1
-                }
+            for id in seenInRoute {
+                counts[id, default: 0] += 1
             }
         }
         return counts

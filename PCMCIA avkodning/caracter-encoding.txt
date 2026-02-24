@@ -1,5 +1,5 @@
 #CARACTER.P01
-File size ska vara: 50020
+File size ska vara: 116 (bekräftat via PILOTE.HD-exempel och testkort. "50020" var felaktig notering.)
 
 #byte 0-3 alltid samma
 01010101 10101010 01010101 10101010 
