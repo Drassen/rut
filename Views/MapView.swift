@@ -7,9 +7,9 @@ enum RutMapStyle: String, CaseIterable, Identifiable {
     case hybrid
     case standard
     case satellite
-    
+
     var id: String { rawValue }
-    
+
     var displayName: String {
         switch self {
         case .hybrid:   return "Hybrid"
@@ -17,7 +17,7 @@ enum RutMapStyle: String, CaseIterable, Identifiable {
         case .satellite:return "Satellite"
         }
     }
-    
+
     var mapKitStyle: MapStyle {
         switch self {
         case .hybrid:   return .hybrid
@@ -44,45 +44,64 @@ struct TriangleMarkerShape: Shape {
 
 struct RutMapView: View {
     @EnvironmentObject var navStore: NavigationStore
-    
+
     var onPointTap: ((RouteMapPoint) -> Void)? = nil
-    
+    var onMapLongPress: ((CLLocationCoordinate2D) -> Void)? = nil
+
     @State private var camera: MapCameraPosition = .automatic
     @State private var mapStyle: RutMapStyle = .hybrid
-    
+
+    // --- Drag state for database markers ---
+    @State private var draggingAirportId: String?
+    @State private var draggingAirportCoord = CLLocationCoordinate2D()
+    @State private var draggingNavaidId: String?
+    @State private var draggingNavaidCoord = CLLocationCoordinate2D()
+    @State private var pendingMove: PendingMove?
+    @State private var showMoveConfirm = false
+
     // --- FÄRGER ---
     private let colorAirport = Color(uiColor: .darkGray)
     private let colorNavaid  = Color.gray
     private let colorWpt     = Color(uiColor: .lightGray)
-    
+
     private let colorActive   = Color.blue
     private let colorInactive = Color.blue.opacity(0.3)
-    
+
     private var hasActiveRoute: Bool { navStore.activeRoute != nil }
-    
+
     private var activeRouteIDs: Set<String> {
         guard let route = navStore.activeRoute else { return [] }
         return Set(route.pointRefs.map { $0.refId })
     }
-    
+
     private var inactiveRouteIDs: Set<String> {
         let refs = navStore.routes
             .filter { $0.id != navStore.activeRouteId }
             .flatMap { $0.pointRefs.map { $0.refId } }
         return Set(refs)
     }
-    
+
+    // Pending move confirmation
+    private struct PendingMove {
+        enum Kind {
+            case airport(UserAirport)
+            case navaid(UserNavaid)
+        }
+        let kind: Kind
+        let newCoordinate: CLLocationCoordinate2D
+    }
+
     var body: some View {
         ZStack(alignment: .topTrailing) {
             MapReader { proxy in
                 Map(position: $camera) {
-                    
+
                     // 1. Inaktiva rutter
                     inactiveRoutesContent(proxy: proxy)
-                    
+
                     // 2. Databas
-                    databaseContent()
-                    
+                    databaseContent(proxy: proxy)
+
                     // 3. Aktiv rutt
                     activeRouteContent(proxy: proxy)
                 }
@@ -90,8 +109,19 @@ struct RutMapView: View {
                 .onAppear {
                     configureInitialCamera()
                 }
+                .simultaneousGesture(
+                    LongPressGesture(minimumDuration: 0.6)
+                        .sequenced(before: DragGesture(minimumDistance: 0, coordinateSpace: .global))
+                        .onEnded { value in
+                            if case .second(true, let drag?) = value {
+                                if let coord = proxy.convert(drag.startLocation, from: .global) {
+                                    onMapLongPress?(coord)
+                                }
+                            }
+                        }
+                )
             }
-            
+
             Picker("Map style", selection: $mapStyle) {
                 ForEach(RutMapStyle.allCases) { style in
                     Text(style.displayName).tag(style)
@@ -104,52 +134,109 @@ struct RutMapView: View {
             .cornerRadius(4)
             .padding()
         }
+        .alert("Confirm Move", isPresented: $showMoveConfirm) {
+            Button("Move") {
+                confirmPendingMove()
+                pendingMove = nil
+            }
+            Button("Cancel", role: .cancel) {
+                pendingMove = nil
+            }
+        } message: {
+            if let move = pendingMove {
+                Text(moveConfirmMessage(for: move))
+            }
+        }
     }
-    
+
     // MARK: - 1. Database Content
-    
+
     @MapContentBuilder
-    private func databaseContent() -> some MapContent {
-        
+    private func databaseContent(proxy: MapProxy) -> some MapContent {
+
         let opacity = hasActiveRoute ? 0.8 : 1.0
         let scale   = hasActiveRoute ? 0.8 : 1.0
-        
+
         // --- USER AIRPORTS ---
         ForEach(Array(navStore.document.userAirports.enumerated()), id: \.offset) { index, airport in
             if !activeRouteIDs.contains(airport.id) && !inactiveRouteIDs.contains(airport.id) {
-                Annotation("apt-\(index)-\(airport.id)", coordinate: displayCoordinate(for: airport.coordinate)) {
-                    DatabaseMarkerView(bgColor: colorAirport, iconName: "airplane", iconColor: .white, label: airport.id)
-                        .opacity(opacity)
-                        .scaleEffect(scale)
-                        .onTapGesture {
-                            onPointTap?(RouteMapPoint(coordinate: airport.coordinate, name: airport.id, indexInRoute: -1, kind: .userAirport))
+                let dragCoord = draggingAirportId == airport.id
+                    ? draggingAirportCoord
+                    : displayCoordinate(for: airport.coordinate)
+                Annotation("apt-\(index)-\(airport.id)", coordinate: dragCoord) {
+                    DraggableDBMarkerView(
+                        bgColor: colorAirport,
+                        iconName: "airplane",
+                        iconColor: .white,
+                        label: airport.id,
+                        onTap: {
+                            onPointTap?(RouteMapPoint(coordinate: airport.coordinate,
+                                                      name: airport.id, indexInRoute: -1, kind: .userAirport))
+                        },
+                        onDragMove: { cgPoint in
+                            if let c = proxy.convert(cgPoint, from: .global) {
+                                draggingAirportId = airport.id
+                                draggingAirportCoord = c
+                            }
+                        },
+                        onDragEnd: { cgPoint in
+                            if let c = proxy.convert(cgPoint, from: .global) {
+                                draggingAirportId = nil
+                                pendingMove = PendingMove(kind: .airport(airport), newCoordinate: c)
+                                showMoveConfirm = true
+                            }
                         }
+                    )
+                    .opacity(opacity)
+                    .scaleEffect(scale)
                 }
                 .annotationTitles(.hidden)
             }
         }
-        
+
         // --- USER NAVAIDS ---
         ForEach(Array(navStore.document.userNavaids.enumerated()), id: \.offset) { index, navaid in
             if !activeRouteIDs.contains(navaid.id) && !inactiveRouteIDs.contains(navaid.id) {
-                Annotation("nav-\(index)-\(navaid.id)", coordinate: displayCoordinate(for: navaid.coordinate)) {
-                    DatabaseMarkerView(bgColor: colorNavaid, iconName: "antenna.radiowaves.left.and.right", iconColor: .white, label: navaid.id)
-                        .opacity(opacity)
-                        .scaleEffect(scale)
-                        .onTapGesture {
-                            onPointTap?(RouteMapPoint(coordinate: navaid.coordinate, name: navaid.id, indexInRoute: -1, kind: .userNavaid))
+                let dragCoord = draggingNavaidId == navaid.id
+                    ? draggingNavaidCoord
+                    : displayCoordinate(for: navaid.coordinate)
+                Annotation("nav-\(index)-\(navaid.id)", coordinate: dragCoord) {
+                    DraggableDBMarkerView(
+                        bgColor: colorNavaid,
+                        iconName: "antenna.radiowaves.left.and.right",
+                        iconColor: .white,
+                        label: navaid.id,
+                        onTap: {
+                            onPointTap?(RouteMapPoint(coordinate: navaid.coordinate,
+                                                      name: navaid.id, indexInRoute: -1, kind: .userNavaid))
+                        },
+                        onDragMove: { cgPoint in
+                            if let c = proxy.convert(cgPoint, from: .global) {
+                                draggingNavaidId = navaid.id
+                                draggingNavaidCoord = c
+                            }
+                        },
+                        onDragEnd: { cgPoint in
+                            if let c = proxy.convert(cgPoint, from: .global) {
+                                draggingNavaidId = nil
+                                pendingMove = PendingMove(kind: .navaid(navaid), newCoordinate: c)
+                                showMoveConfirm = true
+                            }
                         }
+                    )
+                    .opacity(opacity)
+                    .scaleEffect(scale)
                 }
                 .annotationTitles(.hidden)
             }
         }
-        
+
         // --- USER WAYPOINTS ---
         ForEach(Array(navStore.document.userWaypoints.enumerated()), id: \.offset) { index, wp in
             if !activeRouteIDs.contains(wp.id) && !inactiveRouteIDs.contains(wp.id) {
                 Annotation("wpt-\(index)-\(wp.id)", coordinate: displayCoordinate(for: wp.coordinate)) {
                     let bg = isZero(wp.coordinate) ? Color.red : colorWpt
-                    
+
                     // Databas-waypoint (Svart W)
                     ZStack {
                         Circle().fill(bg)
@@ -174,7 +261,7 @@ struct RutMapView: View {
                 .annotationTitles(.hidden)
             }
         }
-        
+
         // --- SYSTEM AIRPORTS ---
         ForEach(Array(navStore.document.systemAirports.enumerated()), id: \.offset) { index, ap in
             if !activeRouteIDs.contains(ap.id) && !inactiveRouteIDs.contains(ap.id) {
@@ -189,7 +276,7 @@ struct RutMapView: View {
                 .annotationTitles(.hidden)
             }
         }
-        
+
         // --- SYSTEM NAVAIDS ---
         ForEach(Array(navStore.document.systemNavaids.enumerated()), id: \.offset) { index, nv in
             if !activeRouteIDs.contains(nv.id) && !inactiveRouteIDs.contains(nv.id) {
@@ -205,24 +292,24 @@ struct RutMapView: View {
             }
         }
     }
-    
+
     // MARK: - 2. Inactive Routes
-    
+
     @MapContentBuilder
     private func inactiveRoutesContent(proxy: MapProxy) -> some MapContent {
         ForEach(navStore.routes.filter { $0.id != navStore.activeRouteId }) { route in
             let points = navStore.mapPoints(for: route)
             let coords = points.map { displayCoordinate(for: $0.coordinate) }
             let dimFactor = hasActiveRoute ? 0.9 : 1.0
-            
+
             if coords.count >= 2 {
                 MapPolyline(coordinates: coords)
                     .stroke(colorInactive.opacity(dimFactor), lineWidth: 6)
             }
-            
+
             ForEach(Array(points.enumerated()), id: \.offset) { pair in
                 let p = pair.element
-                
+
                 if !activeRouteIDs.contains(p.name) {
                     Annotation(p.name, coordinate: displayCoordinate(for: p.coordinate)) {
                         let type = waypointType(for: p)
@@ -242,25 +329,25 @@ struct RutMapView: View {
             }
         }
     }
-    
+
     // MARK: - 3. Active Route
-    
+
     @MapContentBuilder
     private func activeRouteContent(proxy: MapProxy) -> some MapContent {
         if let route = navStore.activeRoute {
             let points = navStore.mapPoints(for: route)
             let coords = points.map { displayCoordinate(for: $0.coordinate) }
             let legDistances = navStore.legDistancesNM(for: route)
-            
+
             if coords.count >= 2 {
                 MapPolyline(coordinates: coords)
                     .stroke(colorActive, lineWidth: 6)
             }
-            
+
             ForEach(Array(points.enumerated()), id: \.offset) { pair in
                 let idx = pair.offset
                 let p = pair.element
-                
+
                 Annotation(p.name, coordinate: displayCoordinate(for: p.coordinate)) {
                     let type = waypointType(for: p)
                     DraggableRouteMarkerView(
@@ -284,7 +371,7 @@ struct RutMapView: View {
                     .zIndex(10)
                 }
                 .annotationTitles(.hidden)
-                
+
                 if idx < points.count - 1 && idx < legDistances.count {
                     let next = points[idx + 1]
                     let safeP = displayCoordinate(for: p.coordinate)
@@ -294,7 +381,7 @@ struct RutMapView: View {
                         longitude: (safeP.longitude + safeNext.longitude) / 2.0
                     )
                     let label = String(format: "%.1fN", legDistances[idx])
-                    
+
                     Annotation(label, coordinate: mid) {
                         Text(label)
                             .font(.caption2)
@@ -309,9 +396,37 @@ struct RutMapView: View {
             }
         }
     }
-    
+
     // MARK: - Helpers
-    
+
+    private func moveConfirmMessage(for move: PendingMove) -> String {
+        let name: String
+        switch move.kind {
+        case .airport(let ap): name = ap.id
+        case .navaid(let nv):  name = nv.id
+        }
+        return "Move \(name) to \(String(format: "%.4f", move.newCoordinate.latitude))°N, \(String(format: "%.4f", move.newCoordinate.longitude))°E?"
+    }
+
+    private func confirmPendingMove() {
+        guard let move = pendingMove else { return }
+        switch move.kind {
+        case .airport(let ap):
+            navStore.updateAirport(
+                originalId: ap.id, newId: ap.id, newName: ap.name,
+                latitude: move.newCoordinate.latitude,
+                longitude: move.newCoordinate.longitude,
+                elevation: ap.elevation, magVar: ap.magneticVariation)
+        case .navaid(let nv):
+            navStore.updateNavaid(
+                originalId: nv.id, newId: nv.id, newName: nv.name,
+                latitude: move.newCoordinate.latitude,
+                longitude: move.newCoordinate.longitude,
+                elevation: nv.elevation, magVar: nv.magneticVariation,
+                frequency: nv.frequency)
+        }
+    }
+
     private func configureInitialCamera() {
         if let route = navStore.activeRoute, let first = navStore.mapPoints(for: route).first {
             setRegion(center: displayCoordinate(for: first.coordinate))
@@ -325,22 +440,22 @@ struct RutMapView: View {
             setRegion(center: displayCoordinate(for: sysAp.coordinate))
         }
     }
-    
+
     private func isZero(_ c: CLLocationCoordinate2D) -> Bool {
         return abs(c.latitude) < 0.0000001 && abs(c.longitude) < 0.0000001
     }
-    
+
     private func displayCoordinate(for c: CLLocationCoordinate2D) -> CLLocationCoordinate2D {
         if isZero(c) {
             return CLLocationCoordinate2D(latitude: 0.000001, longitude: 0.000001)
         }
         return c
     }
-    
+
     private func setRegion(center: CLLocationCoordinate2D) {
         camera = .region(MKCoordinateRegion(center: center, span: MKCoordinateSpan(latitudeDelta: 0.5, longitudeDelta: 0.5)))
     }
-    
+
     private func waypointType(for point: RouteMapPoint) -> WaypointType? {
         guard point.kind == .userWaypoint else { return nil }
         return navStore.document.userWaypoints.first(where: { $0.id == point.name })?.type
@@ -354,12 +469,12 @@ struct DatabaseMarkerView: View {
     let iconName: String
     let iconColor: Color
     let label: String
-    
+
     var body: some View {
         ZStack {
             Circle()
                 .fill(bgColor)
-            
+
             Image(systemName: iconName)
                 .font(.system(size: 12))
                 .foregroundColor(iconColor)
@@ -383,7 +498,7 @@ struct RouteMarkerShapeView: View {
     let color: Color
     let contentColor: Color
     let waypointType: WaypointType?
-    
+
     var body: some View {
         ZStack {
             markerShape()
@@ -400,11 +515,11 @@ struct RouteMarkerShapeView: View {
                 .offset(y: 30)
         }
     }
-    
+
     @ViewBuilder
     private func markerShape() -> some View {
         switch point.kind {
-            
+
         // --- AIRPORTS ---
         case .userAirport, .systemAirport:
             ZStack {
@@ -413,7 +528,7 @@ struct RouteMarkerShapeView: View {
                     .font(.system(size: 14))
                     .foregroundColor(contentColor)
             }
-            
+
         // --- NAVAIDS ---
         case .userNavaid, .systemNavaid:
             ZStack {
@@ -422,7 +537,7 @@ struct RouteMarkerShapeView: View {
                     .font(.system(size: 12))
                     .foregroundColor(contentColor)
             }
-            
+
         // --- WAYPOINTS ---
         case .userWaypoint:
             if let t = waypointType {
@@ -480,12 +595,12 @@ struct DraggableRouteMarkerView: View {
     let onDragMove: (CGPoint) -> Void
     let onDragEnd: (CGPoint) -> Void
     @GestureState private var isLongPressing = false
-    
+
     var body: some View {
         let drag = DragGesture(coordinateSpace: .global)
             .onChanged { onDragMove($0.location) }
             .onEnded { onDragEnd($0.location) }
-        
+
         let seq = LongPressGesture(minimumDuration: 0.3)
             .sequenced(before: drag)
             .updating($isLongPressing) { v, s, _ in
@@ -493,8 +608,38 @@ struct DraggableRouteMarkerView: View {
                 else if case .second(true, _) = v { s = true }
                 else { s = false }
             }
-        
+
         RouteMarkerShapeView(point: point, color: color, contentColor: contentColor, waypointType: waypointType)
+            .scaleEffect(isLongPressing ? 1.2 : 1.0)
+            .gesture(seq)
+            .simultaneousGesture(TapGesture().onEnded { if !isLongPressing { onTap() } })
+    }
+}
+
+struct DraggableDBMarkerView: View {
+    let bgColor: Color
+    let iconName: String
+    let iconColor: Color
+    let label: String
+    let onTap: () -> Void
+    let onDragMove: (CGPoint) -> Void
+    let onDragEnd: (CGPoint) -> Void
+    @GestureState private var isLongPressing = false
+
+    var body: some View {
+        let drag = DragGesture(coordinateSpace: .global)
+            .onChanged { onDragMove($0.location) }
+            .onEnded { onDragEnd($0.location) }
+
+        let seq = LongPressGesture(minimumDuration: 0.3)
+            .sequenced(before: drag)
+            .updating($isLongPressing) { v, s, _ in
+                if case .first(true) = v { s = true }
+                else if case .second(true, _) = v { s = true }
+                else { s = false }
+            }
+
+        DatabaseMarkerView(bgColor: bgColor, iconName: iconName, iconColor: iconColor, label: label)
             .scaleEffect(isLongPressing ? 1.2 : 1.0)
             .gesture(seq)
             .simultaneousGesture(TapGesture().onEnded { if !isLongPressing { onTap() } })

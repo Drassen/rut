@@ -1,5 +1,6 @@
 import SwiftUI
 import UIKit
+import MapKit
 import UniformTypeIdentifiers
 import Foundation
 
@@ -8,6 +9,7 @@ import Foundation
 struct EditorWrapper: Identifiable {
     let id = UUID()
     let mode: PointEditorView.EditMode
+    var isNew: Bool = false
 }
 
 enum ExportFormat: String, CaseIterable, Identifiable {
@@ -17,12 +19,13 @@ enum ExportFormat: String, CaseIterable, Identifiable {
 
     case rte = "Garmin route (.RTE)"
 
-    case rut = "RUT complete set (.RUT)"
-    case fpl = "User Routes (.FPL)"
     case gpx = "GPX Route (.gpx)"
     case kml = "KML"
+
+    case fpl = "User Routes (.FPL)"
     case apt = "User Airports (.APT)"
     case nav = "User Navaids (.NAV)"
+    case rut = "RUT complete set (.RUT)"
 
     var id: String { rawValue }
 }
@@ -49,6 +52,11 @@ struct ContentView: View {
     
     @State private var exportFormat: ExportFormat = .a109
     @State private var showKMLSubDialog = false
+
+    // Long press on map to add new point
+    @State private var longPressLat: Double = 0
+    @State private var longPressLon: Double = 0
+    @State private var showAddPointTypeMenu = false
     
     // NYTT: Helper för att hämta version
     private var appVersion: String {
@@ -94,7 +102,7 @@ struct ContentView: View {
                 .padding(.horizontal)
                 
                 if !hasAnyData {
-                    Text(".RUT .FPL .RTE .P01 .APT .NAV")
+                    Text(".GPX .KML .RUT .FPL .RTE .P01 .APT .NAV")
                         .font(.footnote)
                         .foregroundColor(.secondary)
                         .padding(.horizontal)
@@ -145,30 +153,37 @@ struct ContentView: View {
                     .padding(.horizontal)
                     
                     // Map
-                    RutMapView(onPointTap: { point in
-                        switch point.kind {
-                        case .userWaypoint:
-                            if let wp = navStore.document.userWaypoints.first(where: { $0.id == point.name }) {
-                                editorSheet = EditorWrapper(mode: .waypoint(wp))
+                    RutMapView(
+                        onPointTap: { point in
+                            switch point.kind {
+                            case .userWaypoint:
+                                if let wp = navStore.document.userWaypoints.first(where: { $0.id == point.name }) {
+                                    editorSheet = EditorWrapper(mode: .waypoint(wp))
+                                }
+                            case .userAirport:
+                                if let ap = navStore.document.userAirports.first(where: { $0.id == point.name }) {
+                                    editorSheet = EditorWrapper(mode: .airport(ap))
+                                }
+                            case .userNavaid:
+                                if let nv = navStore.document.userNavaids.first(where: { $0.id == point.name }) {
+                                    editorSheet = EditorWrapper(mode: .navaid(nv))
+                                }
+                            case .systemAirport:
+                                if let ap = navStore.document.systemAirports.first(where: { $0.id == point.name }) {
+                                    editorSheet = EditorWrapper(mode: .systemAirport(ap))
+                                }
+                            case .systemNavaid:
+                                if let nv = navStore.document.systemNavaids.first(where: { $0.id == point.name }) {
+                                    editorSheet = EditorWrapper(mode: .systemNavaid(nv))
+                                }
                             }
-                        case .userAirport:
-                            if let ap = navStore.document.userAirports.first(where: { $0.id == point.name }) {
-                                editorSheet = EditorWrapper(mode: .airport(ap))
-                            }
-                        case .userNavaid:
-                            if let nv = navStore.document.userNavaids.first(where: { $0.id == point.name }) {
-                                editorSheet = EditorWrapper(mode: .navaid(nv))
-                            }
-                        case .systemAirport:
-                            if let ap = navStore.document.systemAirports.first(where: { $0.id == point.name }) {
-                                editorSheet = EditorWrapper(mode: .systemAirport(ap))
-                            }
-                        case .systemNavaid:
-                            if let nv = navStore.document.systemNavaids.first(where: { $0.id == point.name }) {
-                                editorSheet = EditorWrapper(mode: .systemNavaid(nv))
-                            }
+                        },
+                        onMapLongPress: { coord in
+                            longPressLat = coord.latitude
+                            longPressLon = coord.longitude
+                            showAddPointTypeMenu = true
                         }
-                    })
+                    )
                     .environmentObject(navStore)
                     .frame(minHeight: 250)
                     
@@ -231,7 +246,7 @@ struct ContentView: View {
         
         .sheet(item: $editorSheet) { wrapper in
             NavigationStack {
-                PointEditorView(mode: wrapper.mode, isNew: false)
+                PointEditorView(mode: wrapper.mode, isNew: wrapper.isNew)
             }
         }
         
@@ -249,6 +264,18 @@ struct ContentView: View {
         
         .onOpenURL { url in
             importURLs([url])
+        }
+
+        .confirmationDialog("Add Point", isPresented: $showAddPointTypeMenu, titleVisibility: .visible) {
+            Button("Airport") {
+                let ap = UserAirport(id: "", name: "", latitude: longPressLat, longitude: longPressLon, elevation: 0)
+                editorSheet = EditorWrapper(mode: .airport(ap), isNew: true)
+            }
+            Button("Navaid") {
+                let nv = UserNavaid(id: "", name: "", latitude: longPressLat, longitude: longPressLon, elevation: 0, magneticVariation: 0, frequency: 0)
+                editorSheet = EditorWrapper(mode: .navaid(nv), isNew: true)
+            }
+            Button("Cancel", role: .cancel) { }
         }
 
         .confirmationDialog("KML Export", isPresented: $showKMLSubDialog, titleVisibility: .visible) {
