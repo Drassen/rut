@@ -31,19 +31,22 @@ Ruttens kontrollsiffror (byte 16-19)
 00000001 00000000 00000000 
 
 OBS! en tom rutts header består av nollor, förrutom byte 16 som är 01001000
+OBS! byte 16 = 01001000 gäller även aktiva rutter utan logistiska airports (starttyp=010, desttyp=010). Skillnaden mot tom ruttslot är att byte 17-18 ger total_pts > 0 för aktiva rutter.
 
 ruttens punktlista: (kan bestå av waypoints, airports, navaids)
 #ny wpt 12 bytes.
 -byte 0 är databasindex som förklarar var i tillämplig fil den ska hitta punkten
 Formel: Nummer_i_fil = (Byte0 / 2) - 1.
 0 = punkten är en fast officiell punkt från Jeppesen-databasen och ska inte kopplas till någon av filerna.
+-byte 1-3 är alltid noll (padding)
 -byte 4-7 är punktens id i 6bit, avslutas med 00.
+-byte 8-10 är alltid noll (padding). OBS: äldre DAP-system kan ha icke-noll här, helikoptern ignorerar dessa bytes.
 -byte 11 är punkttyp(4bit) och förklarar vilken databas punkten finns i (Airport 0101, Waypoint 0110, Navaid 0111, Jeppesen-databasen 0000, tom/slut 1000) följt av "1100"
 00000010 00000000 00000000 00000000 
 01111001 11100111 10011110 011110 00 
 00000000 00000000 00000000 01101100 
 
-OBS! en tom punkt består av nollor förrutom byte 11 som är 01101100
+OBS! en tom punkt (oanvänd fix-punktslot) består av nollor förrutom byte 11 som är 10001100 (tom/slut-typ 0x8C)
 
 #ny wpt
 00000100 00000000 00000000 00000000 01111101 11110111 11011111 01111100 00000000 00000000 00000000 01101100 
