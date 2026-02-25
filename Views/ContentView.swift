@@ -14,14 +14,16 @@ enum ExportFormat: String, CaseIterable, Identifiable {
     case a109 = "A109 PCMCIA"
     case uh60m = "UH60M PCMCIA (Not implemented)"
     case h145 = "H145 PCMCIA (Not implemented)"
-    
+
     case rte = "Garmin route (.RTE)"
-    
+
     case rut = "RUT complete set (.RUT)"
     case fpl = "User Routes (.FPL)"
+    case gpx = "GPX Route (.gpx)"
+    case kml = "KML"
     case apt = "User Airports (.APT)"
     case nav = "User Navaids (.NAV)"
-    
+
     var id: String { rawValue }
 }
 
@@ -46,6 +48,7 @@ struct ContentView: View {
     @State private var editorSheet: EditorWrapper?
     
     @State private var exportFormat: ExportFormat = .a109
+    @State private var showKMLSubDialog = false
     
     // NYTT: Helper för att hämta version
     private var appVersion: String {
@@ -247,6 +250,22 @@ struct ContentView: View {
         .onOpenURL { url in
             importURLs([url])
         }
+
+        .confirmationDialog("KML Export", isPresented: $showKMLSubDialog, titleVisibility: .visible) {
+            if !navStore.document.userAirports.isEmpty {
+                Button("Airports") { executeKMLExport(id: "kml-airports") }
+            }
+            if !navStore.document.userNavaids.isEmpty {
+                Button("Navaids") { executeKMLExport(id: "kml-navaids") }
+            }
+            if !navStore.document.userWaypoints.isEmpty {
+                Button("Waypoints") { executeKMLExport(id: "kml-waypoints") }
+            }
+            if !navStore.routes.isEmpty {
+                Button("Routes") { executeKMLExport(id: "kml-route") }
+            }
+            Button("Cancel", role: .cancel) { }
+        }
     }
     
     // MARK: - Logic
@@ -298,8 +317,8 @@ struct ContentView: View {
         switch exportFormat {
         case .apt: hasData = !navStore.document.userAirports.isEmpty
         case .nav: hasData = !navStore.document.userNavaids.isEmpty
-        case .fpl, .rte: hasData = !navStore.routes.isEmpty
-        case .rut, .a109, .uh60m, .h145: // Inkludera de nya formaten i datakollen
+        case .fpl, .rte, .gpx: hasData = !navStore.routes.isEmpty
+        case .rut, .a109, .uh60m, .h145, .kml:
             hasData = !navStore.routes.isEmpty ||
                       !navStore.document.userAirports.isEmpty ||
                       !navStore.document.userNavaids.isEmpty ||
@@ -325,7 +344,12 @@ struct ContentView: View {
         }
         
         guard canExport() else { return }
-        
+
+        if exportFormat == .kml {
+            showKMLSubDialog = true
+            return
+        }
+
         if exportFormat == .a109 {
             // Kontrollera om data saknas
             let missingAirports = navStore.document.userAirports.isEmpty
@@ -353,8 +377,9 @@ struct ContentView: View {
             case .fpl: exporterId = "fpl"
             case .rte: exporterId = "rte"
             case .rut: exporterId = "rut"
-            case .apt: exporterId = "apt" // Se till att APTExportService har id="apt"
-            case .nav: exporterId = "nav" // Se till att NAVExportService har id="nav"
+            case .gpx: exporterId = "gpx"
+            case .apt: exporterId = "apt"
+            case .nav: exporterId = "nav"
             default: return
             }
             
@@ -439,6 +464,36 @@ struct ContentView: View {
             }
         }
     
+    // MARK: - KML Sub-Export
+
+    private func executeKMLExport(id: String) {
+        guard let exporter = CoreServices.shared.exporter(withId: id) else {
+            toastManager.show(message: "KML exporter '\(id)' not found.")
+            return
+        }
+        do {
+            let files = try exporter.export(document: navStore.document, routes: navStore.routes)
+            guard !files.isEmpty else {
+                toastManager.show(message: "Nothing to export.", kind: .info)
+                return
+            }
+            let tempDir = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
+            try FileManager.default.createDirectory(at: tempDir, withIntermediateDirectories: true)
+            var urls: [URL] = []
+            for file in files {
+                let url = tempDir.appendingPathComponent(file.filename)
+                try file.data.write(to: url, options: .atomic)
+                urls.append(url)
+            }
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
+                self.exportContainer = ExportContainer(urls: urls)
+            }
+        } catch {
+            ErrorLogger.shared.logError(error)
+            toastManager.show(message: error.localizedDescription)
+        }
+    }
+
     private func cleanupDotFiles(in folderURL: URL) throws {
         let fileManager = FileManager.default
         let contents = try fileManager.contentsOfDirectory(at: folderURL, includingPropertiesForKeys: nil, options: [])

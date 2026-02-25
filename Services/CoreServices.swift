@@ -59,6 +59,8 @@ final class CoreServices: ObservableObject {
         self.importServices = [
             A109ImportService(),
             FPLImportService(),
+            GPXImportService(),
+            KMLImportService(),
             RTEImportService(),
             RUTImportService(),
             APTImportService(),
@@ -69,6 +71,11 @@ final class CoreServices: ObservableObject {
         self.exportServices = [
             A109PCMCIAExportService(),
             FPLExportService(),
+            GPXExportService(),
+            KMLAirportsExportService(),
+            KMLNavaidsExportService(),
+            KMLWaypointsExportService(),
+            KMLRouteExportService(),
             RTEExportService(),
             RUTExportService(),
             APTExportService(),
