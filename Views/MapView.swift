@@ -60,6 +60,11 @@ struct RutMapView: View {
     @State private var pendingMove: PendingMove?
     @State private var showMoveConfirm = false
 
+    // --- Map-level long-press/drag state ---
+    @GestureState private var isMapLongPressing = false
+    @State private var mapDragTarget: MapDragTarget? = nil
+    @State private var mapDragTargetChecked = false
+
     // --- FÄRGER ---
     private let colorAirport = Color(uiColor: .darkGray)
     private let colorNavaid  = Color.gray
@@ -92,6 +97,13 @@ struct RutMapView: View {
         let newCoordinate: CLLocationCoordinate2D
     }
 
+    // Map-level drag target
+    private enum MapDragTarget {
+        case userAirport(UserAirport)
+        case userNavaid(UserNavaid)
+        case routePoint(index: Int)
+    }
+
     var body: some View {
         ZStack(alignment: .topTrailing) {
             MapReader { proxy in
@@ -116,19 +128,49 @@ struct RutMapView: View {
                 .task {
                     await airspaceService.fetchAllZones()
                 }
+                // Single map-level gesture handles both marker drag and new-point creation.
+                // LongPressGesture is NOT on annotation views, so normal pan is never blocked.
                 .simultaneousGesture(
-                    LongPressGesture(minimumDuration: 0.6)
-                        .sequenced(before: DragGesture(minimumDistance: 0, coordinateSpace: .global))
-                        .onEnded { value in
-                            // Suppress if a marker is being dragged
-                            guard draggingAirportId == nil && draggingNavaidId == nil else { return }
-                            if case .second(true, let drag?) = value {
-                                if let coord = proxy.convert(drag.startLocation, from: .global) {
-                                    onMapLongPress?(coord)
+                    LongPressGesture(minimumDuration: 0.5)
+                        .sequenced(before: DragGesture(minimumDistance: 0, coordinateSpace: .global)
+                            .onChanged { v in
+                                if !mapDragTargetChecked {
+                                    mapDragTargetChecked = true
+                                    mapDragTarget = findDragTarget(at: v.startLocation, proxy: proxy)
+                                }
+                                if let target = mapDragTarget {
+                                    updateMapDragTarget(target, at: v.location, proxy: proxy)
                                 }
                             }
+                            .onEnded { v in
+                                if let target = mapDragTarget {
+                                    finalizeMapDragTarget(target, at: v.location, proxy: proxy)
+                                } else {
+                                    if let coord = proxy.convert(v.startLocation, from: .global) {
+                                        onMapLongPress?(coord)
+                                    }
+                                }
+                                mapDragTarget = nil
+                                mapDragTargetChecked = false
+                            }
+                        )
+                        .updating($isMapLongPressing) { v, s, _ in
+                            if case .first(true) = v { s = true }
+                            else if case .second(true, _) = v { s = true }
+                            else { s = false }
                         }
                 )
+                .onChange(of: isMapLongPressing) { wasActive, isActive in
+                    if wasActive && !isActive {
+                        // Gesture cancelled (e.g. pan recognised first) – clean up
+                        if mapDragTarget != nil {
+                            draggingAirportId = nil
+                            draggingNavaidId = nil
+                        }
+                        mapDragTarget = nil
+                        mapDragTargetChecked = false
+                    }
+                }
             }
 
             Picker("Map style", selection: $mapStyle) {
@@ -184,31 +226,14 @@ struct RutMapView: View {
                     ? draggingAirportCoord
                     : displayCoordinate(for: airport.coordinate)
                 Annotation("apt-\(index)-\(airport.id)", coordinate: dragCoord) {
-                    DraggableDBMarkerView(
-                        bgColor: colorAirport,
-                        iconName: "airplane",
-                        iconColor: .white,
-                        label: airport.id,
-                        onTap: {
+                    DatabaseMarkerView(bgColor: colorAirport, iconName: "airplane", iconColor: .white, label: airport.id)
+                        .scaleEffect(draggingAirportId == airport.id ? 1.2 : 1.0)
+                        .opacity(opacity)
+                        .scaleEffect(scale)
+                        .onTapGesture {
                             onPointTap?(RouteMapPoint(coordinate: airport.coordinate,
                                                       name: airport.id, indexInRoute: -1, kind: .userAirport))
-                        },
-                        onDragMove: { cgPoint in
-                            if let c = proxy.convert(cgPoint, from: .global) {
-                                draggingAirportId = airport.id
-                                draggingAirportCoord = c
-                            }
-                        },
-                        onDragEnd: { cgPoint in
-                            if let c = proxy.convert(cgPoint, from: .global) {
-                                draggingAirportId = nil
-                                pendingMove = PendingMove(kind: .airport(airport), newCoordinate: c)
-                                showMoveConfirm = true
-                            }
                         }
-                    )
-                    .opacity(opacity)
-                    .scaleEffect(scale)
                 }
                 .annotationTitles(.hidden)
             }
@@ -221,31 +246,14 @@ struct RutMapView: View {
                     ? draggingNavaidCoord
                     : displayCoordinate(for: navaid.coordinate)
                 Annotation("nav-\(index)-\(navaid.id)", coordinate: dragCoord) {
-                    DraggableDBMarkerView(
-                        bgColor: colorNavaid,
-                        iconName: "antenna.radiowaves.left.and.right",
-                        iconColor: .white,
-                        label: navaid.id,
-                        onTap: {
+                    DatabaseMarkerView(bgColor: colorNavaid, iconName: "antenna.radiowaves.left.and.right", iconColor: .white, label: navaid.id)
+                        .scaleEffect(draggingNavaidId == navaid.id ? 1.2 : 1.0)
+                        .opacity(opacity)
+                        .scaleEffect(scale)
+                        .onTapGesture {
                             onPointTap?(RouteMapPoint(coordinate: navaid.coordinate,
                                                       name: navaid.id, indexInRoute: -1, kind: .userNavaid))
-                        },
-                        onDragMove: { cgPoint in
-                            if let c = proxy.convert(cgPoint, from: .global) {
-                                draggingNavaidId = navaid.id
-                                draggingNavaidCoord = c
-                            }
-                        },
-                        onDragEnd: { cgPoint in
-                            if let c = proxy.convert(cgPoint, from: .global) {
-                                draggingNavaidId = nil
-                                pendingMove = PendingMove(kind: .navaid(navaid), newCoordinate: c)
-                                showMoveConfirm = true
-                            }
                         }
-                    )
-                    .opacity(opacity)
-                    .scaleEffect(scale)
                 }
                 .annotationTitles(.hidden)
             }
@@ -257,23 +265,22 @@ struct RutMapView: View {
                 Annotation("wpt-\(index)-\(wp.id)", coordinate: displayCoordinate(for: wp.coordinate)) {
                     let bg = isZero(wp.coordinate) ? Color.red : colorWpt
 
-                    // Databas-waypoint (Svart W)
                     ZStack {
                         Circle().fill(bg)
                         Text("W").font(.system(size: 12, weight: .bold)).foregroundColor(.black)
                     }
-                    .frame(width: 26, height: 26) // Fix storlek för centrering
-                    .overlay(alignment: .top) {   // Text hänger under
+                    .frame(width: 26, height: 26)
+                    .overlay(alignment: .top) {
                         Text(wp.id)
                             .font(.caption2)
                             .padding(2)
                             .background(Color.white.opacity(0.8))
                             .cornerRadius(4)
                             .fixedSize()
-                            .offset(y: 30) // Skjut ner texten
+                            .offset(y: 30)
                             .allowsHitTesting(false)
                     }
-                    .contentShape(Circle()) // Hit-area = bara ikonen, ej label
+                    .contentShape(Circle())
                     .opacity(opacity)
                     .scaleEffect(scale)
                     .onTapGesture {
@@ -369,28 +376,17 @@ struct RutMapView: View {
             ForEach(Array(points.enumerated()), id: \.offset) { pair in
                 let idx = pair.offset
                 let p = pair.element
+                let type = waypointType(for: p)
+                let isDragging: Bool = {
+                    if case .routePoint(let di) = mapDragTarget { return di == idx }
+                    return false
+                }()
 
                 Annotation(p.name, coordinate: displayCoordinate(for: p.coordinate)) {
-                    let type = waypointType(for: p)
-                    DraggableRouteMarkerView(
-                        point: p,
-                        index: idx,
-                        color: colorActive,
-                        contentColor: .white,
-                        waypointType: type,
-                        onTap: { onPointTap?(p) },
-                        onDragMove: { point in
-                            if let c = proxy.convert(point, from: .global) {
-                                navStore.updateWaypointCoordinate(in: route, at: idx, to: c)
-                            }
-                        },
-                        onDragEnd: { point in
-                            if let c = proxy.convert(point, from: .global) {
-                                navStore.updateWaypointCoordinate(in: route, at: idx, to: c)
-                            }
-                        }
-                    )
-                    .zIndex(10)
+                    RouteMarkerShapeView(point: p, color: colorActive, contentColor: .white, waypointType: type)
+                        .scaleEffect(isDragging ? 1.2 : 1.0)
+                        .zIndex(10)
+                        .onTapGesture { onPointTap?(p) }
                 }
                 .annotationTitles(.hidden)
 
@@ -415,6 +411,95 @@ struct RutMapView: View {
                     }
                     .annotationTitles(.hidden)
                 }
+            }
+        }
+    }
+
+    // MARK: - Map drag helpers
+
+    /// Hit-test: find the draggable marker closest to a screen point (within threshold).
+    private func findDragTarget(at screenPoint: CGPoint, proxy: MapProxy) -> MapDragTarget? {
+        let threshold: CGFloat = 30
+        var closestDist = CGFloat.infinity
+        var result: MapDragTarget? = nil
+
+        // User airports (visible ones – not in any route)
+        for airport in navStore.document.userAirports {
+            guard !activeRouteIDs.contains(airport.id) && !inactiveRouteIDs.contains(airport.id) else { continue }
+            let coord = draggingAirportId == airport.id
+                ? draggingAirportCoord
+                : displayCoordinate(for: airport.coordinate)
+            if let pt = proxy.convert(coord, to: .global) {
+                let dist = hypot(pt.x - screenPoint.x, pt.y - screenPoint.y)
+                if dist < threshold && dist < closestDist {
+                    closestDist = dist
+                    result = .userAirport(airport)
+                }
+            }
+        }
+
+        // User navaids
+        for navaid in navStore.document.userNavaids {
+            guard !activeRouteIDs.contains(navaid.id) && !inactiveRouteIDs.contains(navaid.id) else { continue }
+            let coord = draggingNavaidId == navaid.id
+                ? draggingNavaidCoord
+                : displayCoordinate(for: navaid.coordinate)
+            if let pt = proxy.convert(coord, to: .global) {
+                let dist = hypot(pt.x - screenPoint.x, pt.y - screenPoint.y)
+                if dist < threshold && dist < closestDist {
+                    closestDist = dist
+                    result = .userNavaid(navaid)
+                }
+            }
+        }
+
+        // Active route points
+        if let route = navStore.activeRoute {
+            let points = navStore.mapPoints(for: route)
+            for (idx, point) in points.enumerated() {
+                if let pt = proxy.convert(displayCoordinate(for: point.coordinate), to: .global) {
+                    let dist = hypot(pt.x - screenPoint.x, pt.y - screenPoint.y)
+                    if dist < threshold && dist < closestDist {
+                        closestDist = dist
+                        result = .routePoint(index: idx)
+                    }
+                }
+            }
+        }
+
+        return result
+    }
+
+    private func updateMapDragTarget(_ target: MapDragTarget, at screenPoint: CGPoint, proxy: MapProxy) {
+        guard let coord = proxy.convert(screenPoint, from: .global) else { return }
+        switch target {
+        case .userAirport(let airport):
+            draggingAirportId = airport.id
+            draggingAirportCoord = coord
+        case .userNavaid(let navaid):
+            draggingNavaidId = navaid.id
+            draggingNavaidCoord = coord
+        case .routePoint(let idx):
+            if let route = navStore.activeRoute {
+                navStore.updateWaypointCoordinate(in: route, at: idx, to: coord)
+            }
+        }
+    }
+
+    private func finalizeMapDragTarget(_ target: MapDragTarget, at screenPoint: CGPoint, proxy: MapProxy) {
+        guard let coord = proxy.convert(screenPoint, from: .global) else { return }
+        switch target {
+        case .userAirport(let airport):
+            draggingAirportId = nil
+            pendingMove = PendingMove(kind: .airport(airport), newCoordinate: coord)
+            showMoveConfirm = true
+        case .userNavaid(let navaid):
+            draggingNavaidId = nil
+            pendingMove = PendingMove(kind: .navaid(navaid), newCoordinate: coord)
+            showMoveConfirm = true
+        case .routePoint(let idx):
+            if let route = navStore.activeRoute {
+                navStore.updateWaypointCoordinate(in: route, at: idx, to: coord)
             }
         }
     }
@@ -501,8 +586,8 @@ struct DatabaseMarkerView: View {
                 .font(.system(size: 12))
                 .foregroundColor(iconColor)
         }
-        .frame(width: 26, height: 26) // Fixerad storlek
-        .overlay(alignment: .top) {   // Text hänger utanför (under)
+        .frame(width: 26, height: 26)
+        .overlay(alignment: .top) {
             Text(label)
                 .font(.caption2)
                 .padding(2)
@@ -510,10 +595,10 @@ struct DatabaseMarkerView: View {
                 .foregroundColor(Color.black.opacity(0.8))
                 .cornerRadius(4)
                 .fixedSize()
-                .offset(y: 30) // 26 + 4 padding
+                .offset(y: 30)
                 .allowsHitTesting(false)
         }
-        .contentShape(Circle()) // Hit-area = bara ikonen, ej label
+        .contentShape(Circle())
     }
 }
 
@@ -527,8 +612,8 @@ struct RouteMarkerShapeView: View {
         ZStack {
             markerShape()
         }
-        .frame(width: 26, height: 26) // Fixerad storlek
-        .overlay(alignment: .top) {   // Text hänger utanför
+        .frame(width: 26, height: 26)
+        .overlay(alignment: .top) {
             Text(point.name)
                 .font(.caption2)
                 .padding(2)
@@ -539,7 +624,7 @@ struct RouteMarkerShapeView: View {
                 .offset(y: 30)
                 .allowsHitTesting(false)
         }
-        .contentShape(Circle()) // Hit-area = bara ikonen, ej label
+        .contentShape(Circle())
     }
 
     @ViewBuilder
@@ -594,98 +679,17 @@ struct RouteMarkerShapeView: View {
                         Image(systemName: "arrow.triangle.2.circlepath").font(.system(size: 12, weight: .bold)).foregroundColor(.white)
                     }
                 default:
-                    // Default: Cirkel med vit prick
                     ZStack {
                         Circle().fill(color)
                         Circle().fill(Color.white).padding(6)
                     }
                 }
             } else {
-                // Fallback
                 ZStack {
                     Circle().fill(color)
                     Circle().fill(Color.white).padding(6)
                 }
             }
         }
-    }
-}
-
-struct DraggableRouteMarkerView: View {
-    let point: RouteMapPoint
-    let index: Int
-    let color: Color
-    let contentColor: Color
-    let waypointType: WaypointType?
-    let onTap: () -> Void
-    let onDragMove: (CGPoint) -> Void
-    let onDragEnd: (CGPoint) -> Void
-    @GestureState private var isLongPressing = false
-    @State private var lastDragLocation: CGPoint? = nil
-
-    var body: some View {
-        let drag = DragGesture(coordinateSpace: .global)
-            .onChanged { v in
-                lastDragLocation = v.location
-                onDragMove(v.location)
-            }
-
-        let seq = LongPressGesture(minimumDuration: 0.3)
-            .sequenced(before: drag)
-            .updating($isLongPressing) { v, s, _ in
-                if case .first(true) = v { s = true }
-                else if case .second(true, _) = v { s = true }
-                else { s = false }
-            }
-
-        RouteMarkerShapeView(point: point, color: color, contentColor: contentColor, waypointType: waypointType)
-            .scaleEffect(isLongPressing ? 1.2 : 1.0)
-            .gesture(seq)
-            .simultaneousGesture(TapGesture().onEnded { if !isLongPressing { onTap() } })
-            .onChange(of: isLongPressing) { wasActive, isActive in
-                if wasActive && !isActive, let loc = lastDragLocation {
-                    onDragEnd(loc)
-                    lastDragLocation = nil
-                }
-            }
-    }
-}
-
-struct DraggableDBMarkerView: View {
-    let bgColor: Color
-    let iconName: String
-    let iconColor: Color
-    let label: String
-    let onTap: () -> Void
-    let onDragMove: (CGPoint) -> Void
-    let onDragEnd: (CGPoint) -> Void
-    @GestureState private var isLongPressing = false
-    @State private var lastDragLocation: CGPoint? = nil
-
-    var body: some View {
-        let drag = DragGesture(coordinateSpace: .global)
-            .onChanged { v in
-                lastDragLocation = v.location
-                onDragMove(v.location)
-            }
-
-        let seq = LongPressGesture(minimumDuration: 0.3)
-            .sequenced(before: drag)
-            .updating($isLongPressing) { v, s, _ in
-                if case .first(true) = v { s = true }
-                else if case .second(true, _) = v { s = true }
-                else { s = false }
-            }
-
-        DatabaseMarkerView(bgColor: bgColor, iconName: iconName, iconColor: iconColor, label: label)
-            .scaleEffect(isLongPressing ? 1.2 : 1.0)
-            .gesture(seq)
-            .simultaneousGesture(TapGesture().onEnded { if !isLongPressing { onTap() } })
-            .onChange(of: isLongPressing) { wasActive, isActive in
-                if wasActive && !isActive, let loc = lastDragLocation {
-                    onDragEnd(loc)
-                    lastDragLocation = nil
-                }
-            }
     }
 }
