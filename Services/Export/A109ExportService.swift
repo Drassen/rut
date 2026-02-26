@@ -319,8 +319,8 @@ private extension A109PCMCIAExportService {
                 let first = route.pointRefs.first
                 let last = route.pointRefs.last
                 
-                let startIsSystem = (first?.kind == .systemAirport)
-                let endIsSystem = (last?.kind == .systemAirport)
+                let startIsSystem = (first?.kind == .systemAirport) && aptIdxMap[first?.refId ?? ""] == nil
+                let endIsSystem = (last?.kind == .systemAirport) && aptIdxMap[last?.refId ?? ""] == nil
                 
                 let startIsAnyApt = (first?.kind == .userAirport || first?.kind == .systemAirport)
                 let lastIsAnyApt = (last?.kind == .userAirport || last?.kind == .systemAirport)
@@ -397,8 +397,13 @@ private extension A109PCMCIAExportService {
                             
                         case .systemAirport:
                             typeCode = 0x5C
-                            dbIdx = 0
-                            ptName = ref.refId
+                            if let idx = aptIdxMap[ref.refId] {
+                                dbIdx = UInt8((idx + 1) * 2)
+                                ptName = userAirports[idx].id
+                            } else {
+                                dbIdx = 0
+                                ptName = ref.refId
+                            }
                             
                         case .systemNavaid:
                             typeCode = 0x7C
@@ -457,6 +462,10 @@ private extension A109PCMCIAExportService {
                 return LogInfo(idBytes: id3, dbIndex: UInt8((idx+1)*2), typeBits: 0b101)
             }
         } else if ref.kind == .systemAirport {
+            if let idx = aptMap[ref.refId] {
+                // Promoted to user airport: Type 101 (5), Index > 0
+                return LogInfo(idBytes: id3, dbIndex: UInt8((idx+1)*2), typeBits: 0b101)
+            }
             // System Airport: Type 100 (4), Index 0
             return LogInfo(idBytes: id3, dbIndex: 0, typeBits: 0b100)
         }
