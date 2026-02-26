@@ -44,6 +44,7 @@ struct TriangleMarkerShape: Shape {
 
 struct RutMapView: View {
     @EnvironmentObject var navStore: NavigationStore
+    @StateObject private var airspaceService = AirspaceService.shared
 
     var onPointTap: ((RouteMapPoint) -> Void)? = nil
     var onMapLongPress: ((CLLocationCoordinate2D) -> Void)? = nil
@@ -96,6 +97,9 @@ struct RutMapView: View {
             MapReader { proxy in
                 Map(position: $camera) {
 
+                    // 0. Airspace zones (bakgrund, ej klickbar)
+                    airspaceContent()
+
                     // 1. Inaktiva rutter
                     inactiveRoutesContent(proxy: proxy)
 
@@ -109,10 +113,15 @@ struct RutMapView: View {
                 .onAppear {
                     configureInitialCamera()
                 }
+                .task {
+                    await airspaceService.fetchAllZones()
+                }
                 .simultaneousGesture(
                     LongPressGesture(minimumDuration: 0.6)
                         .sequenced(before: DragGesture(minimumDistance: 0, coordinateSpace: .global))
                         .onEnded { value in
+                            // Suppress if a marker is being dragged
+                            guard draggingAirportId == nil && draggingNavaidId == nil else { return }
                             if case .second(true, let drag?) = value {
                                 if let coord = proxy.convert(drag.startLocation, from: .global) {
                                     onMapLongPress?(coord)
@@ -146,6 +155,17 @@ struct RutMapView: View {
             if let move = pendingMove {
                 Text(moveConfirmMessage(for: move))
             }
+        }
+    }
+
+    // MARK: - 0. Airspace Zones
+
+    @MapContentBuilder
+    private func airspaceContent() -> some MapContent {
+        ForEach(airspaceService.zones) { zone in
+            MapPolygon(coordinates: zone.coordinates)
+                .foregroundStyle(zone.type.fillColor)
+                .stroke(zone.type.strokeColor, lineWidth: 1.5)
         }
     }
 
@@ -251,7 +271,9 @@ struct RutMapView: View {
                             .cornerRadius(4)
                             .fixedSize()
                             .offset(y: 30) // Skjut ner texten
+                            .allowsHitTesting(false)
                     }
+                    .contentShape(Circle()) // Hit-area = bara ikonen, ej label
                     .opacity(opacity)
                     .scaleEffect(scale)
                     .onTapGesture {
@@ -489,7 +511,9 @@ struct DatabaseMarkerView: View {
                 .cornerRadius(4)
                 .fixedSize()
                 .offset(y: 30) // 26 + 4 padding
+                .allowsHitTesting(false)
         }
+        .contentShape(Circle()) // Hit-area = bara ikonen, ej label
     }
 }
 
@@ -513,7 +537,9 @@ struct RouteMarkerShapeView: View {
                 .cornerRadius(4)
                 .fixedSize()
                 .offset(y: 30)
+                .allowsHitTesting(false)
         }
+        .contentShape(Circle()) // Hit-area = bara ikonen, ej label
     }
 
     @ViewBuilder
@@ -595,11 +621,14 @@ struct DraggableRouteMarkerView: View {
     let onDragMove: (CGPoint) -> Void
     let onDragEnd: (CGPoint) -> Void
     @GestureState private var isLongPressing = false
+    @State private var lastDragLocation: CGPoint? = nil
 
     var body: some View {
         let drag = DragGesture(coordinateSpace: .global)
-            .onChanged { onDragMove($0.location) }
-            .onEnded { onDragEnd($0.location) }
+            .onChanged { v in
+                lastDragLocation = v.location
+                onDragMove(v.location)
+            }
 
         let seq = LongPressGesture(minimumDuration: 0.3)
             .sequenced(before: drag)
@@ -613,6 +642,12 @@ struct DraggableRouteMarkerView: View {
             .scaleEffect(isLongPressing ? 1.2 : 1.0)
             .gesture(seq)
             .simultaneousGesture(TapGesture().onEnded { if !isLongPressing { onTap() } })
+            .onChange(of: isLongPressing) { wasActive, isActive in
+                if wasActive && !isActive, let loc = lastDragLocation {
+                    onDragEnd(loc)
+                    lastDragLocation = nil
+                }
+            }
     }
 }
 
@@ -625,11 +660,14 @@ struct DraggableDBMarkerView: View {
     let onDragMove: (CGPoint) -> Void
     let onDragEnd: (CGPoint) -> Void
     @GestureState private var isLongPressing = false
+    @State private var lastDragLocation: CGPoint? = nil
 
     var body: some View {
         let drag = DragGesture(coordinateSpace: .global)
-            .onChanged { onDragMove($0.location) }
-            .onEnded { onDragEnd($0.location) }
+            .onChanged { v in
+                lastDragLocation = v.location
+                onDragMove(v.location)
+            }
 
         let seq = LongPressGesture(minimumDuration: 0.3)
             .sequenced(before: drag)
@@ -643,5 +681,11 @@ struct DraggableDBMarkerView: View {
             .scaleEffect(isLongPressing ? 1.2 : 1.0)
             .gesture(seq)
             .simultaneousGesture(TapGesture().onEnded { if !isLongPressing { onTap() } })
+            .onChange(of: isLongPressing) { wasActive, isActive in
+                if wasActive && !isActive, let loc = lastDragLocation {
+                    onDragEnd(loc)
+                    lastDragLocation = nil
+                }
+            }
     }
 }
