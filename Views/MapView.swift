@@ -663,6 +663,11 @@ struct RouteMarkerShapeView: View {
                         Rectangle().fill(color)
                         Rectangle().fill(Color.white).padding(6)
                     }
+                case .lp:
+                    ZStack {
+                        TriangleMarkerShape().fill(color)
+                        TriangleMarkerShape().fill(Color.white).padding(6)
+                    }
                 case .cli:
                     ZStack {
                         Circle().fill(color)

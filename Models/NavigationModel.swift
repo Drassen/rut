@@ -7,6 +7,7 @@ enum WaypointType: String, Codable, CaseIterable {
     case custom = "CUSTOM" // Default / Visas som liten prick
     case wpt  = "WPT"  // Waypoint (Cirkel)
     case ip   = "IP"   // Initial Point (Fyrkant)
+    case lp   = "LP"   // Landing Point (Triangel)
     case tgt  = "TGT"  // Target (Triangel)
     case hld  = "HLD"  // Holding (Cirkel)
     case cli  = "CLI"  // Climb Point (Upp-pil)

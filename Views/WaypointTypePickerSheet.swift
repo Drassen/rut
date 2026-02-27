@@ -109,6 +109,14 @@ struct WaypointTypePickerSheet: View {
                             }
                         }
                         
+                        Button { apply(type: .lp) } label: {
+                            HStack {
+                                Image(systemName: "triangle.fill")
+                                Text("LP (Landing Point)")
+                                Spacer()
+                            }
+                        }
+                        
                         Button { apply(type: .tgt) } label: {
                             HStack {
                                 Image(systemName: "triangle.fill")
