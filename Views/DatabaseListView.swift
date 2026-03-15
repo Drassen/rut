@@ -2,44 +2,72 @@ import SwiftUI
 
 enum DatabaseTab: String, CaseIterable, Identifiable {
     case waypoints = "Waypoints"
-    case airports = "Airports"
-    case navaids = "Navaids"
-    
+    case airports  = "Airports"
+    case navaids   = "Navaids"
+
     var id: String { rawValue }
+
+    var icon: String {
+        switch self {
+        case .waypoints: return "mappin.and.ellipse"
+        case .airports:  return "airplane"
+        case .navaids:   return "antenna.radiowaves.left.and.right"
+        }
+    }
+
+    var color: Color {
+        switch self {
+        case .waypoints: return RutTheme.textDim
+        case .airports:  return RutTheme.amber
+        case .navaids:   return RutTheme.green
+        }
+    }
 }
 
 struct DatabaseListView: View {
     @EnvironmentObject var navStore: NavigationStore
     @Environment(\.dismiss) var dismiss
-    
-    @State private var selectedTab: DatabaseTab = .waypoints
+
+    @State private var selectedTab: DatabaseTab = .airports
     @State private var itemToAdd: PointEditorView.EditMode?
-    
+
     var body: some View {
         NavigationStack {
             VStack(spacing: 0) {
-                Picker("Database", selection: $selectedTab) {
+                // ── Custom tab bar ──
+                HStack(spacing: 0) {
                     ForEach(DatabaseTab.allCases) { tab in
-                        Text(tab.rawValue).tag(tab)
+                        tabButton(tab)
                     }
                 }
-                .pickerStyle(.segmented)
-                .padding()
-                
+                .background(RutTheme.surface)
+                .overlay(alignment: .bottom) {
+                    Rectangle().fill(RutTheme.border).frame(height: 1)
+                }
+
+                // ── Content ──
                 Group {
                     switch selectedTab {
                     case .waypoints: waypointList
-                    case .airports: airportList
-                    case .navaids: navaidList
+                    case .airports:  airportList
+                    case .navaids:   navaidList
                     }
                 }
+                .background(RutTheme.bg)
             }
             .navigationTitle("User Database")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
-                ToolbarItem(placement: .cancellationAction) { Button("Close") { dismiss() } }
+                ToolbarItem(placement: .cancellationAction) {
+                    Button("Close") { dismiss() }
+                        .foregroundColor(RutTheme.textDim)
+                }
                 ToolbarItem(placement: .primaryAction) {
-                    Button { startAddItem() } label: { Image(systemName: "plus") }
+                    Button { startAddItem() } label: {
+                        Image(systemName: "plus")
+                            .fontWeight(.semibold)
+                            .foregroundColor(RutTheme.amber)
+                    }
                 }
             }
             .sheet(item: Binding(
@@ -49,85 +77,157 @@ struct DatabaseListView: View {
                 NavigationStack {
                     PointEditorView(mode: wrapper.mode, isNew: true)
                 }
+                .tint(RutTheme.amber)
             }
         }
+        .tint(RutTheme.amber)
     }
-    
-    struct Wrapper: Identifiable {
-        let id = UUID()
-        let mode: PointEditorView.EditMode
-    }
-    
-    private func startAddItem() {
-        switch selectedTab {
-        case .waypoints:
-            let template = UserWaypoint(id: "", name: "", type: .custom, latitude: 0, longitude: 0, elevation: 0)
-            itemToAdd = .waypoint(template)
-        case .airports:
-            let template = UserAirport(id: "", name: "", latitude: 0, longitude: 0, elevation: 0)
-            itemToAdd = .airport(template)
-        case .navaids:
-            let template = UserNavaid(id: "", name: "", latitude: 0, longitude: 0, elevation: 0, magneticVariation: 0, frequency: 0)
-            itemToAdd = .navaid(template)
-        }
-    }
-    
-    // MARK: - Sorted Lists
-    
-    private var waypointList: some View {
-        List {
-            // SORTERING HÄR
-            ForEach(navStore.document.userWaypoints.sorted { $0.id < $1.id }) { wp in
-                NavigationLink(destination: PointEditorView(mode: .waypoint(wp), isNew: false)) {
-                    HStack {
-                        Image(systemName: "triangle.fill").font(.caption2).foregroundColor(.gray)
-                        Text(wp.id).font(.headline)
-                        if !wp.name.isEmpty && wp.name != wp.id { Text(wp.name).font(.caption).foregroundColor(.secondary) }
-                        Spacer()
-                        if wp.type != .custom {
-                            Text(wp.type.rawValue).font(.caption2).padding(4).background(Color.gray.opacity(0.2)).cornerRadius(4)
-                        }
-                    }
+
+    // MARK: - Tab Button
+
+    private func tabButton(_ tab: DatabaseTab) -> some View {
+        Button {
+            withAnimation(.easeInOut(duration: 0.18)) { selectedTab = tab }
+        } label: {
+            VStack(spacing: 4) {
+                Image(systemName: tab.icon)
+                    .font(.system(size: 15))
+                Text(tab.rawValue)
+                    .font(.caption2.weight(.medium))
+            }
+            .foregroundColor(selectedTab == tab ? tab.color : RutTheme.textMuted)
+            .frame(maxWidth: .infinity)
+            .padding(.vertical, 10)
+            .overlay(alignment: .bottom) {
+                if selectedTab == tab {
+                    Rectangle()
+                        .fill(tab.color)
+                        .frame(height: 2)
                 }
             }
-            // OBS: onDelete fungerar inte direkt på en sorted array i en ForEach om vi inte hanterar index noga.
-            // För enkelhetens skull tar vi bort swipe-delete här och litar på delete-knappen inne i editorn,
-            // ELLER så måste vi slå upp objektet att radera.
-            // Eftersom vi har sorterat, matchar inte indexet i ForEach indexet i den riktiga arrayen.
-            // Lösning: Använd id-baserad radering via PointEditorView istället, eller implementera komplex swipe-logic.
-            // Jag tar bort .onDelete här för att undvika buggar med sortering. Användaren kan radera inne i vyn.
         }
     }
-    
+
+    // MARK: - Lists
+
+    private var waypointList: some View {
+        List {
+            ForEach(navStore.document.userWaypoints.sorted { $0.id < $1.id }) { wp in
+                NavigationLink(destination: PointEditorView(mode: .waypoint(wp), isNew: false)) {
+                    HStack(spacing: 12) {
+                        Image(systemName: "mappin.and.ellipse")
+                            .font(.system(size: 13))
+                            .foregroundColor(RutTheme.textDim)
+                            .frame(width: 22)
+
+                        VStack(alignment: .leading, spacing: 2) {
+                            Text(wp.id)
+                                .font(.subheadline.weight(.semibold))
+                                .foregroundColor(RutTheme.text)
+                            if !wp.name.isEmpty && wp.name != wp.id {
+                                Text(wp.name)
+                                    .font(.caption)
+                                    .foregroundColor(RutTheme.textDim)
+                            }
+                        }
+
+                        Spacer()
+
+                        if wp.type != .custom {
+                            Text(wp.type.rawValue)
+                                .font(.system(size: 10, weight: .semibold, design: .monospaced))
+                                .foregroundColor(RutTheme.amber)
+                                .padding(.horizontal, 6)
+                                .padding(.vertical, 3)
+                                .background(RutTheme.amberDim)
+                                .overlay(RoundedRectangle(cornerRadius: 4).stroke(RutTheme.amber.opacity(0.3), lineWidth: 1))
+                                .cornerRadius(4)
+                        }
+                    }
+                    .padding(.vertical, 3)
+                }
+                .listRowBackground(RutTheme.surface)
+            }
+        }
+        .listStyle(.plain)
+        .scrollContentBackground(.hidden)
+    }
+
     private var airportList: some View {
         List {
             ForEach(navStore.document.userAirports.sorted { $0.id < $1.id }) { ap in
                 NavigationLink(destination: PointEditorView(mode: .airport(ap), isNew: false)) {
-                    HStack {
-                        Image(systemName: "airplane").foregroundColor(.blue)
-                        VStack(alignment: .leading) {
-                            Text(ap.id).font(.headline)
-                            if !ap.name.isEmpty && ap.name != ap.id { Text(ap.name).font(.caption).foregroundColor(.secondary) }
+                    HStack(spacing: 12) {
+                        Image(systemName: "airplane")
+                            .font(.system(size: 13))
+                            .foregroundColor(RutTheme.amber)
+                            .frame(width: 22)
+
+                        VStack(alignment: .leading, spacing: 2) {
+                            Text(ap.id)
+                                .font(.subheadline.weight(.semibold))
+                                .foregroundColor(RutTheme.text)
+                            if !ap.name.isEmpty && ap.name != ap.id {
+                                Text(ap.name)
+                                    .font(.caption)
+                                    .foregroundColor(RutTheme.textDim)
+                            }
                         }
                     }
+                    .padding(.vertical, 3)
                 }
+                .listRowBackground(RutTheme.surface)
             }
         }
+        .listStyle(.plain)
+        .scrollContentBackground(.hidden)
     }
-    
+
     private var navaidList: some View {
         List {
             ForEach(navStore.document.userNavaids.sorted { $0.id < $1.id }) { nv in
                 NavigationLink(destination: PointEditorView(mode: .navaid(nv), isNew: false)) {
-                    HStack {
-                        Image(systemName: "antenna.radiowaves.left.and.right").foregroundColor(.orange)
-                        VStack(alignment: .leading) {
-                            Text(nv.id).font(.headline)
-                            Text(nv.name).font(.caption).foregroundColor(.secondary)
+                    HStack(spacing: 12) {
+                        Image(systemName: "antenna.radiowaves.left.and.right")
+                            .font(.system(size: 13))
+                            .foregroundColor(RutTheme.green)
+                            .frame(width: 22)
+
+                        VStack(alignment: .leading, spacing: 2) {
+                            Text(nv.id)
+                                .font(.subheadline.weight(.semibold))
+                                .foregroundColor(RutTheme.text)
+                            if !nv.name.isEmpty {
+                                Text(nv.name)
+                                    .font(.caption)
+                                    .foregroundColor(RutTheme.textDim)
+                            }
                         }
                     }
+                    .padding(.vertical, 3)
                 }
+                .listRowBackground(RutTheme.surface)
             }
+        }
+        .listStyle(.plain)
+        .scrollContentBackground(.hidden)
+    }
+
+    // MARK: - Add Item
+
+    struct Wrapper: Identifiable {
+        let id = UUID()
+        let mode: PointEditorView.EditMode
+    }
+
+    private func startAddItem() {
+        switch selectedTab {
+        case .waypoints:
+            itemToAdd = .waypoint(UserWaypoint(id: "", name: "", type: .custom, latitude: 0, longitude: 0, elevation: 0))
+        case .airports:
+            itemToAdd = .airport(UserAirport(id: "", name: "", latitude: 0, longitude: 0, elevation: 0))
+        case .navaids:
+            itemToAdd = .navaid(UserNavaid(id: "", name: "", latitude: 0, longitude: 0, elevation: 0, magneticVariation: 0, frequency: 0))
         }
     }
 }

@@ -13,21 +13,21 @@ struct EditorWrapper: Identifiable {
 }
 
 enum ExportFormat: String, CaseIterable, Identifiable {
-    case a109 = "A109 PCMCIA"
-    case uh60m = "UH60M PCMCIA (Not implemented)"
-    case h145 = "H145 PCMCIA (Not implemented)"
-
-    case rte = "Garmin route (.RTE)"
-
-    case gpx = "GPX Route (.gpx)"
-    case kml = "KML"
-
-    case fpl = "User Routes (.FPL)"
-    case apt = "User Airports (.APT)"
-    case nav = "User Navaids (.NAV)"
-    case rut = "RUT complete set (.RUT)"
+    case a109  = "A109 PCMCIA"
+    case uh60m = "UH60M (Not implemented)"
+    case h145  = "H145 (Not implemented)"
+    case nh90  = "NH90 (Not implemented)"
+    case rte   = "Garmin route (.RTE)"
+    case gpx   = "GPX Route (.gpx)"
+    case kml   = "KML"
+    case fpl   = "User Routes (.FPL)"
+    case apt   = "User Airports (.APT)"
+    case nav   = "User Navaids (.NAV)"
+    case rut   = "RUT complete set (.RUT)"
 
     var id: String { rawValue }
+
+    var isPCMCIA: Bool { self == .a109 || self == .uh60m || self == .h145 || self == .nh90 }
 }
 
 struct ExportContainer: Identifiable {
@@ -35,34 +35,52 @@ struct ExportContainer: Identifiable {
     let urls: [URL]
 }
 
+// MARK: - Stat Badge
+
+private struct StatBadge: View {
+    let icon: String
+    let count: Int
+    let label: String
+
+    var body: some View {
+        HStack(spacing: 5) {
+            Image(systemName: icon)
+                .font(.system(size: 10, weight: .semibold))
+                .foregroundColor(RutTheme.amber)
+            Text("\(count) \(label)")
+                .font(.caption.weight(.semibold))
+                .foregroundColor(RutTheme.textDim)
+        }
+        .padding(.horizontal, 9)
+        .padding(.vertical, 5)
+        .background(RutTheme.surface2)
+        .overlay(Capsule().stroke(RutTheme.border, lineWidth: 1))
+        .clipShape(Capsule())
+    }
+}
+
+// MARK: - Content View
+
 struct ContentView: View {
     @EnvironmentObject var navStore: NavigationStore
     @EnvironmentObject var toastManager: ToastManager
-    
-    // Import state
+
     @State private var isImporting = false
-    
-    // Export state
-    @State private var isSelectingExportFolder = false // For A109 direct write
-    @State private var exportContainer: ExportContainer? // For other formats (Share sheet)
-    @State private var showA109MissingDataAlert = false // Varning för saknad data
-    
+    @State private var isSelectingExportFolder = false
+    @State private var exportContainer: ExportContainer?
+    @State private var showA109MissingDataAlert = false
     @State private var showDatabase = false
     @State private var editorSheet: EditorWrapper?
-    
     @State private var exportFormat: ExportFormat = .a109
     @State private var showKMLSubDialog = false
-
-    // Long press on map to add new point
     @State private var longPressLat: Double = 0
     @State private var longPressLon: Double = 0
     @State private var showAddPointTypeMenu = false
-    
-    // NYTT: Helper för att hämta version
+
     private var appVersion: String {
-        Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "Unknown"
+        Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "—"
     }
-    
+
     private var hasAnyData: Bool {
         !navStore.routes.isEmpty ||
         !navStore.document.userAirports.isEmpty ||
@@ -71,201 +89,32 @@ struct ContentView: View {
         !navStore.document.systemAirports.isEmpty ||
         !navStore.document.systemNavaids.isEmpty
     }
-    
+
     var body: some View {
-        ZStack {
-            if !hasAnyData {
-                Image("bgimage")
-                    .resizable()
-                    .aspectRatio(contentMode: .fit)
+        Group {
+            if hasAnyData {
+                mainView
+            } else {
+                emptyStateView
             }
-            VStack(spacing: 16) {
-                if !hasAnyData {
-                    Spacer()
-                }
-                // Top Controls
-                HStack(spacing: 12) {
-                    Button {
-                        isImporting = true
-                    } label: {
-                        Label("Import", systemImage: "square.and.arrow.down")
-                            .frame(minWidth: 200)
-                    }
-                    .buttonStyle(.borderedProminent)
-                    .fileImporter(
-                        isPresented: $isImporting,
-                        allowedContentTypes: [.data],
-                        allowsMultipleSelection: true,
-                        onCompletion: handleImport(result:)
-                    )
-                }
-                .padding(.horizontal)
-                
-                if !hasAnyData {
-                    Text(".GPX .KML .RUT .FPL .RTE .P01 .APT .NAV")
-                        .font(.footnote)
-                        .foregroundColor(.secondary)
-                        .padding(.horizontal)
-                    Spacer()
-                } else {
-                    // Routes
-                    if !navStore.routes.isEmpty {
-                        ScrollView(.horizontal, showsIndicators: false) {
-                            HStack(spacing: 8) {
-                                ForEach(navStore.routes) { route in
-                                    RouteTileView(
-                                        route: route,
-                                        isActive: route.id == navStore.activeRouteId,
-                                        onTap: { handleRouteTap(route) },
-                                        onClose: { navStore.deleteRoute(route) }
-                                    )
-                                }
-                            }
-                            .padding(.horizontal)
-                        }
-                    }
-                    
-                    // Counters
-                    HStack(spacing: 16) {
-                        let uApCount = navStore.document.userAirports.count
-                        if uApCount > 0 {
-                            Label("\(uApCount) Apt", systemImage: "airplane")
-                                .font(.headline).foregroundColor(.secondary)
-                        }
-                        let uNvCount = navStore.document.userNavaids.count
-                        if uNvCount > 0 {
-                            Label("\(uNvCount) Nav", systemImage: "antenna.radiowaves.left.and.right")
-                                .font(.headline).foregroundColor(.secondary)
-                        }
-                        let uWpCount = navStore.document.userWaypoints.count
-                        if uWpCount > 0 {
-                            Label("\(uWpCount) Wpt", systemImage: "mappin.and.ellipse")
-                                .font(.headline).foregroundColor(.secondary)
-                        }
-                        Spacer()
-                        Button {
-                            showDatabase = true
-                        } label: {
-                            Label("Database", systemImage: "list.bullet.rectangle")
-                        }
-                        .buttonStyle(.bordered)
-                    }
-                    .padding(.horizontal)
-                    
-                    // Map
-                    RutMapView(
-                        onPointTap: { point in
-                            switch point.kind {
-                            case .userWaypoint:
-                                if let wp = navStore.document.userWaypoints.first(where: { $0.id == point.name }) {
-                                    editorSheet = EditorWrapper(mode: .waypoint(wp))
-                                }
-                            case .userAirport:
-                                if let ap = navStore.document.userAirports.first(where: { $0.id == point.name }) {
-                                    editorSheet = EditorWrapper(mode: .airport(ap))
-                                }
-                            case .userNavaid:
-                                if let nv = navStore.document.userNavaids.first(where: { $0.id == point.name }) {
-                                    editorSheet = EditorWrapper(mode: .navaid(nv))
-                                }
-                            case .systemAirport:
-                                if let ap = navStore.document.systemAirports.first(where: { $0.id == point.name }) {
-                                    editorSheet = EditorWrapper(mode: .systemAirport(ap))
-                                }
-                            case .systemNavaid:
-                                if let nv = navStore.document.systemNavaids.first(where: { $0.id == point.name }) {
-                                    editorSheet = EditorWrapper(mode: .systemNavaid(nv))
-                                }
-                            }
-                        },
-                        onMapLongPress: { coord in
-                            longPressLat = coord.latitude
-                            longPressLon = coord.longitude
-                            showAddPointTypeMenu = true
-                        }
-                    )
-                    .environmentObject(navStore)
-                    .frame(minHeight: 250)
-                    
-                    // Export Controls
-                    HStack {
-                        Picker("Format", selection: $exportFormat) {
-                            ForEach(ExportFormat.allCases) { format in
-                                Text(format.rawValue).tag(format)
-                            }
-                        }
-                        .pickerStyle(.menu)
-                        
-                        Button {
-                            handleExportButtonTap()
-                        } label: {
-                            // Label changes based on context (PCMCIA formats vs others)
-                            if exportFormat == .a109 || exportFormat == .uh60m || exportFormat == .h145 {
-                                Label("Save to Drive", systemImage: "externaldrive.badge.plus")
-                            } else {
-                                Label("Export", systemImage: "square.and.arrow.up")
-                            }
-                        }
-                        .frame(maxWidth: .infinity)
-                        .buttonStyle(.borderedProminent)
-                        // Trigger for A109 Folder Selection
-                        .fileImporter(
-                            isPresented: $isSelectingExportFolder,
-                            allowedContentTypes: [.folder],
-                            allowsMultipleSelection: false,
-                            onCompletion: { result in
-                                handleA109ExportFolderSelection(result: result)
-                            }
-                        )
-                        // ALERT: Varning om data saknas vid A109
-                        .alert("Incomplete Data", isPresented: $showA109MissingDataAlert) {
-                            Button("Cancel", role: .cancel) { }
-                            Button("Continue") {
-                                // Fortsätt till mapp-val om användaren godkänner
-                                isSelectingExportFolder = true
-                            }
-                        } message: {
-                            Text("Do you want to continue the export without user airports or user navaids?")
-                        }
-                    }
-                    .padding()
-                }
-                
-                // Versionsnummer längst ner
-                if !hasAnyData {
-                    Text("v\(appVersion)")
-                        .font(.caption)
-                        .foregroundColor(.secondary.opacity(0.5))
-                        .padding(.bottom, 4)
-                }
-            }
-            
-            ToastOverlay()
-                .environmentObject(toastManager)
         }
-        
+        .tint(RutTheme.amber)
+        // ── Sheets & dialogs ──
         .sheet(item: $editorSheet) { wrapper in
             NavigationStack {
                 PointEditorView(mode: wrapper.mode, isNew: wrapper.isNew)
             }
+            .tint(RutTheme.amber)
         }
-        
         .sheet(isPresented: $showDatabase) {
             DatabaseListView()
                 .environmentObject(navStore)
+                .tint(RutTheme.amber)
         }
-        
-        // Trigger for Standard Share Sheet (Non-A109)
         .sheet(item: $exportContainer) { container in
-            MultiFileExportController(fileURLs: container.urls) { success in
-                if !success { }
-            }
+            MultiFileExportController(fileURLs: container.urls) { _ in }
         }
-        
-        .onOpenURL { url in
-            importURLs([url])
-        }
-
+        .onOpenURL { url in importURLs([url]) }
         .confirmationDialog("Add Point", isPresented: $showAddPointTypeMenu, titleVisibility: .visible) {
             Button("Airport") {
                 let ap = UserAirport(id: "", name: "", latitude: longPressLat, longitude: longPressLon, elevation: 0)
@@ -277,26 +126,222 @@ struct ContentView: View {
             }
             Button("Cancel", role: .cancel) { }
         }
-
         .confirmationDialog("KML Export", isPresented: $showKMLSubDialog, titleVisibility: .visible) {
-            if !navStore.document.userAirports.isEmpty {
-                Button("Airports") { executeKMLExport(id: "kml-airports") }
-            }
-            if !navStore.document.userNavaids.isEmpty {
-                Button("Navaids") { executeKMLExport(id: "kml-navaids") }
-            }
-            if !navStore.document.userWaypoints.isEmpty {
-                Button("Waypoints") { executeKMLExport(id: "kml-waypoints") }
-            }
-            if !navStore.routes.isEmpty {
-                Button("Routes") { executeKMLExport(id: "kml-route") }
-            }
+            if !navStore.document.userAirports.isEmpty  { Button("Airports")  { executeKMLExport(id: "kml-airports") } }
+            if !navStore.document.userNavaids.isEmpty   { Button("Navaids")   { executeKMLExport(id: "kml-navaids")  } }
+            if !navStore.document.userWaypoints.isEmpty { Button("Waypoints") { executeKMLExport(id: "kml-waypoints")} }
+            if !navStore.routes.isEmpty                  { Button("Routes")    { executeKMLExport(id: "kml-route")   } }
             Button("Cancel", role: .cancel) { }
         }
     }
-    
+
+    // MARK: - Empty State
+
+    private var emptyStateView: some View {
+        ZStack {
+            Image("bgimage")
+                .resizable()
+                .aspectRatio(contentMode: .fill)
+                .ignoresSafeArea()
+                .overlay(Color.black.opacity(0.58))
+
+            VStack(spacing: 0) {
+                Spacer()
+
+                // ── Center card ──
+                VStack(spacing: 28) {
+                    // Logo
+                    Image("logo")
+                        .resizable()
+                        .scaledToFit()
+                        .frame(maxWidth: 220)
+
+                    // Import button
+                    Button {
+                        isImporting = true
+                    } label: {
+                        Label("Import", systemImage: "square.and.arrow.down")
+                    }
+                    .buttonStyle(RutPrimaryButtonStyle())
+                    .padding(.horizontal, 32)
+                    .fileImporter(
+                        isPresented: $isImporting,
+                        allowedContentTypes: [.data],
+                        allowsMultipleSelection: true,
+                        onCompletion: handleImport(result:)
+                    )
+
+                    // Supported formats
+                    Text(".GPX  .KML  .RUT  .FPL  .RTE  .P01  .APT  .NAV")
+                        .font(.system(size: 10, weight: .medium, design: .monospaced))
+                        .foregroundColor(RutTheme.textMuted)
+                        .tracking(1)
+                }
+
+                Spacer()
+
+                Text("v\(appVersion)")
+                    .font(.system(size: 11, weight: .medium, design: .monospaced))
+                    .foregroundColor(RutTheme.textMuted)
+                    .padding(.bottom, 24)
+            }
+        }
+    }
+
+    // MARK: - Main View (with data)
+
+    private var mainView: some View {
+        ZStack {
+            RutTheme.bg.ignoresSafeArea()
+
+            VStack(spacing: 0) {
+
+                // ── Route tiles ──
+                if !navStore.routes.isEmpty {
+                    ScrollView(.horizontal, showsIndicators: false) {
+                        HStack(spacing: 8) {
+                            ForEach(navStore.routes) { route in
+                                RouteTileView(
+                                    route: route,
+                                    isActive: route.id == navStore.activeRouteId,
+                                    onTap: { handleRouteTap(route) },
+                                    onClose: { navStore.deleteRoute(route) }
+                                )
+                            }
+                        }
+                        .padding(.horizontal, 14)
+                        .padding(.vertical, 10)
+                    }
+                    .background(RutTheme.surface)
+                    divider
+                }
+
+                // ── Stats + toolbar ──
+                HStack(spacing: 8) {
+                    let uAp = navStore.document.userAirports.count
+                    let uNv = navStore.document.userNavaids.count
+                    let uWp = navStore.document.userWaypoints.count
+
+                    if uAp > 0 { StatBadge(icon: "airplane", count: uAp, label: "Apt") }
+                    if uNv > 0 { StatBadge(icon: "antenna.radiowaves.left.and.right", count: uNv, label: "Nav") }
+                    if uWp > 0 { StatBadge(icon: "mappin.and.ellipse", count: uWp, label: "Wpt") }
+
+                    Spacer()
+
+                    Button {
+                        isImporting = true
+                    } label: {
+                        Label("Import", systemImage: "square.and.arrow.down")
+                    }
+                    .buttonStyle(RutSecondaryButtonStyle())
+                    .fileImporter(
+                        isPresented: $isImporting,
+                        allowedContentTypes: [.data],
+                        allowsMultipleSelection: true,
+                        onCompletion: handleImport(result:)
+                    )
+
+                    Button {
+                        showDatabase = true
+                    } label: {
+                        Image(systemName: "list.bullet.rectangle")
+                    }
+                    .buttonStyle(RutSecondaryButtonStyle())
+                }
+                .padding(.horizontal, 14)
+                .padding(.vertical, 10)
+                .background(RutTheme.surface)
+
+                divider
+
+                // ── Map ──
+                RutMapView(
+                    onPointTap: { point in
+                        switch point.kind {
+                        case .userWaypoint:
+                            if let wp = navStore.document.userWaypoints.first(where: { $0.id == point.name }) {
+                                editorSheet = EditorWrapper(mode: .waypoint(wp))
+                            }
+                        case .userAirport:
+                            if let ap = navStore.document.userAirports.first(where: { $0.id == point.name }) {
+                                editorSheet = EditorWrapper(mode: .airport(ap))
+                            }
+                        case .userNavaid:
+                            if let nv = navStore.document.userNavaids.first(where: { $0.id == point.name }) {
+                                editorSheet = EditorWrapper(mode: .navaid(nv))
+                            }
+                        case .systemAirport:
+                            if let ap = navStore.document.systemAirports.first(where: { $0.id == point.name }) {
+                                editorSheet = EditorWrapper(mode: .systemAirport(ap))
+                            }
+                        case .systemNavaid:
+                            if let nv = navStore.document.systemNavaids.first(where: { $0.id == point.name }) {
+                                editorSheet = EditorWrapper(mode: .systemNavaid(nv))
+                            }
+                        }
+                    },
+                    onMapLongPress: { coord in
+                        longPressLat = coord.latitude
+                        longPressLon = coord.longitude
+                        showAddPointTypeMenu = true
+                    }
+                )
+                .environmentObject(navStore)
+                .frame(minHeight: 200)
+
+                divider
+
+                // ── Export bar ──
+                HStack(spacing: 10) {
+                    Picker("Format", selection: $exportFormat) {
+                        ForEach(ExportFormat.allCases) { format in
+                            Text(format.rawValue).tag(format)
+                        }
+                    }
+                    .pickerStyle(.menu)
+                    .foregroundColor(RutTheme.textDim)
+
+                    Button {
+                        handleExportButtonTap()
+                    } label: {
+                        if exportFormat.isPCMCIA {
+                            Label("Save to Drive", systemImage: "externaldrive.badge.plus")
+                        } else {
+                            Label("Export", systemImage: "square.and.arrow.up")
+                        }
+                    }
+                    .buttonStyle(RutPrimaryButtonStyle())
+                    .fileImporter(
+                        isPresented: $isSelectingExportFolder,
+                        allowedContentTypes: [.folder],
+                        allowsMultipleSelection: false,
+                        onCompletion: { result in handleA109ExportFolderSelection(result: result) }
+                    )
+                    .alert("Incomplete Data", isPresented: $showA109MissingDataAlert) {
+                        Button("Cancel", role: .cancel) { }
+                        Button("Continue") { isSelectingExportFolder = true }
+                    } message: {
+                        Text("Do you want to continue the export without user airports or user navaids?")
+                    }
+                }
+                .padding(.horizontal, 14)
+                .padding(.vertical, 12)
+                .background(RutTheme.surface)
+            }
+
+            ToastOverlay()
+                .environmentObject(toastManager)
+        }
+    }
+
+    private var divider: some View {
+        Rectangle()
+            .fill(RutTheme.border)
+            .frame(height: 1)
+    }
+
     // MARK: - Logic
-    
+
     private func handleImport(result: Result<[URL], Error>) {
         switch result {
         case .failure(let error):
@@ -306,13 +351,11 @@ struct ContentView: View {
             importURLs(urls)
         }
     }
-    
+
     private func importURLs(_ urls: [URL]) {
-        Task {
-            await CoreServices.shared.importDocuments(from: urls)
-        }
+        Task { await CoreServices.shared.importDocuments(from: urls) }
     }
-    
+
     private func handleRouteTap(_ route: Route) {
         if navStore.activeRouteId == route.id {
             showRenameDialog(for: route)
@@ -320,190 +363,82 @@ struct ContentView: View {
             navStore.setActiveRoute(route)
         }
     }
-    
+
     private func showRenameDialog(for route: Route) {
-        let currentName = route.name
         let alert = UIAlertController(title: "Rename route", message: nil, preferredStyle: .alert)
-        alert.addTextField { tf in tf.text = currentName }
-        alert.addAction(UIAlertAction(title: "Cancel", style: .cancel, handler: { _ in }))
-        alert.addAction(UIAlertAction(title: "Save", style: .default, handler: { _ in
+        alert.addTextField { tf in tf.text = route.name }
+        alert.addAction(UIAlertAction(title: "Cancel", style: .cancel))
+        alert.addAction(UIAlertAction(title: "Save", style: .default) { _ in
             if let newName = alert.textFields?.first?.text {
                 navStore.updateRouteName(route, newName: newName)
             }
-        }))
+        })
         if let scene = UIApplication.shared.connectedScenes.first as? UIWindowScene,
            let root = scene.windows.first?.rootViewController {
-            root.present(alert, animated: true, completion: nil)
+            root.present(alert, animated: true)
         }
     }
-    
+
     // MARK: - Export Logic
-    
+
     private func canExport() -> Bool {
         let hasData: Bool
         switch exportFormat {
         case .apt: hasData = !navStore.document.userAirports.isEmpty
         case .nav: hasData = !navStore.document.userNavaids.isEmpty
         case .fpl, .rte, .gpx: hasData = !navStore.routes.isEmpty
-        case .rut, .a109, .uh60m, .h145, .kml:
+        case .rut, .a109, .uh60m, .h145, .nh90, .kml:
             hasData = !navStore.routes.isEmpty ||
                       !navStore.document.userAirports.isEmpty ||
                       !navStore.document.userNavaids.isEmpty ||
                       !navStore.document.userWaypoints.isEmpty
         }
-        
         if !hasData {
             toastManager.show(message: "No data available to export for \(exportFormat.rawValue).", kind: .info)
             return false
         }
         return true
     }
-    
+
     private func handleExportButtonTap() {
-        // Om UH-60M eller H145 är vald, stoppa direkt med ett meddelande
         if exportFormat == .uh60m {
-            toastManager.show(message: "UH-60M export is not implemented yet.", kind: .info)
-            return
+            toastManager.show(message: "UH-60M export is not implemented yet.", kind: .info); return
         }
         if exportFormat == .h145 {
-            toastManager.show(message: "H145 export is not implemented yet.", kind: .info)
-            return
+            toastManager.show(message: "H145 export is not implemented yet.", kind: .info); return
         }
-        
+        if exportFormat == .nh90 {
+            toastManager.show(message: "NH90 export is not implemented yet.", kind: .info); return
+        }
         guard canExport() else { return }
 
-        if exportFormat == .kml {
-            showKMLSubDialog = true
-            return
-        }
+        if exportFormat == .kml { showKMLSubDialog = true; return }
 
         if exportFormat == .a109 {
-            // Kontrollera om data saknas
-            let missingAirports = navStore.document.userAirports.isEmpty
-            let missingNavaids = navStore.document.userNavaids.isEmpty
-            
-            if missingAirports || missingNavaids {
-                // Visa varning -> Alert triggar 'isSelectingExportFolder' om man väljer Continue
-                showA109MissingDataAlert = true
-            } else {
-                // Allt ok, öppna mapp-väljare direkt
-                isSelectingExportFolder = true
-            }
+            let missing = navStore.document.userAirports.isEmpty || navStore.document.userNavaids.isEmpty
+            if missing { showA109MissingDataAlert = true } else { isSelectingExportFolder = true }
         } else {
-            // Övriga format -> Standard Share Sheet
             prepareStandardExport()
         }
     }
-    
-    // MARK: - Standard Export (FPL, RTE, etc)
-    
-    private func prepareStandardExport() {
-            // Hämta rätt exporter baserat på ID (säkrare än namn)
-            let exporterId: String
-            switch exportFormat {
-            case .fpl: exporterId = "fpl"
-            case .rte: exporterId = "rte"
-            case .rut: exporterId = "rut"
-            case .gpx: exporterId = "gpx"
-            case .apt: exporterId = "apt"
-            case .nav: exporterId = "nav"
-            default: return
-            }
-            
-            // Fråga CoreServices direkt
-            guard let exporter = CoreServices.shared.exporter(withId: exporterId) else {
-                toastManager.show(message: "Exporter for '\(exporterId)' not found.")
-                return
-            }
-            
-            // Resten är samma som förut...
-            do {
-                let generatedFiles = try exporter.export(document: navStore.document, routes: navStore.routes)
-                if generatedFiles.isEmpty {
-                    toastManager.show(message: "Nothing to export.", kind: .info)
-                    return
-                }
-                
-                let tempDir = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
-                try FileManager.default.createDirectory(at: tempDir, withIntermediateDirectories: true)
-                
-                var urls: [URL] = []
-                for file in generatedFiles {
-                    let fileURL = tempDir.appendingPathComponent(file.filename)
-                    try file.data.write(to: fileURL, options: .atomic)
-                    urls.append(fileURL)
-                }
-                
-                DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
-                    self.exportContainer = ExportContainer(urls: urls)
-                }
-                
-            } catch {
-                ErrorLogger.shared.logError(error)
-                toastManager.show(message: error.localizedDescription)
-            }
-        }
-    
-    // MARK: - A109 Direct Export (Folder Selection)
-    
-    private func handleA109ExportFolderSelection(result: Result<[URL], Error>) {
-        switch result {
-        case .failure(let error):
-            toastManager.showError(error)
-        case .success(let urls):
-            guard let folderURL = urls.first else { return }
-            performA109DirectExport(to: folderURL)
-        }
-    }
-    
-    private func performA109DirectExport(to folderURL: URL) {
-            // Hämta direkt via ID "a109" (kontrollera att A109PCMCIAExportService har id="a109")
-            guard let exporter = CoreServices.shared.exporter(withId: "a109") else {
-                toastManager.show(message: "A109 Exporter not available.")
-                return
-            }
-            
-            do {
-                let generatedFiles = try exporter.export(document: navStore.document, routes: navStore.routes)
-                if generatedFiles.isEmpty {
-                    toastManager.show(message: "Nothing to export.", kind: .info)
-                    return
-                }
-                
-                let secured = folderURL.startAccessingSecurityScopedResource()
-                defer { if secured { folderURL.stopAccessingSecurityScopedResource() } }
-                
-                var successCount = 0
-                for file in generatedFiles {
-                    let destinationURL = folderURL.appendingPathComponent(file.filename)
-                    try file.data.write(to: destinationURL, options: .atomic)
-                    destinationURL.cleanAppleAttributes()
-                    successCount += 1
-                }
-                
-                try cleanupDotFiles(in: folderURL)
-                
-                toastManager.show(message: "Saved \(successCount) files to \(folderURL.lastPathComponent)", kind: .info)
-                
-            } catch {
-                ErrorLogger.shared.logError(error)
-                toastManager.show(message: "Export failed: \(error.localizedDescription)")
-            }
-        }
-    
-    // MARK: - KML Sub-Export
 
-    private func executeKMLExport(id: String) {
-        guard let exporter = CoreServices.shared.exporter(withId: id) else {
-            toastManager.show(message: "KML exporter '\(id)' not found.")
-            return
+    private func prepareStandardExport() {
+        let exporterId: String
+        switch exportFormat {
+        case .fpl: exporterId = "fpl"
+        case .rte: exporterId = "rte"
+        case .rut: exporterId = "rut"
+        case .gpx: exporterId = "gpx"
+        case .apt: exporterId = "apt"
+        case .nav: exporterId = "nav"
+        default: return
+        }
+        guard let exporter = CoreServices.shared.exporter(withId: exporterId) else {
+            toastManager.show(message: "Exporter for '\(exporterId)' not found."); return
         }
         do {
             let files = try exporter.export(document: navStore.document, routes: navStore.routes)
-            guard !files.isEmpty else {
-                toastManager.show(message: "Nothing to export.", kind: .info)
-                return
-            }
+            guard !files.isEmpty else { toastManager.show(message: "Nothing to export.", kind: .info); return }
             let tempDir = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
             try FileManager.default.createDirectory(at: tempDir, withIntermediateDirectories: true)
             var urls: [URL] = []
@@ -512,9 +447,62 @@ struct ContentView: View {
                 try file.data.write(to: url, options: .atomic)
                 urls.append(url)
             }
-            DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
-                self.exportContainer = ExportContainer(urls: urls)
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) { self.exportContainer = ExportContainer(urls: urls) }
+        } catch {
+            ErrorLogger.shared.logError(error)
+            toastManager.show(message: error.localizedDescription)
+        }
+    }
+
+    private func handleA109ExportFolderSelection(result: Result<[URL], Error>) {
+        switch result {
+        case .failure(let error): toastManager.showError(error)
+        case .success(let urls):
+            guard let folderURL = urls.first else { return }
+            performA109DirectExport(to: folderURL)
+        }
+    }
+
+    private func performA109DirectExport(to folderURL: URL) {
+        guard let exporter = CoreServices.shared.exporter(withId: "a109") else {
+            toastManager.show(message: "A109 Exporter not available."); return
+        }
+        do {
+            let files = try exporter.export(document: navStore.document, routes: navStore.routes)
+            guard !files.isEmpty else { toastManager.show(message: "Nothing to export.", kind: .info); return }
+            let secured = folderURL.startAccessingSecurityScopedResource()
+            defer { if secured { folderURL.stopAccessingSecurityScopedResource() } }
+            var count = 0
+            for file in files {
+                let dest = folderURL.appendingPathComponent(file.filename)
+                try file.data.write(to: dest, options: .atomic)
+                dest.cleanAppleAttributes()
+                count += 1
             }
+            try cleanupDotFiles(in: folderURL)
+            toastManager.show(message: "Saved \(count) files to \(folderURL.lastPathComponent)", kind: .info)
+        } catch {
+            ErrorLogger.shared.logError(error)
+            toastManager.show(message: "Export failed: \(error.localizedDescription)")
+        }
+    }
+
+    private func executeKMLExport(id: String) {
+        guard let exporter = CoreServices.shared.exporter(withId: id) else {
+            toastManager.show(message: "KML exporter '\(id)' not found."); return
+        }
+        do {
+            let files = try exporter.export(document: navStore.document, routes: navStore.routes)
+            guard !files.isEmpty else { toastManager.show(message: "Nothing to export.", kind: .info); return }
+            let tempDir = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
+            try FileManager.default.createDirectory(at: tempDir, withIntermediateDirectories: true)
+            var urls: [URL] = []
+            for file in files {
+                let url = tempDir.appendingPathComponent(file.filename)
+                try file.data.write(to: url, options: .atomic)
+                urls.append(url)
+            }
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) { self.exportContainer = ExportContainer(urls: urls) }
         } catch {
             ErrorLogger.shared.logError(error)
             toastManager.show(message: error.localizedDescription)
@@ -522,36 +510,23 @@ struct ContentView: View {
     }
 
     private func cleanupDotFiles(in folderURL: URL) throws {
-        let fileManager = FileManager.default
-        let contents = try fileManager.contentsOfDirectory(at: folderURL, includingPropertiesForKeys: nil, options: [])
-        
-        for fileURL in contents {
-            let name = fileURL.lastPathComponent
-            if name.hasPrefix(".") {
-                do {
-                    try fileManager.removeItem(at: fileURL)
-                    print("Deleted system artifact: \(name)")
-                } catch {
-                    print("Failed to delete \(name): \(error.localizedDescription)")
-                }
-            }
+        let contents = try FileManager.default.contentsOfDirectory(at: folderURL, includingPropertiesForKeys: nil)
+        for fileURL in contents where fileURL.lastPathComponent.hasPrefix(".") {
+            try? FileManager.default.removeItem(at: fileURL)
         }
     }
 }
 
-// MARK: - URL Extension (Städning)
+// MARK: - URL Extension
 
 extension URL {
     func cleanAppleAttributes() {
-        self.withUnsafeFileSystemRepresentation { fileSystemPath in
-            guard let fileSystemPath = fileSystemPath else { return }
-            let attributesToRemove = [
-                "com.apple.quarantine", "com.apple.FinderInfo",
-                "com.apple.ResourceFork", "com.apple.metadata:_kMDItemUserTags",
-                "com.apple.lastuseddate#PS"
-            ]
-            for attr in attributesToRemove {
-                removexattr(fileSystemPath, attr, 0)
+        self.withUnsafeFileSystemRepresentation { path in
+            guard let path else { return }
+            for attr in ["com.apple.quarantine", "com.apple.FinderInfo",
+                         "com.apple.ResourceFork", "com.apple.metadata:_kMDItemUserTags",
+                         "com.apple.lastuseddate#PS"] {
+                removexattr(path, attr, 0)
             }
         }
     }

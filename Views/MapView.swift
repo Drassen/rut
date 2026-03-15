@@ -179,11 +179,14 @@ struct RutMapView: View {
                 }
             }
             .pickerStyle(.menu)
-            .padding(8)
-            .background(Color.black.opacity(0.4))
-            .foregroundColor(Color.white)
-            .cornerRadius(4)
-            .padding()
+            .padding(.horizontal, 10)
+            .padding(.vertical, 7)
+            .background(RutTheme.surface.opacity(0.88))
+            .foregroundColor(RutTheme.amber)
+            .tint(RutTheme.amber)
+            .cornerRadius(8)
+            .overlay(RoundedRectangle(cornerRadius: 8).stroke(RutTheme.border, lineWidth: 1))
+            .padding(12)
         }
         .alert("Confirm Move", isPresented: $showMoveConfirm) {
             Button("Move") {
