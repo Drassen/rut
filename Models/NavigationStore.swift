@@ -153,6 +153,15 @@ final class NavigationStore: ObservableObject {
         document.routes[idx].pointRefs.append(ref)
     }
 
+    /// Replace the first occurrence of `replacingRefId` in the route with `newRef`,
+    /// then delete `replacingRefId` from the waypoint database (it was a temp point).
+    func replaceRoutePoint(routeId: UUID, replacingRefId: String, with newRef: RoutePointRef) {
+        guard let rIdx = document.routes.firstIndex(where: { $0.id == routeId }) else { return }
+        guard let pIdx = document.routes[rIdx].pointRefs.firstIndex(where: { $0.refId == replacingRefId }) else { return }
+        document.routes[rIdx].pointRefs[pIdx] = newRef
+        document.userWaypoints.removeAll { $0.id == replacingRefId }
+    }
+
     func insertRoutePoint(routeId: UUID, at index: Int, ref: RoutePointRef) {
         guard let idx = document.routes.firstIndex(where: { $0.id == routeId }) else { return }
         let clamped = max(0, min(index, document.routes[idx].pointRefs.count))
