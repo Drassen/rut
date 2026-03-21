@@ -219,10 +219,10 @@ struct RutMapView: View {
                         }
                     }
 
-                    // 60fps Canvas overlay — drawn only while dragging a route point.
-                    // MapPolyline inside @MapContentBuilder is throttled by MapKit and only
-                    // updates ~1fps; this Canvas bypasses that by drawing directly in SwiftUI.
-                    dragPolylineOverlay(proxy: proxy)
+                    // Canvas overlay always renders the active route line.
+                    // This replaces MapPolyline entirely, avoiding MapKit's update throttling
+                    // and ensuring the line always reflects current @State/@ObservableObject.
+                    routePolylineOverlay(proxy: proxy)
                         .allowsHitTesting(false)
                 }
             }
@@ -449,16 +449,12 @@ struct RutMapView: View {
     private func activeRouteContent(proxy: MapProxy) -> some MapContent {
         if let route = navStore.activeRoute {
             let points = navStore.mapPoints(for: route)
-            let coords = points.map { displayCoordinate(for: $0.coordinate) }
-            // Skip leg-distance labels while dragging — values are stale and the
-            // Canvas overlay is drawing the live polyline on top anyway.
+            // Skip leg-distance labels while dragging — values are stale.
             let legDistances = draggingRoutePointIdx == nil ? navStore.legDistancesNM(for: route) : [Double]()
 
-            // Hide during drag — Canvas overlay draws the live version instead.
-            if coords.count >= 2 && draggingRoutePointIdx == nil {
-                MapPolyline(coordinates: coords)
-                    .stroke(colorActive, lineWidth: 6)
-            }
+            // MapPolyline intentionally omitted — route line is drawn entirely by
+            // routePolylineOverlay (a SwiftUI Canvas), which always stays in sync
+            // with @State changes and avoids MapKit's @MapContentBuilder update throttling.
 
             ForEach(Array(points.enumerated()), id: \.offset) { pair in
                 let idx = pair.offset
@@ -759,24 +755,28 @@ struct RutMapView: View {
         return navStore.document.userWaypoints.first(where: { $0.id == point.name })?.type
     }
 
-    // MARK: - 60fps drag overlay
+    // MARK: - Route polyline overlay
 
-    /// Draws the active route polyline + dragged marker in a SwiftUI Canvas overlay.
-    /// Because @MapContentBuilder content is throttled by MapKit (~1fps during programmatic
-    /// updates), we bypass it entirely during drag and draw directly in SwiftUI space.
+    /// Always-on SwiftUI Canvas that renders the active route polyline (and dragged marker).
+    /// Replaces MapPolyline in @MapContentBuilder entirely. Because this is a regular SwiftUI
+    /// view driven by @State and @EnvironmentObject, it updates immediately on every change —
+    /// no MapKit update throttling. Also stays in sync with map pan/zoom because `camera` is
+    /// @State and changes to it cause body re-evaluation, which re-computes proxy.convert().
     @ViewBuilder
-    private func dragPolylineOverlay(proxy: MapProxy) -> some View {
-        if let dragIdx = draggingRoutePointIdx, let route = navStore.activeRoute {
+    private func routePolylineOverlay(proxy: MapProxy) -> some View {
+        if let route = navStore.activeRoute {
             let points = navStore.mapPoints(for: route)
+            let dragIdx = draggingRoutePointIdx
             let dragCoord = draggingRoutePointCoord
 
             ZStack {
-                // Polyline
                 Canvas { ctx, _ in
                     var path = Path()
                     var first = true
                     for (i, p) in points.enumerated() {
-                        let coord = i == dragIdx ? dragCoord : displayCoordinate(for: p.coordinate)
+                        let coord = (dragIdx != nil && i == dragIdx)
+                            ? dragCoord
+                            : displayCoordinate(for: p.coordinate)
                         guard let pt = proxy.convert(coord, to: .local) else { continue }
                         if first { path.move(to: pt); first = false }
                         else { path.addLine(to: pt) }
@@ -784,8 +784,8 @@ struct RutMapView: View {
                     ctx.stroke(path, with: .color(colorActive), lineWidth: 6)
                 }
 
-                // Dragged marker
-                if dragIdx < points.count,
+                // Dragged marker (shows on top of the hidden annotation during drag)
+                if let dragIdx, dragIdx < points.count,
                    let pt = proxy.convert(dragCoord, to: .local) {
                     let p = points[dragIdx]
                     RouteMarkerShapeView(
