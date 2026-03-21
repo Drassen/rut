@@ -51,6 +51,7 @@ struct RutMapView: View {
 
     @State private var camera: MapCameraPosition = .automatic
     @State private var mapStyle: RutMapStyle = .hybrid
+    @State private var showMapLabels: Bool = true
 
     // --- Drag state for database markers ---
     @State private var draggingAirportId: String?
@@ -68,6 +69,9 @@ struct RutMapView: View {
     // Local drag state for route points — avoids @Published on every frame
     @State private var draggingRoutePointIdx: Int? = nil
     @State private var draggingRoutePointCoord = CLLocationCoordinate2D()
+    // Separate from draggingRoutePointIdx so we can restore MapPolyline color
+    // before hiding the Canvas overlay (they need different timing on cancel).
+    @State private var isRoutePointDragActive = false
     @State private var pendingRoutePointMove: PendingRoutePointMove? = nil
     @State private var showRoutePointMoveConfirm = false
 
@@ -151,6 +155,9 @@ struct RutMapView: View {
                         activeRouteContent(proxy: proxy)
                     }
                     .mapStyle(mapStyle.mapKitStyle)
+                    .onMapCameraChange(frequency: .onEnd) { ctx in
+                        showMapLabels = ctx.region.span.latitudeDelta < 0.68
+                    }
                     .onAppear {
                         configureInitialCamera()
                     }
@@ -177,6 +184,10 @@ struct RutMapView: View {
                                             mapDragTarget = rawTarget
                                         } else {
                                             mapDragTarget = rawTarget
+                                            if case .routePoint = rawTarget {
+                                                isRoutePointDragActive = true
+                                                DispatchQueue.main.async { forceMapRedraw() }
+                                            }
                                         }
                                     }
                                     if let target = mapDragTarget {
@@ -208,6 +219,7 @@ struct RutMapView: View {
                                 draggingAirportId = nil
                                 draggingNavaidId = nil
                                 draggingRoutePointIdx = nil
+                                isRoutePointDragActive = false
                             }
                             if insertGhostCoord != nil {
                                 setMapScrollEnabled(true)
@@ -220,8 +232,7 @@ struct RutMapView: View {
                     }
 
                     // Canvas overlay always renders the active route line.
-                    // This replaces MapPolyline entirely, avoiding MapKit's update throttling
-                    // and ensuring the line always reflects current @State/@ObservableObject.
+                    // Canvas overlay for 60fps route-point dragging.
                     routePolylineOverlay(proxy: proxy)
                         .allowsHitTesting(false)
                 }
@@ -271,11 +282,28 @@ struct RutMapView: View {
                     navStore.updateWaypointCoordinate(in: route, at: move.pointIndex, to: move.newCoordinate)
                 }
                 pendingRoutePointMove = nil
+                isRoutePointDragActive = false
                 draggingRoutePointIdx = nil
+                DispatchQueue.main.async { forceMapRedraw() }
             }
             Button("Cancel", role: .cancel) {
+                // Snap canvas to original position immediately (correct visual during dismiss).
+                if let move = pendingRoutePointMove,
+                   let route = navStore.document.routes.first(where: { $0.id == move.routeId }) {
+                    let pts = navStore.mapPoints(for: route)
+                    if move.pointIndex < pts.count {
+                        draggingRoutePointCoord = displayCoordinate(for: pts[move.pointIndex].coordinate)
+                    }
+                }
                 pendingRoutePointMove = nil
-                draggingRoutePointIdx = nil
+                // Restore MapPolyline color immediately — MapKit will apply this during
+                // the alert dismiss animation (~250ms at 60fps = ~15 render cycles).
+                isRoutePointDragActive = false
+                // Clear canvas after the alert animation completes, at which point
+                // MapKit has definitely rendered the colorActive polyline.
+                DispatchQueue.main.asyncAfter(deadline: .now() + 0.05) {
+                    draggingRoutePointIdx = nil
+                }
             }
         } message: {
             if let move = pendingRoutePointMove {
@@ -310,7 +338,7 @@ struct RutMapView: View {
                     ? draggingAirportCoord
                     : displayCoordinate(for: airport.coordinate)
                 Annotation("apt-\(index)-\(airport.id)", coordinate: dragCoord) {
-                    DatabaseMarkerView(bgColor: colorAirport, iconName: "airplane", iconColor: .white, label: airport.id)
+                    DatabaseMarkerView(bgColor: colorAirport, iconName: "airplane", iconColor: .white, label: airport.id, showLabel: showMapLabels)
                         .scaleEffect(draggingAirportId == airport.id ? 1.2 : 1.0)
                         .opacity(opacity)
                         .scaleEffect(scale)
@@ -330,7 +358,7 @@ struct RutMapView: View {
                     ? draggingNavaidCoord
                     : displayCoordinate(for: navaid.coordinate)
                 Annotation("nav-\(index)-\(navaid.id)", coordinate: dragCoord) {
-                    DatabaseMarkerView(bgColor: colorNavaid, iconName: "antenna.radiowaves.left.and.right", iconColor: .white, label: navaid.id)
+                    DatabaseMarkerView(bgColor: colorNavaid, iconName: "antenna.radiowaves.left.and.right", iconColor: .white, label: navaid.id, showLabel: showMapLabels)
                         .scaleEffect(draggingNavaidId == navaid.id ? 1.2 : 1.0)
                         .opacity(opacity)
                         .scaleEffect(scale)
@@ -379,7 +407,7 @@ struct RutMapView: View {
         ForEach(Array(navStore.document.systemAirports.enumerated()), id: \.offset) { index, ap in
             if !activeRouteIDs.contains(ap.id) && !inactiveRouteIDs.contains(ap.id) {
                 Annotation("sys-apt-\(index)-\(ap.id)", coordinate: displayCoordinate(for: ap.coordinate)) {
-                    DatabaseMarkerView(bgColor: colorAirport, iconName: "airplane", iconColor: .white, label: ap.id)
+                    DatabaseMarkerView(bgColor: colorAirport, iconName: "airplane", iconColor: .white, label: ap.id, showLabel: showMapLabels)
                         .opacity(opacity)
                         .scaleEffect(scale)
                         .onTapGesture {
@@ -394,7 +422,7 @@ struct RutMapView: View {
         ForEach(Array(navStore.document.systemNavaids.enumerated()), id: \.offset) { index, nv in
             if !activeRouteIDs.contains(nv.id) && !inactiveRouteIDs.contains(nv.id) {
                 Annotation("sys-nav-\(index)-\(nv.id)", coordinate: displayCoordinate(for: nv.coordinate)) {
-                    DatabaseMarkerView(bgColor: colorNavaid, iconName: "antenna.radiowaves.left.and.right", iconColor: .white, label: nv.id)
+                    DatabaseMarkerView(bgColor: colorNavaid, iconName: "antenna.radiowaves.left.and.right", iconColor: .white, label: nv.id, showLabel: showMapLabels)
                         .opacity(opacity)
                         .scaleEffect(scale)
                         .onTapGesture {
@@ -430,7 +458,8 @@ struct RutMapView: View {
                             point: p,
                             color: colorInactive.opacity(dimFactor),
                             contentColor: .white.opacity(0.8 * dimFactor),
-                            waypointType: type
+                            waypointType: type,
+                            showLabel: showMapLabels
                         )
                         .scaleEffect(hasActiveRoute ? 0.9 : 1.0)
                         .onTapGesture {
@@ -452,18 +481,20 @@ struct RutMapView: View {
             // Skip leg-distance labels while dragging — values are stale.
             let legDistances = draggingRoutePointIdx == nil ? navStore.legDistancesNM(for: route) : [Double]()
 
-            // MapPolyline intentionally omitted — route line is drawn entirely by
-            // routePolylineOverlay (a SwiftUI Canvas), which always stays in sync
-            // with @State changes and avoids MapKit's @MapContentBuilder update throttling.
+            let coords = points.map { displayCoordinate(for: $0.coordinate) }
+            if coords.count >= 2 {
+                MapPolyline(coordinates: coords)
+                    .stroke(isRoutePointDragActive ? Color.clear : colorActive, lineWidth: 6)
+            }
 
             ForEach(Array(points.enumerated()), id: \.offset) { pair in
                 let idx = pair.offset
                 let p = pair.element
                 let type = waypointType(for: p)
-                let isDragging = draggingRoutePointIdx == idx
+                let isDragging = isRoutePointDragActive && draggingRoutePointIdx == idx
 
                 Annotation(p.name, coordinate: displayCoordinate(for: p.coordinate)) {
-                    RouteMarkerShapeView(point: p, color: colorActive, contentColor: .white, waypointType: type)
+                    RouteMarkerShapeView(point: p, color: colorActive, contentColor: .white, waypointType: type, showLabel: showMapLabels)
                         // Hide while dragging — Canvas overlay renders the live marker instead.
                         .opacity(isDragging ? 0 : 1)
                         .zIndex(10)
@@ -471,7 +502,7 @@ struct RutMapView: View {
                 }
                 .annotationTitles(.hidden)
 
-                if idx < points.count - 1 && idx < legDistances.count {
+                if showMapLabels && idx < points.count - 1 && idx < legDistances.count {
                     let safeP = displayCoordinate(for: p.coordinate)
                     let safeNext = displayCoordinate(for: points[idx + 1].coordinate)
                     let mid = CLLocationCoordinate2D(
@@ -755,18 +786,16 @@ struct RutMapView: View {
         return navStore.document.userWaypoints.first(where: { $0.id == point.name })?.type
     }
 
-    // MARK: - Route polyline overlay
+    // MARK: - Route point drag overlay
 
-    /// Always-on SwiftUI Canvas that renders the active route polyline (and dragged marker).
-    /// Replaces MapPolyline in @MapContentBuilder entirely. Because this is a regular SwiftUI
-    /// view driven by @State and @EnvironmentObject, it updates immediately on every change —
-    /// no MapKit update throttling. Also stays in sync with map pan/zoom because `camera` is
-    /// @State and changes to it cause body re-evaluation, which re-computes proxy.convert().
+    /// Canvas overlay shown only while dragging a route point.
+    /// Draws the live polyline at 60fps on top of the frozen MapPolyline.
+    /// MapPolyline is never hidden — on cancel it was always at the original
+    /// position so nothing needs to be restored.
     @ViewBuilder
     private func routePolylineOverlay(proxy: MapProxy) -> some View {
-        if let route = navStore.activeRoute {
+        if let dragIdx = draggingRoutePointIdx, let route = navStore.activeRoute {
             let points = navStore.mapPoints(for: route)
-            let dragIdx = draggingRoutePointIdx
             let dragCoord = draggingRoutePointCoord
 
             ZStack {
@@ -774,9 +803,7 @@ struct RutMapView: View {
                     var path = Path()
                     var first = true
                     for (i, p) in points.enumerated() {
-                        let coord = (dragIdx != nil && i == dragIdx)
-                            ? dragCoord
-                            : displayCoordinate(for: p.coordinate)
+                        let coord = i == dragIdx ? dragCoord : displayCoordinate(for: p.coordinate)
                         guard let pt = proxy.convert(coord, to: .local) else { continue }
                         if first { path.move(to: pt); first = false }
                         else { path.addLine(to: pt) }
@@ -784,8 +811,7 @@ struct RutMapView: View {
                     ctx.stroke(path, with: .color(colorActive), lineWidth: 6)
                 }
 
-                // Dragged marker (shows on top of the hidden annotation during drag)
-                if let dragIdx, dragIdx < points.count,
+                if dragIdx < points.count,
                    let pt = proxy.convert(dragCoord, to: .local) {
                     let p = points[dragIdx]
                     RouteMarkerShapeView(
@@ -832,18 +858,28 @@ struct RutMapView: View {
         pendingInsert = nil
     }
 
-    private func setMapScrollEnabled(_ enabled: Bool) {
+    private func findMKMapView() -> MKMapView? {
         guard let scene = UIApplication.shared.connectedScenes
             .compactMap({ $0 as? UIWindowScene }).first,
-              let window = scene.windows.first else { return }
-        func findMapView(_ view: UIView) -> MKMapView? {
+              let window = scene.windows.first else { return nil }
+        func find(_ view: UIView) -> MKMapView? {
             if let mv = view as? MKMapView { return mv }
-            for sub in view.subviews {
-                if let mv = findMapView(sub) { return mv }
-            }
+            for sub in view.subviews { if let mv = find(sub) { return mv } }
             return nil
         }
-        findMapView(window)?.isScrollEnabled = enabled
+        return find(window)
+    }
+
+    private func setMapScrollEnabled(_ enabled: Bool) {
+        findMKMapView()?.isScrollEnabled = enabled
+    }
+
+    /// Forces MapKit to process pending @MapContentBuilder changes.
+    /// Must be called via DispatchQueue.main.async so SwiftUI has already
+    /// re-evaluated body and sent updated content to MapKit first.
+    private func forceMapRedraw() {
+        guard let mv = findMKMapView() else { return }
+        mv.setCenter(mv.centerCoordinate, animated: false)
     }
 }
 
@@ -854,6 +890,7 @@ struct DatabaseMarkerView: View {
     let iconName: String
     let iconColor: Color
     let label: String
+    var showLabel: Bool = true
 
     var body: some View {
         ZStack {
@@ -866,15 +903,17 @@ struct DatabaseMarkerView: View {
         }
         .frame(width: 26, height: 26)
         .overlay(alignment: .top) {
-            Text(label)
-                .font(.caption2)
-                .padding(2)
-                .background(Color.white.opacity(0.8))
-                .foregroundColor(Color.black.opacity(0.8))
-                .cornerRadius(4)
-                .fixedSize()
-                .offset(y: 30)
-                .allowsHitTesting(false)
+            if showLabel {
+                Text(label)
+                    .font(.caption2)
+                    .padding(2)
+                    .background(Color.white.opacity(0.8))
+                    .foregroundColor(Color.black.opacity(0.8))
+                    .cornerRadius(4)
+                    .fixedSize()
+                    .offset(y: 30)
+                    .allowsHitTesting(false)
+            }
         }
         .contentShape(Circle())
     }
@@ -885,6 +924,7 @@ struct RouteMarkerShapeView: View {
     let color: Color
     let contentColor: Color
     let waypointType: WaypointType?
+    var showLabel: Bool = true
 
     var body: some View {
         ZStack {
@@ -892,15 +932,17 @@ struct RouteMarkerShapeView: View {
         }
         .frame(width: 26, height: 26)
         .overlay(alignment: .top) {
-            Text(point.name)
-                .font(.caption2)
-                .padding(2)
-                .background(Color.white.opacity(0.8))
-                .foregroundColor(.black)
-                .cornerRadius(4)
-                .fixedSize()
-                .offset(y: 30)
-                .allowsHitTesting(false)
+            if showLabel {
+                Text(point.name)
+                    .font(.caption2)
+                    .padding(2)
+                    .background(Color.white.opacity(0.8))
+                    .foregroundColor(.black)
+                    .cornerRadius(4)
+                    .fixedSize()
+                    .offset(y: 30)
+                    .allowsHitTesting(false)
+            }
         }
         .contentShape(Circle())
     }
