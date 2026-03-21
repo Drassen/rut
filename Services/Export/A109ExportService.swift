@@ -29,7 +29,11 @@ struct A109PCMCIAExportService: RouteExporting {
     
     /// Main entry point
     func export(document: NavigationDocument, selectedRoutes: [Route]) throws -> [ExportedFile] {
-        
+
+        // Validate before generating any files. Throws ExportValidationError
+        // with a human-readable list of all constraint violations.
+        try A109ExportValidator.validate(document: document)
+
         let fileSet = A109PCMCIAExportService.generateFileSet(document: document)
         
         return [

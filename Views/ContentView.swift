@@ -45,10 +45,13 @@ private struct StatBadge: View {
     var body: some View {
         HStack(spacing: 5) {
             Image(systemName: icon)
-                .font(.system(size: 10, weight: .semibold))
+                .font(.system(size: 14, weight: .semibold))
                 .foregroundColor(RutTheme.amber)
-            Text("\(count) \(label)")
-                .font(.caption.weight(.semibold))
+            Text("\(count)")
+                .font(.system(size: 14, weight: .bold, design: .monospaced))
+                .foregroundColor(RutTheme.text)
+            + Text(" \(label)")
+                .font(.system(size: 14, weight: .semibold))
                 .foregroundColor(RutTheme.textDim)
         }
         .padding(.horizontal, 9)
@@ -379,6 +382,22 @@ struct ContentView: View {
         }
     }
 
+    private func showExportValidationAlert(_ error: ExportValidationError) {
+        let message = error.issues
+            .map { "• \($0)" }
+            .joined(separator: "\n\n")
+        let alert = UIAlertController(
+            title: error.title,
+            message: message,
+            preferredStyle: .alert
+        )
+        alert.addAction(UIAlertAction(title: "OK", style: .default))
+        if let scene = UIApplication.shared.connectedScenes.first as? UIWindowScene,
+           let root = scene.windows.first?.rootViewController {
+            root.present(alert, animated: true)
+        }
+    }
+
     // MARK: - Export Logic
 
     private func canExport() -> Bool {
@@ -448,6 +467,8 @@ struct ContentView: View {
                 urls.append(url)
             }
             DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) { self.exportContainer = ExportContainer(urls: urls) }
+        } catch let ve as ExportValidationError {
+            showExportValidationAlert(ve)
         } catch {
             ErrorLogger.shared.logError(error)
             toastManager.show(message: error.localizedDescription)
@@ -481,6 +502,8 @@ struct ContentView: View {
             }
             try cleanupDotFiles(in: folderURL)
             toastManager.show(message: "Saved \(count) files to \(folderURL.lastPathComponent)", kind: .info)
+        } catch let ve as ExportValidationError {
+            showExportValidationAlert(ve)
         } catch {
             ErrorLogger.shared.logError(error)
             toastManager.show(message: "Export failed: \(error.localizedDescription)")

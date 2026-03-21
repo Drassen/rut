@@ -47,7 +47,7 @@ struct RutSecondaryButtonStyle: ButtonStyle {
     func makeBody(configuration: Configuration) -> some View {
         configuration.label
             .font(.subheadline.weight(.medium))
-            .foregroundColor(RutTheme.textDim)
+            .foregroundColor(RutTheme.amber)
             .padding(.horizontal, 14)
             .padding(.vertical, 9)
             .background(RutTheme.surface2.opacity(configuration.isPressed ? 0.6 : 1))

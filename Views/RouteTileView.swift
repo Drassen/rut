@@ -15,7 +15,7 @@ struct RouteTileView: View {
 
             // Point count badge
             Text("\(route.pointRefs.count)")
-                .font(.system(size: 10, weight: .bold, design: .monospaced))
+                .font(.system(size: 13, weight: .bold, design: .monospaced))
                 .foregroundColor(route.pointRefs.count > 40
                     ? RutTheme.danger
                     : (isActive ? Color(red: 0.08, green: 0.10, blue: 0.14).opacity(0.6) : RutTheme.textMuted))

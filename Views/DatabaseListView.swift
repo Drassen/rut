@@ -1,6 +1,7 @@
 import SwiftUI
 
 enum DatabaseTab: String, CaseIterable, Identifiable {
+    case routes    = "Routes"
     case waypoints = "Waypoints"
     case airports  = "Airports"
     case navaids   = "Navaids"
@@ -9,6 +10,7 @@ enum DatabaseTab: String, CaseIterable, Identifiable {
 
     var icon: String {
         switch self {
+        case .routes:    return "map"
         case .waypoints: return "mappin.and.ellipse"
         case .airports:  return "airplane"
         case .navaids:   return "antenna.radiowaves.left.and.right"
@@ -17,6 +19,7 @@ enum DatabaseTab: String, CaseIterable, Identifiable {
 
     var color: Color {
         switch self {
+        case .routes:    return RutTheme.amber
         case .waypoints: return RutTheme.textDim
         case .airports:  return RutTheme.amber
         case .navaids:   return RutTheme.green
@@ -28,8 +31,10 @@ struct DatabaseListView: View {
     @EnvironmentObject var navStore: NavigationStore
     @Environment(\.dismiss) var dismiss
 
-    @State private var selectedTab: DatabaseTab = .airports
+    @State private var selectedTab: DatabaseTab = .routes
     @State private var itemToAdd: PointEditorView.EditMode?
+    @State private var showNewRouteAlert = false
+    @State private var newRouteName = ""
 
     var body: some View {
         NavigationStack {
@@ -48,6 +53,7 @@ struct DatabaseListView: View {
                 // ── Content ──
                 Group {
                     switch selectedTab {
+                    case .routes:    routeList
                     case .waypoints: waypointList
                     case .airports:  airportList
                     case .navaids:   navaidList
@@ -81,6 +87,21 @@ struct DatabaseListView: View {
             }
         }
         .tint(RutTheme.amber)
+        .alert("New Route", isPresented: $showNewRouteAlert) {
+            TextField("Route name", text: $newRouteName)
+                .autocorrectionDisabled()
+                .textInputAutocapitalization(.characters)
+            Button("Create") {
+                let trimmed = newRouteName.trimmingCharacters(in: .whitespaces)
+                if !trimmed.isEmpty {
+                    navStore.createEmptyRoute(named: trimmed)
+                }
+                newRouteName = ""
+            }
+            Button("Cancel", role: .cancel) { newRouteName = "" }
+        } message: {
+            Text("Enter a name for the new route.")
+        }
     }
 
     // MARK: - Tab Button
@@ -109,6 +130,39 @@ struct DatabaseListView: View {
     }
 
     // MARK: - Lists
+
+    private var routeList: some View {
+        List {
+            ForEach(navStore.document.routes) { route in
+                NavigationLink(destination: RouteEditorView(routeId: route.id)) {
+                    HStack(spacing: 12) {
+                        Image(systemName: "map")
+                            .font(.system(size: 13))
+                            .foregroundColor(RutTheme.amber)
+                            .frame(width: 22)
+
+                        Text(route.name)
+                            .font(.subheadline.weight(.semibold))
+                            .foregroundColor(RutTheme.text)
+
+                        Spacer()
+
+                        Text("\(route.pointRefs.count)")
+                            .font(.system(size: 12, weight: .bold, design: .monospaced))
+                            .foregroundColor(route.pointRefs.count > 40 ? RutTheme.danger : RutTheme.textMuted)
+                            .padding(.horizontal, 6)
+                            .padding(.vertical, 2)
+                            .background(RutTheme.surface2)
+                            .clipShape(Capsule())
+                    }
+                    .padding(.vertical, 3)
+                }
+                .listRowBackground(RutTheme.surface)
+            }
+        }
+        .listStyle(.plain)
+        .scrollContentBackground(.hidden)
+    }
 
     private var waypointList: some View {
         List {
@@ -222,6 +276,9 @@ struct DatabaseListView: View {
 
     private func startAddItem() {
         switch selectedTab {
+        case .routes:
+            newRouteName = ""
+            showNewRouteAlert = true
         case .waypoints:
             itemToAdd = .waypoint(UserWaypoint(id: "", name: "", type: .custom, latitude: 0, longitude: 0, elevation: 0))
         case .airports:

@@ -136,6 +136,33 @@ final class NavigationStore: ObservableObject {
             }
         }
 
+    // MARK: - Route Point Editing
+
+    func moveRoutePoints(routeId: UUID, from: IndexSet, to: Int) {
+        guard let idx = document.routes.firstIndex(where: { $0.id == routeId }) else { return }
+        document.routes[idx].pointRefs.move(fromOffsets: from, toOffset: to)
+    }
+
+    func removeRoutePoints(routeId: UUID, at offsets: IndexSet) {
+        guard let idx = document.routes.firstIndex(where: { $0.id == routeId }) else { return }
+        document.routes[idx].pointRefs.remove(atOffsets: offsets)
+    }
+
+    func addRoutePoint(routeId: UUID, ref: RoutePointRef) {
+        guard let idx = document.routes.firstIndex(where: { $0.id == routeId }) else { return }
+        document.routes[idx].pointRefs.append(ref)
+    }
+
+    func createEmptyRoute(named name: String) {
+        let sanitized = NavigationStore.sanitizedName(name, maxLength: 15)
+        let finalName = sanitized.isEmpty ? "ROUTE" : sanitized
+        let used = Set(document.routes.map { $0.routeId })
+        let base = makeRouteIdBase(from: finalName)
+        let newRouteId = makeUniqueRouteId(base: base, used: used)
+        let route = Route(routeId: newRouteId, name: finalName, pointRefs: [])
+        document.routes.append(route)
+    }
+
     func updateRouteName(_ route: Route, newName: String) {
         guard let idx = document.routes.firstIndex(where: { $0.id == route.id }) else { return }
         let sanitized = NavigationStore.sanitizedName(newName, maxLength: 15)

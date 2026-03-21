@@ -74,6 +74,22 @@ final class ErrorLogger {
     }
 }
 
+// MARK: - ExportValidationError
+
+/// Thrown by format-specific validators when one or more pre-export rules are
+/// violated. The `issues` array contains one human-readable string per rule
+/// failure; the `title` is used as the alert title in the UI.
+struct ExportValidationError: LocalizedError {
+    let title: String
+    let issues: [String]
+
+    var errorDescription: String? {
+        issues.enumerated()
+            .map { "• \($0.element)" }
+            .joined(separator: "\n\n")
+    }
+}
+
 // MARK: - RutError
 
 enum RutError: LocalizedError {
