@@ -153,6 +153,12 @@ final class NavigationStore: ObservableObject {
         document.routes[idx].pointRefs.append(ref)
     }
 
+    func insertRoutePoint(routeId: UUID, at index: Int, ref: RoutePointRef) {
+        guard let idx = document.routes.firstIndex(where: { $0.id == routeId }) else { return }
+        let clamped = max(0, min(index, document.routes[idx].pointRefs.count))
+        document.routes[idx].pointRefs.insert(ref, at: clamped)
+    }
+
     func createEmptyRoute(named name: String) {
         let sanitized = NavigationStore.sanitizedName(name, maxLength: 15)
         let finalName = sanitized.isEmpty ? "ROUTE" : sanitized

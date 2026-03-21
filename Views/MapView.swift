@@ -65,6 +65,12 @@ struct RutMapView: View {
     @State private var mapDragTarget: MapDragTarget? = nil
     @State private var mapDragTargetChecked = false
 
+    // --- Line-segment insertion state ---
+    @State private var insertGhostCoord: CLLocationCoordinate2D? = nil
+    @State private var insertSnapRef: RoutePointRef? = nil
+    @State private var pendingInsert: PendingInsert? = nil
+    @State private var showLineInsertAlert = false
+
     // --- FÄRGER ---
     private let colorAirport = Color(uiColor: .darkGray)
     private let colorNavaid  = Color.gray
@@ -97,11 +103,21 @@ struct RutMapView: View {
         let newCoordinate: CLLocationCoordinate2D
     }
 
+    // Pending line-segment insertion
+    private struct PendingInsert {
+        let routeId: UUID
+        let segmentIndex: Int          // Insert AT this index in pointRefs
+        let snapRef: RoutePointRef?    // Non-nil → insert existing point
+        let newCoord: CLLocationCoordinate2D? // Non-nil → create new WPT
+        let previewId: String?         // Pre-computed WPT ID for display
+    }
+
     // Map-level drag target
     private enum MapDragTarget {
         case userAirport(UserAirport)
         case userNavaid(UserNavaid)
         case routePoint(index: Int)
+        case lineSegment(segmentIndex: Int)
     }
 
     var body: some View {
@@ -136,7 +152,12 @@ struct RutMapView: View {
                             .onChanged { v in
                                 if !mapDragTargetChecked {
                                     mapDragTargetChecked = true
-                                    mapDragTarget = findDragTarget(at: v.startLocation, proxy: proxy)
+                                    let target = findDragTarget(at: v.startLocation, proxy: proxy)
+                                    mapDragTarget = target
+                                    // Seed ghost coord for line segment insertion
+                                    if case .lineSegment(_) = target {
+                                        insertGhostCoord = proxy.convert(v.startLocation, from: .global)
+                                    }
                                 }
                                 if let target = mapDragTarget {
                                     updateMapDragTarget(target, at: v.location, proxy: proxy)
@@ -169,6 +190,8 @@ struct RutMapView: View {
                         }
                         mapDragTarget = nil
                         mapDragTargetChecked = false
+                        insertGhostCoord = nil
+                        insertSnapRef = nil
                     }
                 }
             }
@@ -199,6 +222,18 @@ struct RutMapView: View {
         } message: {
             if let move = pendingMove {
                 Text(moveConfirmMessage(for: move))
+            }
+        }
+        .alert(lineInsertAlertTitle, isPresented: $showLineInsertAlert) {
+            Button("Add") { confirmLineInsert() }
+            Button("Cancel", role: .cancel) { pendingInsert = nil }
+        } message: {
+            if let ins = pendingInsert {
+                if ins.snapRef != nil {
+                    Text("Insert into route at this position.")
+                } else if let id = ins.previewId {
+                    Text("Create waypoint \(id) and add to route.")
+                }
             }
         }
     }
@@ -376,6 +411,17 @@ struct RutMapView: View {
                     .stroke(colorActive, lineWidth: 6)
             }
 
+            // Ghost marker during line-segment insertion drag
+            if let ghostCoord = insertGhostCoord {
+                Annotation("insert-ghost", coordinate: ghostCoord) {
+                    GhostInsertMarkerView(
+                        isSnapped: insertSnapRef != nil,
+                        snapLabel: insertSnapRef?.refId
+                    )
+                }
+                .annotationTitles(.hidden)
+            }
+
             ForEach(Array(points.enumerated()), id: \.offset) { pair in
                 let idx = pair.offset
                 let p = pair.element
@@ -470,6 +516,13 @@ struct RutMapView: View {
             }
         }
 
+        // If no marker was hit, check if touch is on a route line segment
+        if result == nil, let route = navStore.activeRoute {
+            if let seg = findNearestSegment(at: screenPoint, proxy: proxy, route: route) {
+                result = .lineSegment(segmentIndex: seg)
+            }
+        }
+
         return result
     }
 
@@ -485,6 +538,17 @@ struct RutMapView: View {
         case .routePoint(let idx):
             if let route = navStore.activeRoute {
                 navStore.updateWaypointCoordinate(in: route, at: idx, to: coord)
+            }
+        case .lineSegment:
+            // Check if finger is near an existing point (snap)
+            let snap = findSnapTarget(at: screenPoint, proxy: proxy)
+            if let snap, let snapCoord = coordinate(for: snap) {
+                // Snap ghost to existing point's coordinate
+                insertSnapRef = snap
+                insertGhostCoord = displayCoordinate(for: snapCoord)
+            } else {
+                insertSnapRef = nil
+                insertGhostCoord = coord
             }
         }
     }
@@ -503,6 +567,26 @@ struct RutMapView: View {
         case .routePoint(let idx):
             if let route = navStore.activeRoute {
                 navStore.updateWaypointCoordinate(in: route, at: idx, to: coord)
+            }
+        case .lineSegment(let segIdx):
+            guard let route = navStore.activeRoute else { return }
+            let ghost = insertGhostCoord
+            let snap  = insertSnapRef
+            insertGhostCoord = nil
+            insertSnapRef    = nil
+            if let snap {
+                pendingInsert = PendingInsert(
+                    routeId: route.id, segmentIndex: segIdx + 1,
+                    snapRef: snap, newCoord: nil, previewId: nil
+                )
+                showLineInsertAlert = true
+            } else if let dropCoord = ghost {
+                let newId = navStore.nextAvailableId(for: .wpt)
+                pendingInsert = PendingInsert(
+                    routeId: route.id, segmentIndex: segIdx + 1,
+                    snapRef: nil, newCoord: dropCoord, previewId: newId
+                )
+                showLineInsertAlert = true
             }
         }
     }
@@ -555,6 +639,103 @@ struct RutMapView: View {
         return abs(c.latitude) < 0.0000001 && abs(c.longitude) < 0.0000001
     }
 
+    // MARK: - Line segment helpers
+
+    /// Returns the segment index (first-point index) of the nearest active-route segment
+    /// to `screenPt`, or nil if no segment is within the hit threshold.
+    private func findNearestSegment(at screenPt: CGPoint, proxy: MapProxy, route: Route) -> Int? {
+        let lineHitThreshold: CGFloat = 18
+        let points = navStore.mapPoints(for: route)
+        guard points.count >= 2 else { return nil }
+
+        var bestDist = CGFloat.infinity
+        var bestIdx: Int? = nil
+
+        for i in 0 ..< points.count - 1 {
+            guard
+                let p0 = proxy.convert(displayCoordinate(for: points[i].coordinate),     to: .global),
+                let p1 = proxy.convert(displayCoordinate(for: points[i+1].coordinate),   to: .global)
+            else { continue }
+
+            let (dist, _) = closestPointOnSegment(from: screenPt, segA: p0, segB: p1)
+            if dist < lineHitThreshold && dist < bestDist {
+                bestDist = dist
+                bestIdx  = i
+            }
+        }
+        return bestIdx
+    }
+
+    /// Projects point `p` onto segment (segA, segB) and returns (distance, closest point).
+    private func closestPointOnSegment(
+        from p: CGPoint, segA: CGPoint, segB: CGPoint
+    ) -> (CGFloat, CGPoint) {
+        let dx = segB.x - segA.x
+        let dy = segB.y - segA.y
+        let lenSq = dx * dx + dy * dy
+        guard lenSq > 0 else {
+            return (hypot(p.x - segA.x, p.y - segA.y), segA)
+        }
+        let t = max(0, min(1, ((p.x - segA.x) * dx + (p.y - segA.y) * dy) / lenSq))
+        let closest = CGPoint(x: segA.x + t * dx, y: segA.y + t * dy)
+        return (hypot(p.x - closest.x, p.y - closest.y), closest)
+    }
+
+    /// Returns the nearest database point within snap threshold of `screenPt`, or nil.
+    private func findSnapTarget(at screenPt: CGPoint, proxy: MapProxy) -> RoutePointRef? {
+        let snapThreshold: CGFloat = 32
+        var bestDist = CGFloat.infinity
+        var result: RoutePointRef? = nil
+
+        func check(_ coord: CLLocationCoordinate2D, _ ref: RoutePointRef) {
+            guard let pt = proxy.convert(displayCoordinate(for: coord), to: .global) else { return }
+            let d = hypot(pt.x - screenPt.x, pt.y - screenPt.y)
+            if d < snapThreshold && d < bestDist { bestDist = d; result = ref }
+        }
+
+        for ap in navStore.document.userAirports   { check(ap.coordinate, RoutePointRef(kind: .userAirport,   refId: ap.id)) }
+        for nv in navStore.document.userNavaids    { check(nv.coordinate, RoutePointRef(kind: .userNavaid,    refId: nv.id)) }
+        for wp in navStore.document.userWaypoints  { check(wp.coordinate, RoutePointRef(kind: .userWaypoint,  refId: wp.id)) }
+        for ap in navStore.document.systemAirports { check(ap.coordinate, RoutePointRef(kind: .systemAirport, refId: ap.id)) }
+        for nv in navStore.document.systemNavaids  { check(nv.coordinate, RoutePointRef(kind: .systemNavaid,  refId: nv.id)) }
+
+        return result
+    }
+
+    /// Resolves the map coordinate for any RoutePointRef.
+    private func coordinate(for ref: RoutePointRef) -> CLLocationCoordinate2D? {
+        switch ref.kind {
+        case .userAirport:   return navStore.document.userAirports.first   { $0.id == ref.refId }?.coordinate
+        case .userNavaid:    return navStore.document.userNavaids.first    { $0.id == ref.refId }?.coordinate
+        case .userWaypoint:  return navStore.document.userWaypoints.first  { $0.id == ref.refId }?.coordinate
+        case .systemAirport: return navStore.document.systemAirports.first { $0.id == ref.refId }?.coordinate
+        case .systemNavaid:  return navStore.document.systemNavaids.first  { $0.id == ref.refId }?.coordinate
+        }
+    }
+
+    // MARK: - Line insert confirmation
+
+    private var lineInsertAlertTitle: String {
+        if let snap = pendingInsert?.snapRef { return "Insert \(snap.refId)?" }
+        return "New Waypoint?"
+    }
+
+    private func confirmLineInsert() {
+        guard let ins = pendingInsert else { return }
+        pendingInsert = nil
+        if let snap = ins.snapRef {
+            navStore.insertRoutePoint(routeId: ins.routeId, at: ins.segmentIndex, ref: snap)
+        } else if let coord = ins.newCoord, let newId = ins.previewId {
+            let wp = UserWaypoint(id: newId, name: newId, type: .wpt,
+                                  latitude: coord.latitude, longitude: coord.longitude, elevation: 0)
+            navStore.createUserWaypoint(wp)
+            navStore.insertRoutePoint(
+                routeId: ins.routeId, at: ins.segmentIndex,
+                ref: RoutePointRef(kind: .userWaypoint, refId: newId)
+            )
+        }
+    }
+
     private func displayCoordinate(for c: CLLocationCoordinate2D) -> CLLocationCoordinate2D {
         if isZero(c) {
             return CLLocationCoordinate2D(latitude: 0.000001, longitude: 0.000001)
@@ -602,6 +783,43 @@ struct DatabaseMarkerView: View {
                 .allowsHitTesting(false)
         }
         .contentShape(Circle())
+    }
+}
+
+// MARK: - Ghost insert marker
+
+struct GhostInsertMarkerView: View {
+    let isSnapped: Bool
+    let snapLabel: String?
+
+    var body: some View {
+        VStack(spacing: 3) {
+            ZStack {
+                Circle()
+                    .fill((isSnapped ? Color.green : Color.blue).opacity(0.22))
+                Circle()
+                    .strokeBorder(
+                        isSnapped ? Color.green : Color.blue,
+                        style: StrokeStyle(lineWidth: 2.5, dash: [5, 3])
+                    )
+                Image(systemName: isSnapped ? "checkmark" : "plus")
+                    .font(.system(size: 11, weight: .bold))
+                    .foregroundColor(isSnapped ? .green : .blue)
+            }
+            .frame(width: 30, height: 30)
+
+            if let label = snapLabel {
+                Text(label)
+                    .font(.caption2.weight(.semibold))
+                    .padding(.horizontal, 5)
+                    .padding(.vertical, 2)
+                    .background(Color.black.opacity(0.72))
+                    .foregroundColor(.white)
+                    .cornerRadius(4)
+                    .fixedSize()
+            }
+        }
+        .animation(.easeInOut(duration: 0.12), value: isSnapped)
     }
 }
 
