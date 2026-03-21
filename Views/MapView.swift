@@ -68,6 +68,8 @@ struct RutMapView: View {
     // Local drag state for route points — avoids @Published on every frame
     @State private var draggingRoutePointIdx: Int? = nil
     @State private var draggingRoutePointCoord = CLLocationCoordinate2D()
+    @State private var pendingRoutePointMove: PendingRoutePointMove? = nil
+    @State private var showRoutePointMoveConfirm = false
 
     // --- Line-segment insertion state ---
     @State private var insertGhostCoord: CLLocationCoordinate2D? = nil
@@ -95,6 +97,14 @@ struct RutMapView: View {
             .filter { $0.id != navStore.activeRouteId }
             .flatMap { $0.pointRefs.map { $0.refId } }
         return Set(refs)
+    }
+
+    // Pending route-point move (awaiting user confirmation)
+    private struct PendingRoutePointMove {
+        let routeId: UUID
+        let pointIndex: Int
+        let pointId: String
+        let newCoordinate: CLLocationCoordinate2D
     }
 
     // Pending move confirmation
@@ -252,6 +262,24 @@ struct RutMapView: View {
             if let ins = pendingInsert, ins.snapRef == nil {
                 Text(String(format: "Create a new waypoint at %.4f°N, %.4f°E and insert it into the route?",
                             ins.coordinate.latitude, ins.coordinate.longitude))
+            }
+        }
+        .alert("Confirm Move", isPresented: $showRoutePointMoveConfirm) {
+            Button("Move") {
+                if let move = pendingRoutePointMove,
+                   let route = navStore.document.routes.first(where: { $0.id == move.routeId }) {
+                    navStore.updateWaypointCoordinate(in: route, at: move.pointIndex, to: move.newCoordinate)
+                }
+                pendingRoutePointMove = nil
+                draggingRoutePointIdx = nil
+            }
+            Button("Cancel", role: .cancel) {
+                pendingRoutePointMove = nil
+                draggingRoutePointIdx = nil
+            }
+        } message: {
+            if let move = pendingRoutePointMove {
+                Text("Move \(move.pointId) to \(String(format: "%.4f", move.newCoordinate.latitude))°N, \(String(format: "%.4f", move.newCoordinate.longitude))°E?")
             }
         }
     }
@@ -426,7 +454,8 @@ struct RutMapView: View {
             // Canvas overlay is drawing the live polyline on top anyway.
             let legDistances = draggingRoutePointIdx == nil ? navStore.legDistancesNM(for: route) : [Double]()
 
-            if coords.count >= 2 {
+            // Hide during drag — Canvas overlay draws the live version instead.
+            if coords.count >= 2 && draggingRoutePointIdx == nil {
                 MapPolyline(coordinates: coords)
                     .stroke(colorActive, lineWidth: 6)
             }
@@ -572,11 +601,20 @@ struct RutMapView: View {
             pendingMove = PendingMove(kind: .navaid(navaid), newCoordinate: coord)
             showMoveConfirm = true
         case .routePoint(let idx):
-            // Write to navStore exactly once — on release
             if let route = navStore.activeRoute {
-                navStore.updateWaypointCoordinate(in: route, at: idx, to: coord)
+                let points = navStore.mapPoints(for: route)
+                let pointId = idx < points.count ? points[idx].name : "point"
+                // Keep draggingRoutePointIdx set so Canvas holds the drop position during confirm
+                pendingRoutePointMove = PendingRoutePointMove(
+                    routeId: route.id,
+                    pointIndex: idx,
+                    pointId: pointId,
+                    newCoordinate: coord
+                )
+                showRoutePointMoveConfirm = true
+            } else {
+                draggingRoutePointIdx = nil
             }
-            draggingRoutePointIdx = nil
         case .lineSegment(let segIdx):
             setMapScrollEnabled(true)
             if let ghostCoord = insertGhostCoord {
