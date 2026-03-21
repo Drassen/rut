@@ -65,6 +65,10 @@ struct RutMapView: View {
     @State private var mapDragTarget: MapDragTarget? = nil
     @State private var mapDragTargetChecked = false
 
+    // Local drag state for route points — avoids @Published on every frame
+    @State private var draggingRoutePointIdx: Int? = nil
+    @State private var draggingRoutePointCoord = CLLocationCoordinate2D()
+
     // --- Line-segment insertion state ---
     @State private var insertGhostCoord: CLLocationCoordinate2D? = nil
     @State private var insertSnapRef: RoutePointRef? = nil
@@ -192,6 +196,7 @@ struct RutMapView: View {
                         if mapDragTarget != nil {
                             draggingAirportId = nil
                             draggingNavaidId = nil
+                            draggingRoutePointIdx = nil
                         }
                         if insertGhostCoord != nil {
                             setMapScrollEnabled(true)
@@ -408,8 +413,16 @@ struct RutMapView: View {
     private func activeRouteContent(proxy: MapProxy) -> some MapContent {
         if let route = navStore.activeRoute {
             let points = navStore.mapPoints(for: route)
-            let coords = points.map { displayCoordinate(for: $0.coordinate) }
-            let legDistances = navStore.legDistancesNM(for: route)
+            let dragIdx = draggingRoutePointIdx
+
+            // Build polyline coords, substituting the local drag coord for the moving point.
+            // This avoids calling navStore.updateWaypointCoordinate (and firing @Published) per frame.
+            let coords: [CLLocationCoordinate2D] = points.enumerated().map { i, p in
+                dragIdx == i ? draggingRoutePointCoord : displayCoordinate(for: p.coordinate)
+            }
+
+            // Skip leg-distance calculations while dragging — values are stale anyway.
+            let legDistances = dragIdx == nil ? navStore.legDistancesNM(for: route) : [Double]()
 
             if coords.count >= 2 {
                 MapPolyline(coordinates: coords)
@@ -420,12 +433,10 @@ struct RutMapView: View {
                 let idx = pair.offset
                 let p = pair.element
                 let type = waypointType(for: p)
-                let isDragging: Bool = {
-                    if case .routePoint(let di) = mapDragTarget { return di == idx }
-                    return false
-                }()
+                let isDragging = dragIdx == idx
+                let effectiveCoord = isDragging ? draggingRoutePointCoord : displayCoordinate(for: p.coordinate)
 
-                Annotation(p.name, coordinate: displayCoordinate(for: p.coordinate)) {
+                Annotation(p.name, coordinate: effectiveCoord) {
                     RouteMarkerShapeView(point: p, color: colorActive, contentColor: .white, waypointType: type)
                         .scaleEffect(isDragging ? 1.2 : 1.0)
                         .zIndex(10)
@@ -434,12 +445,10 @@ struct RutMapView: View {
                 .annotationTitles(.hidden)
 
                 if idx < points.count - 1 && idx < legDistances.count {
-                    let next = points[idx + 1]
-                    let safeP = displayCoordinate(for: p.coordinate)
-                    let safeNext = displayCoordinate(for: next.coordinate)
+                    let nextCoord = dragIdx == idx + 1 ? draggingRoutePointCoord : displayCoordinate(for: points[idx + 1].coordinate)
                     let mid = CLLocationCoordinate2D(
-                        latitude: (safeP.latitude + safeNext.latitude) / 2.0,
-                        longitude: (safeP.longitude + safeNext.longitude) / 2.0
+                        latitude: (effectiveCoord.latitude + nextCoord.latitude) / 2.0,
+                        longitude: (effectiveCoord.longitude + nextCoord.longitude) / 2.0
                     )
                     let label = String(format: "%.1fN", legDistances[idx])
 
@@ -539,9 +548,9 @@ struct RutMapView: View {
             draggingNavaidId = navaid.id
             draggingNavaidCoord = coord
         case .routePoint(let idx):
-            if let route = navStore.activeRoute {
-                navStore.updateWaypointCoordinate(in: route, at: idx, to: coord)
-            }
+            // Update local state only — no @Published fire on every drag frame
+            draggingRoutePointIdx = idx
+            draggingRoutePointCoord = coord
         case .lineSegment:
             insertGhostCoord = coord
             insertSnapRef = findSnapTarget(at: screenPoint, proxy: proxy)
@@ -560,9 +569,11 @@ struct RutMapView: View {
             pendingMove = PendingMove(kind: .navaid(navaid), newCoordinate: coord)
             showMoveConfirm = true
         case .routePoint(let idx):
+            // Write to navStore exactly once — on release
             if let route = navStore.activeRoute {
                 navStore.updateWaypointCoordinate(in: route, at: idx, to: coord)
             }
+            draggingRoutePointIdx = nil
         case .lineSegment(let segIdx):
             setMapScrollEnabled(true)
             if let ghostCoord = insertGhostCoord {
