@@ -125,87 +125,95 @@ struct RutMapView: View {
     var body: some View {
         ZStack(alignment: .topTrailing) {
             MapReader { proxy in
-                Map(position: $camera) {
+                ZStack {
+                    Map(position: $camera) {
 
-                    // 0. Airspace zones (bakgrund, ej klickbar)
-                    airspaceContent()
+                        // 0. Airspace zones (bakgrund, ej klickbar)
+                        airspaceContent()
 
-                    // 1. Inaktiva rutter
-                    inactiveRoutesContent(proxy: proxy)
+                        // 1. Inaktiva rutter
+                        inactiveRoutesContent(proxy: proxy)
 
-                    // 2. Databas
-                    databaseContent(proxy: proxy)
+                        // 2. Databas
+                        databaseContent(proxy: proxy)
 
-                    // 3. Aktiv rutt
-                    activeRouteContent(proxy: proxy)
-                }
-                .mapStyle(mapStyle.mapKitStyle)
-                .onAppear {
-                    configureInitialCamera()
-                }
-                .task {
-                    await airspaceService.fetchAllZones()
-                }
-                // Single map-level gesture handles both marker drag and new-point creation.
-                // LongPressGesture is NOT on annotation views, so normal pan is never blocked.
-                .simultaneousGesture(
-                    LongPressGesture(minimumDuration: 0.5)
-                        .sequenced(before: DragGesture(minimumDistance: 0, coordinateSpace: .global)
-                            .onChanged { v in
-                                if !mapDragTargetChecked {
-                                    mapDragTargetChecked = true
-                                    let rawTarget = findDragTarget(at: v.startLocation, proxy: proxy)
-
-                                    // Line segment: show ghost, disable map scroll so pan
-                                    // doesn't steal the drag while the finger is moving.
-                                    if case .lineSegment = rawTarget,
-                                       let touchCoord = proxy.convert(v.startLocation, from: .global) {
-                                        setMapScrollEnabled(false)
-                                        insertGhostCoord = touchCoord
-                                        insertSnapRef = nil
-                                        mapDragTarget = rawTarget
-                                    } else {
-                                        mapDragTarget = rawTarget
-                                    }
-                                }
-                                if let target = mapDragTarget {
-                                    updateMapDragTarget(target, at: v.location, proxy: proxy)
-                                }
-                            }
-                            .onEnded { v in
-                                if let target = mapDragTarget {
-                                    finalizeMapDragTarget(target, at: v.location, proxy: proxy)
-                                } else {
-                                    if let coord = proxy.convert(v.startLocation, from: .global) {
-                                        onMapLongPress?(coord)
-                                    }
-                                }
-                                mapDragTarget = nil
-                                mapDragTargetChecked = false
-                            }
-                        )
-                        .updating($isMapLongPressing) { v, s, _ in
-                            if case .first(true) = v { s = true }
-                            else if case .second(true, _) = v { s = true }
-                            else { s = false }
-                        }
-                )
-                .onChange(of: isMapLongPressing) { wasActive, isActive in
-                    if wasActive && !isActive {
-                        // Gesture cancelled (e.g. pan recognised first) – clean up
-                        if mapDragTarget != nil {
-                            draggingAirportId = nil
-                            draggingNavaidId = nil
-                            draggingRoutePointIdx = nil
-                        }
-                        if insertGhostCoord != nil {
-                            setMapScrollEnabled(true)
-                            insertGhostCoord = nil
-                            insertSnapRef = nil
-                        }
-                        mapDragTarget = nil
-                        mapDragTargetChecked = false
+                        // 3. Aktiv rutt
+                        activeRouteContent(proxy: proxy)
                     }
+                    .mapStyle(mapStyle.mapKitStyle)
+                    .onAppear {
+                        configureInitialCamera()
+                    }
+                    .task {
+                        await airspaceService.fetchAllZones()
+                    }
+                    // Single map-level gesture handles both marker drag and new-point creation.
+                    // LongPressGesture is NOT on annotation views, so normal pan is never blocked.
+                    .simultaneousGesture(
+                        LongPressGesture(minimumDuration: 0.5)
+                            .sequenced(before: DragGesture(minimumDistance: 0, coordinateSpace: .global)
+                                .onChanged { v in
+                                    if !mapDragTargetChecked {
+                                        mapDragTargetChecked = true
+                                        let rawTarget = findDragTarget(at: v.startLocation, proxy: proxy)
+
+                                        // Line segment: show ghost, disable map scroll so pan
+                                        // doesn't steal the drag while the finger is moving.
+                                        if case .lineSegment = rawTarget,
+                                           let touchCoord = proxy.convert(v.startLocation, from: .global) {
+                                            setMapScrollEnabled(false)
+                                            insertGhostCoord = touchCoord
+                                            insertSnapRef = nil
+                                            mapDragTarget = rawTarget
+                                        } else {
+                                            mapDragTarget = rawTarget
+                                        }
+                                    }
+                                    if let target = mapDragTarget {
+                                        updateMapDragTarget(target, at: v.location, proxy: proxy)
+                                    }
+                                }
+                                .onEnded { v in
+                                    if let target = mapDragTarget {
+                                        finalizeMapDragTarget(target, at: v.location, proxy: proxy)
+                                    } else {
+                                        if let coord = proxy.convert(v.startLocation, from: .global) {
+                                            onMapLongPress?(coord)
+                                        }
+                                    }
+                                    mapDragTarget = nil
+                                    mapDragTargetChecked = false
+                                }
+                            )
+                            .updating($isMapLongPressing) { v, s, _ in
+                                if case .first(true) = v { s = true }
+                                else if case .second(true, _) = v { s = true }
+                                else { s = false }
+                            }
+                    )
+                    .onChange(of: isMapLongPressing) { wasActive, isActive in
+                        if wasActive && !isActive {
+                            // Gesture cancelled (e.g. pan recognised first) – clean up
+                            if mapDragTarget != nil {
+                                draggingAirportId = nil
+                                draggingNavaidId = nil
+                                draggingRoutePointIdx = nil
+                            }
+                            if insertGhostCoord != nil {
+                                setMapScrollEnabled(true)
+                                insertGhostCoord = nil
+                                insertSnapRef = nil
+                            }
+                            mapDragTarget = nil
+                            mapDragTargetChecked = false
+                        }
+                    }
+
+                    // 60fps Canvas overlay — drawn only while dragging a route point.
+                    // MapPolyline inside @MapContentBuilder is throttled by MapKit and only
+                    // updates ~1fps; this Canvas bypasses that by drawing directly in SwiftUI.
+                    dragPolylineOverlay(proxy: proxy)
+                        .allowsHitTesting(false)
                 }
             }
 
@@ -413,16 +421,10 @@ struct RutMapView: View {
     private func activeRouteContent(proxy: MapProxy) -> some MapContent {
         if let route = navStore.activeRoute {
             let points = navStore.mapPoints(for: route)
-            let dragIdx = draggingRoutePointIdx
-
-            // Build polyline coords, substituting the local drag coord for the moving point.
-            // This avoids calling navStore.updateWaypointCoordinate (and firing @Published) per frame.
-            let coords: [CLLocationCoordinate2D] = points.enumerated().map { i, p in
-                dragIdx == i ? draggingRoutePointCoord : displayCoordinate(for: p.coordinate)
-            }
-
-            // Skip leg-distance calculations while dragging — values are stale anyway.
-            let legDistances = dragIdx == nil ? navStore.legDistancesNM(for: route) : [Double]()
+            let coords = points.map { displayCoordinate(for: $0.coordinate) }
+            // Skip leg-distance labels while dragging — values are stale and the
+            // Canvas overlay is drawing the live polyline on top anyway.
+            let legDistances = draggingRoutePointIdx == nil ? navStore.legDistancesNM(for: route) : [Double]()
 
             if coords.count >= 2 {
                 MapPolyline(coordinates: coords)
@@ -433,22 +435,23 @@ struct RutMapView: View {
                 let idx = pair.offset
                 let p = pair.element
                 let type = waypointType(for: p)
-                let isDragging = dragIdx == idx
-                let effectiveCoord = isDragging ? draggingRoutePointCoord : displayCoordinate(for: p.coordinate)
+                let isDragging = draggingRoutePointIdx == idx
 
-                Annotation(p.name, coordinate: effectiveCoord) {
+                Annotation(p.name, coordinate: displayCoordinate(for: p.coordinate)) {
                     RouteMarkerShapeView(point: p, color: colorActive, contentColor: .white, waypointType: type)
-                        .scaleEffect(isDragging ? 1.2 : 1.0)
+                        // Hide while dragging — Canvas overlay renders the live marker instead.
+                        .opacity(isDragging ? 0 : 1)
                         .zIndex(10)
                         .onTapGesture { onPointTap?(p) }
                 }
                 .annotationTitles(.hidden)
 
                 if idx < points.count - 1 && idx < legDistances.count {
-                    let nextCoord = dragIdx == idx + 1 ? draggingRoutePointCoord : displayCoordinate(for: points[idx + 1].coordinate)
+                    let safeP = displayCoordinate(for: p.coordinate)
+                    let safeNext = displayCoordinate(for: points[idx + 1].coordinate)
                     let mid = CLLocationCoordinate2D(
-                        latitude: (effectiveCoord.latitude + nextCoord.latitude) / 2.0,
-                        longitude: (effectiveCoord.longitude + nextCoord.longitude) / 2.0
+                        latitude: (safeP.latitude + safeNext.latitude) / 2.0,
+                        longitude: (safeP.longitude + safeNext.longitude) / 2.0
                     )
                     let label = String(format: "%.1fN", legDistances[idx])
 
@@ -716,6 +719,48 @@ struct RutMapView: View {
     private func waypointType(for point: RouteMapPoint) -> WaypointType? {
         guard point.kind == .userWaypoint else { return nil }
         return navStore.document.userWaypoints.first(where: { $0.id == point.name })?.type
+    }
+
+    // MARK: - 60fps drag overlay
+
+    /// Draws the active route polyline + dragged marker in a SwiftUI Canvas overlay.
+    /// Because @MapContentBuilder content is throttled by MapKit (~1fps during programmatic
+    /// updates), we bypass it entirely during drag and draw directly in SwiftUI space.
+    @ViewBuilder
+    private func dragPolylineOverlay(proxy: MapProxy) -> some View {
+        if let dragIdx = draggingRoutePointIdx, let route = navStore.activeRoute {
+            let points = navStore.mapPoints(for: route)
+            let dragCoord = draggingRoutePointCoord
+
+            ZStack {
+                // Polyline
+                Canvas { ctx, _ in
+                    var path = Path()
+                    var first = true
+                    for (i, p) in points.enumerated() {
+                        let coord = i == dragIdx ? dragCoord : displayCoordinate(for: p.coordinate)
+                        guard let pt = proxy.convert(coord, to: .local) else { continue }
+                        if first { path.move(to: pt); first = false }
+                        else { path.addLine(to: pt) }
+                    }
+                    ctx.stroke(path, with: .color(colorActive), lineWidth: 6)
+                }
+
+                // Dragged marker
+                if dragIdx < points.count,
+                   let pt = proxy.convert(dragCoord, to: .local) {
+                    let p = points[dragIdx]
+                    RouteMarkerShapeView(
+                        point: p,
+                        color: colorActive,
+                        contentColor: .white,
+                        waypointType: waypointType(for: p)
+                    )
+                    .scaleEffect(1.2)
+                    .position(pt)
+                }
+            }
+        }
     }
 
     // MARK: - Line insert helpers
