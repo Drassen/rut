@@ -1,0 +1,86 @@
+******* PilotHeader Loading ******
+Generation date: 26 - 2 - 2026
+Airport file size: 4020
+Navaid file size: 4020
+Waypoint file size: 2820
+Route file size: 50020
+Carac file size: 116
+Pilot Database name: DTD2622026  
+******* PilotWaypoint Loading ******
+Allocated elements: 4
+Waypoint 1 Name MRP-04          ID MRP-0 Latitude 58,54405 Longitude 15,26311 Used in Route 1
+Waypoint 2 Name MRP-03          ID MRP00 Latitude 58,65146 Longitude 15,03164 Used in Route 1
+Waypoint 3 Name MRP-05          ID MRP01 Latitude 58,7467 Longitude 14,99159 Used in Route 1
+Waypoint 4 Name MRP-02          ID MRP02 Latitude 58,96727 Longitude 14,82438 Used in Route 1
+******* PilotAirport Loading ******
+Allocated elements: 54
+Airport 1 Name ESCF            IcaoID ESCF Latitude 58,40129 Longitude 15,52576 LongestRunway/Validity 0 / Undefined MagneticVariation/Validity 6,541356 / Defined Elevation 282,1522 UsedInRoute 1
+Airport 2 Name SKED            IcaoID SKED Latitude 58,28437 Longitude 15,57129 LongestRunway/Validity 0 / Undefined MagneticVariation/Validity 6,537054 / Defined Elevation 380,5774 UsedInRoute 0
+Airport 3 Name HACK            IcaoID HACK Latitude 58,34378 Longitude 15,58211 LongestRunway/Validity 0 / Undefined MagneticVariation/Validity 6,551165 / Defined Elevation 325 UsedInRoute 0
+Airport 4 Name AMYN            IcaoID AMYN Latitude 58,44371 Longitude 15,62298 LongestRunway/Validity 0 / Undefined MagneticVariation/Validity 6,583004 / Defined Elevation 108,2677 UsedInRoute 0
+Airport 5 Name SPEL            IcaoID SPEL Latitude 58,28475 Longitude 15,33691 LongestRunway/Validity 0 / Undefined MagneticVariation/Validity 6,455027 / Defined Elevation 347,769 UsedInRoute 0
+Airport 6 Name HOVE            IcaoID HOVE Latitude 58,30975 Longitude 15,7335 LongestRunway/Validity 0 / Undefined MagneticVariation/Validity 6,598222 / Defined Elevation 285,4331 UsedInRoute 0
+Airport 7 Name VIBY            IcaoID VIBY Latitude 58,37445 Longitude 15,32487 LongestRunway/Validity 0 / Undefined MagneticVariation/Validity 6,465997 / Defined Elevation 262,4672 UsedInRoute 0
+Airport 8 Name OSTR            IcaoID OSTR Latitude 58,48687 Longitude 15,74712 LongestRunway/Validity 0 / Undefined MagneticVariation/Validity 6,634408 / Defined Elevation 111,5486 UsedInRoute 0
+Airport 9 Name TOLE            IcaoID TOLE Latitude 58,41511 Longitude 15,45008 LongestRunway/Validity 0 / Undefined MagneticVariation/Validity 6,517081 / Defined Elevation 240 UsedInRoute 0
+Airport 10 Name ALVE            IcaoID ALVE Latitude 58,4465 Longitude 15,33006 LongestRunway/Validity 0 / Undefined MagneticVariation/Validity 6,480081 / Defined Elevation 226,378 UsedInRoute 0
+Airport 11 Name SNAV            IcaoID SNAV Latitude 58,5099 Longitude 15,57193 LongestRunway/Validity 0 / Undefined MagneticVariation/Validity 6,576585 / Defined Elevation 127,9528 UsedInRoute 0
+Airport 12 Name GIST            IcaoID GIST Latitude 58,45484 Longitude 15,84814 LongestRunway/Validity 0 / Undefined MagneticVariation/Validity 6,664264 / Defined Elevation 167,3228 UsedInRoute 0
+Airport 13 Name SPET            IcaoID SPET Latitude 58,29722 Longitude 15,85896 LongestRunway/Validity 0 / Undefined MagneticVariation/Validity 6,639821 / Defined Elevation 190,2887 UsedInRoute 0
+Airport 14 Name LJUN            IcaoID LJUN Latitude 58,52415 Longitude 15,38606 LongestRunway/Validity 0 / Undefined MagneticVariation/Validity 6,513207 / Defined Elevation 269,0289 UsedInRoute 1
+Airport 15 Name VIKI            IcaoID VIKI Latitude 58,37119 Longitude 15,42419 LongestRunway/Validity 0 / Undefined MagneticVariation/Validity 6,500413 / Defined Elevation 276 UsedInRoute 0
+Airport 16 Name VREN            IcaoID VREN Latitude 58,865 Longitude 16,69 LongestRunway/Validity 0 / Undefined MagneticVariation/Validity 7,039668 / Defined Elevation 115 UsedInRoute 0
+Airport 17 Name BOGS            IcaoID BOGS Latitude 58,87167 Longitude 17,14 LongestRunway/Validity 0 / Undefined MagneticVariation/Validity 7,200881 / Defined Elevation 82 UsedInRoute 0
+Airport 18 Name NORR            IcaoID NORR Latitude 58,70333 Longitude 16,62833 LongestRunway/Validity 0 / Undefined MagneticVariation/Validity 6,985956 / Defined Elevation 167 UsedInRoute 0
+Airport 19 Name LIDS            IcaoID LIDS Latitude 58,89333 Longitude 16,905 LongestRunway/Validity 0 / Undefined MagneticVariation/Validity 7,121855 / Defined Elevation 105 UsedInRoute 0
+Airport 20 Name MARS            IcaoID MARS Latitude 58,69667 Longitude 16,95833 LongestRunway/Validity 0 / Undefined MagneticVariation/Validity 7,101013 / Defined Elevation 46 UsedInRoute 0
+Airport 21 Name KUML            IcaoID KUML Latitude 59,14427 Longitude 15,15807 LongestRunway/Validity 0 / Undefined MagneticVariation/Validity 6,537854 / Defined Elevation 125 UsedInRoute 0
+Airport 22 Name FJUG            IcaoID FJUG Latitude 59,18879 Longitude 14,86866 LongestRunway/Validity 0 / Undefined MagneticVariation/Validity 6,439016 / Defined Elevation 259 UsedInRoute 0
+Airport 23 Name EAST            IcaoID EAST Latitude 59,21069 Longitude 15,13987 LongestRunway/Validity 0 / Undefined MagneticVariation/Validity 6,542649 / Defined Elevation 144 UsedInRoute 0
+Airport 24 Name GARP            IcaoID GARP Latitude 59,31192 Longitude 14,9287 LongestRunway/Validity 0 / Undefined MagneticVariation/Validity 6,482009 / Defined Elevation 531 UsedInRoute 1
+Airport 25 Name WEST            IcaoID WEST Latitude 59,23492 Longitude 14,95883 LongestRunway/Validity 0 / Undefined MagneticVariation/Validity 6,480072 / Defined Elevation 144 UsedInRoute 0
+Airport 26 Name LILL            IcaoID LILL Latitude 59,31582 Longitude 15,21983 LongestRunway/Validity 0 / Undefined MagneticVariation/Validity 6,590447 / Defined Elevation 92 UsedInRoute 0
+Airport 27 Name FAGE            IcaoID FAGE Latitude 59,51833 Longitude 13,23 LongestRunway/Validity 0 / Undefined MagneticVariation/Validity 5,875781 / Defined Elevation 230 UsedInRoute 0
+Airport 28 Name WEST            IcaoID WE00 Latitude 59,44667 Longitude 13,20833 LongestRunway/Validity 0 / Undefined MagneticVariation/Validity 5,857495 / Defined Elevation 177 UsedInRoute 0
+Airport 29 Name SKOG            IcaoID SKOG Latitude 59,35333 Longitude 13,41667 LongestRunway/Validity 0 / Undefined MagneticVariation/Validity 5,92314 / Defined Elevation 144 UsedInRoute 0
+Airport 30 Name TOLL            IcaoID TOLL Latitude 59,42667 Longitude 13,49833 LongestRunway/Validity 0 / Undefined MagneticVariation/Validity 5,964528 / Defined Elevation 256 UsedInRoute 0
+Airport 31 Name SKRU            IcaoID SKRU Latitude 59,41667 Longitude 13,15333 LongestRunway/Validity 0 / Undefined MagneticVariation/Validity 5,832451 / Defined Elevation 410 UsedInRoute 0
+Airport 32 Name EAST            IcaoID EA00 Latitude 59,44 Longitude 13,45667 LongestRunway/Validity 0 / Undefined MagneticVariation/Validity 5,950691 / Defined Elevation 187 UsedInRoute 0
+Airport 33 Name SAMS            IcaoID SAMS Latitude 59,51167 Longitude 13,56833 LongestRunway/Validity 0 / Undefined MagneticVariation/Validity 6,003435 / Defined Elevation 256 UsedInRoute 0
+Airport 34 Name ROMF            IcaoID ROMF Latitude 59,73309 Longitude 16,56181 LongestRunway/Validity 0 / Undefined MagneticVariation/Validity 7,167281 / Defined Elevation 131 UsedInRoute 0
+Airport 35 Name GOL             IcaoID GOL  Latitude 59,54083 Longitude 16,77753 LongestRunway/Validity 0 / Undefined MagneticVariation/Validity 7,207814 / Defined Elevation 49 UsedInRoute 0
+Airport 36 Name EAST            IcaoID EA01 Latitude 59,56842 Longitude 16,74159 LongestRunway/Validity 0 / Undefined MagneticVariation/Validity 7,200244 / Defined Elevation 46 UsedInRoute 0
+Airport 37 Name BJO             IcaoID BJO  Latitude 59,63877 Longitude 16,801 LongestRunway/Validity 0 / Undefined MagneticVariation/Validity 7,236679 / Defined Elevation 108 UsedInRoute 0
+Airport 38 Name VIKH            IcaoID VIKH Latitude 59,49162 Longitude 16,46536 LongestRunway/Validity 0 / Undefined MagneticVariation/Validity 7,082922 / Defined Elevation 16 UsedInRoute 0
+Airport 39 Name WEST            IcaoID WE01 Latitude 59,58124 Longitude 16,56768 LongestRunway/Validity 0 / Undefined MagneticVariation/Validity 7,138667 / Defined Elevation 3 UsedInRoute 0
+Airport 40 Name DOCK            IcaoID DOCK Latitude 58,493 Longitude 16,30707 LongestRunway/Validity 0 / Undefined MagneticVariation/Validity 6,832492 / Defined Elevation 69 UsedInRoute 0
+Airport 41 Name ABY             IcaoID ABY  Latitude 58,6706 Longitude 16,16064 LongestRunway/Validity 0 / Undefined MagneticVariation/Validity 6,814174 / Defined Elevation 26 UsedInRoute 0
+Airport 42 Name MELB            IcaoID MELB Latitude 58,52925 Longitude 16,02165 LongestRunway/Validity 0 / Undefined MagneticVariation/Validity 6,738869 / Defined Elevation 177 UsedInRoute 0
+Airport 43 Name KOPP            IcaoID KOPP Latitude 58,64915 Longitude 16,5465 LongestRunway/Validity 0 / Undefined MagneticVariation/Validity 6,94652 / Defined Elevation 151 UsedInRoute 0
+Airport 44 Name SVAR            IcaoID SVAR Latitude 58,66377 Longitude 16,03425 LongestRunway/Validity 0 / Undefined MagneticVariation/Validity 6,768079 / Defined Elevation 269 UsedInRoute 0
+Airport 45 Name VAST            IcaoID VAST Latitude 59,26242 Longitude 14,6678 LongestRunway/Validity 0 / Undefined MagneticVariation/Validity 6,362268 / Defined Elevation 534,7769 UsedInRoute 0
+Airport 46 Name FISK            IcaoID FISK Latitude 59,31279 Longitude 14,89268 LongestRunway/Validity 0 / Undefined MagneticVariation/Validity 6,454084 / Defined Elevation 734,9081 UsedInRoute 0
+Airport 47 Name NORR            IcaoID NO00 Latitude 59,30289 Longitude 14,73537 LongestRunway/Validity 0 / Undefined MagneticVariation/Validity 6,394027 / Defined Elevation 505,2493 UsedInRoute 0
+Airport 48 Name KROK            IcaoID KROK Latitude 59,35197 Longitude 14,85947 LongestRunway/Validity 0 / Undefined MagneticVariation/Validity 6,448355 / Defined Elevation 715,2231 UsedInRoute 0
+Airport 49 Name OST             IcaoID OST  Latitude 59,28574 Longitude 14,77176 LongestRunway/Validity 0 / Undefined MagneticVariation/Validity 6,40469 / Defined Elevation 515,0919 UsedInRoute 0
+Airport 50 Name FOB             IcaoID FOB  Latitude 59,28881 Longitude 14,70014 LongestRunway/Validity 0 / Undefined MagneticVariation/Validity 6,378615 / Defined Elevation 495,4068 UsedInRoute 2
+Airport 51 Name VILL            IcaoID VILL Latitude 59,28319 Longitude 14,70128 LongestRunway/Validity 0 / Undefined MagneticVariation/Validity 6,378111 / Defined Elevation 492,126 UsedInRoute 2
+Airport 52 Name LANF            IcaoID LANF Latitude 59,3271 Longitude 14,78762 LongestRunway/Validity 0 / Undefined MagneticVariation/Validity 6,417468 / Defined Elevation 590,5512 UsedInRoute 0
+Airport 53 Name SYD             IcaoID SYD  Latitude 59,26246 Longitude 14,72428 LongestRunway/Validity 0 / Undefined MagneticVariation/Validity 6,383222 / Defined Elevation 524,9344 UsedInRoute 1
+Airport 54 Name ESHQ            IcaoID ESHQ Latitude 59,27472 Longitude 15,22908 LongestRunway/Validity 0 / Undefined MagneticVariation/Validity 6,586663 / Defined Elevation 165 UsedInRoute 1
+******* PilotNavaid Loading ******
+Allocated elements: 0
+******* PilotRoute Loading ******
+Allocated elements: 2
+Route 1 ID ESHQ       - From Airport FOB  To Airport ESHQ
+Route 1 Fix 1 Index 51 - Type PilotAirport - FirstID VILL  SecondID      NavaidCat None
+Route 1 Fix 2 Index 24 - Type PilotAirport - FirstID GARP  SecondID      NavaidCat None
+Route 2 ID ESCF-FOB   - From Airport ESCF To Airport FOB 
+Route 2 Fix 1 Index 14 - Type PilotAirport - FirstID LJUN  SecondID      NavaidCat None
+Route 2 Fix 2 Index 1 - Type PilotWaypoint - FirstID MRP-0 SecondID      NavaidCat None
+Route 2 Fix 3 Index 2 - Type PilotWaypoint - FirstID MRP00 SecondID      NavaidCat None
+Route 2 Fix 4 Index 3 - Type PilotWaypoint - FirstID MRP01 SecondID      NavaidCat None
+Route 2 Fix 5 Index 4 - Type PilotWaypoint - FirstID MRP02 SecondID      NavaidCat None
+Route 2 Fix 6 Index 53 - Type PilotAirport - FirstID SYD   SecondID      NavaidCat None
+Route 2 Fix 7 Index 51 - Type PilotAirport - FirstID VILL  SecondID      NavaidCat None
+******* Pilot Database Loading OK ******
