@@ -70,6 +70,9 @@ struct ContentView: View {
 
     @State private var isImporting = false
     @State private var isSelectingExportFolder = false
+    @State private var isSelectingDefaultFile = false
+    @State private var showSettingsSheet = false
+    @State private var showA109ExportCompleteAlert = false
     @State private var exportContainer: ExportContainer?
     @State private var showA109MissingDataAlert = false
     @State private var showDatabase = false
@@ -135,6 +138,21 @@ struct ContentView: View {
             if !navStore.document.userWaypoints.isEmpty { Button("Waypoints") { executeKMLExport(id: "kml-waypoints")} }
             if !navStore.routes.isEmpty                  { Button("Routes")    { executeKMLExport(id: "kml-route")   } }
             Button("Cancel", role: .cancel) { }
+        }
+        .alert("Export Complete", isPresented: $showA109ExportCompleteAlert) {
+            Button("OK") { }
+        } message: {
+            Text("Remove the PCMCIA card.")
+        }
+        .sheet(isPresented: $showSettingsSheet) {
+            SettingsView()
+        }
+        .fileImporter(
+            isPresented: $isSelectingDefaultFile,
+            allowedContentTypes: [.rut, .apt, .nav],
+            allowsMultipleSelection: false
+        ) { result in
+            handleDefaultFileSelection(result: result)
         }
     }
 
@@ -250,6 +268,13 @@ struct ContentView: View {
                         Image(systemName: "list.bullet.rectangle")
                     }
                     .buttonStyle(RutSecondaryButtonStyle())
+
+                    Button {
+                        showSettingsSheet = true
+                    } label: {
+                        Image(systemName: "gearshape")
+                    }
+                    .buttonStyle(RutSecondaryButtonStyle())
                 }
                 .padding(.horizontal, 14)
                 .padding(.vertical, 10)
@@ -322,9 +347,18 @@ struct ContentView: View {
                     )
                     .alert("Incomplete Data", isPresented: $showA109MissingDataAlert) {
                         Button("Cancel", role: .cancel) { }
+                        if DefaultPresetService.shared.hasDefault {
+                            Button("Use my default") { loadDefaultAndExport() }
+                        } else {
+                            Button("Set default file…") { isSelectingDefaultFile = true }
+                        }
                         Button("Continue") { isSelectingExportFolder = true }
                     } message: {
-                        Text("Do you want to continue the export without user airports or user navaids?")
+                        if let name = DefaultPresetService.shared.defaultFileName {
+                            Text("Missing airports or navaids. Default: \(name)")
+                        } else {
+                            Text("Do you want to continue the export without user airports or user navaids?")
+                        }
                     }
                 }
                 .padding(.horizontal, 14)
@@ -493,15 +527,15 @@ struct ContentView: View {
             guard !files.isEmpty else { toastManager.show(message: "Nothing to export.", kind: .info); return }
             let secured = folderURL.startAccessingSecurityScopedResource()
             defer { if secured { folderURL.stopAccessingSecurityScopedResource() } }
-            var count = 0
             for file in files {
                 let dest = folderURL.appendingPathComponent(file.filename)
                 try file.data.write(to: dest, options: .atomic)
                 dest.cleanAppleAttributes()
-                count += 1
+                let fd = Darwin.open(dest.path, O_RDONLY)
+                if fd >= 0 { Darwin.fsync(fd); Darwin.close(fd) }
             }
             try cleanupDotFiles(in: folderURL)
-            toastManager.show(message: "Saved \(count) files to \(folderURL.lastPathComponent)", kind: .info)
+            showA109ExportCompleteAlert = true
         } catch let ve as ExportValidationError {
             showExportValidationAlert(ve)
         } catch {
@@ -532,10 +566,76 @@ struct ContentView: View {
         }
     }
 
+    private func handleDefaultFileSelection(result: Result<[URL], Error>) {
+        guard case .success(let urls) = result, let url = urls.first else { return }
+        DefaultPresetService.shared.saveDefault(url: url)
+        loadDefaultAndExport()
+    }
+
+    private func loadDefaultAndExport() {
+        guard let url = DefaultPresetService.shared.resolveDefault() else {
+            isSelectingExportFolder = true
+            return
+        }
+        Task {
+            await CoreServices.shared.importDocuments(from: [url])
+            url.stopAccessingSecurityScopedResource()
+            await MainActor.run { isSelectingExportFolder = true }
+        }
+    }
+
     private func cleanupDotFiles(in folderURL: URL) throws {
         let contents = try FileManager.default.contentsOfDirectory(at: folderURL, includingPropertiesForKeys: nil)
         for fileURL in contents where fileURL.lastPathComponent.hasPrefix(".") {
             try? FileManager.default.removeItem(at: fileURL)
+        }
+    }
+}
+
+// MARK: - Settings View
+
+private struct SettingsView: View {
+    @Environment(\.dismiss) private var dismiss
+    @State private var isSelectingDefaultFile = false
+    @State private var currentName: String? = DefaultPresetService.shared.defaultFileName
+
+    var body: some View {
+        NavigationStack {
+            Form {
+                Section("Default airports & navaids") {
+                    if let name = currentName {
+                        LabeledContent("File", value: name)
+                    } else {
+                        Text("No default set").foregroundStyle(.secondary)
+                    }
+                    Button("Set default file…") {
+                        isSelectingDefaultFile = true
+                    }
+                    if currentName != nil {
+                        Button("Clear default", role: .destructive) {
+                            DefaultPresetService.shared.clearDefault()
+                            currentName = nil
+                        }
+                    }
+                }
+            }
+            .navigationTitle("Settings")
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .topBarTrailing) {
+                    Button("Done") { dismiss() }
+                }
+            }
+            .fileImporter(
+                isPresented: $isSelectingDefaultFile,
+                allowedContentTypes: [.rut, .apt, .nav],
+                allowsMultipleSelection: false
+            ) { result in
+                if case .success(let urls) = result, let url = urls.first {
+                    DefaultPresetService.shared.saveDefault(url: url)
+                    currentName = DefaultPresetService.shared.defaultFileName
+                }
+            }
         }
     }
 }
