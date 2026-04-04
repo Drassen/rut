@@ -112,6 +112,36 @@
 				<string>com.serveraren.rut.kml</string>
 			</array>
 		</dict>
+		<dict>
+			<key>CFBundleTypeName</key>
+			<string>Airspace Coordination Order</string>
+			<key>CFBundleTypeRole</key>
+			<string>Viewer</string>
+			<key>LSHandlerRank</key>
+			<string>Alternate</string>
+			<key>LSItemContentTypes</key>
+			<array>
+				<string>com.serveraren.rut.aco</string>
+				<string>public.plain-text</string>
+			</array>
+		</dict>
+		<dict>
+			<key>UTTypeConformsTo</key>
+			<array>
+				<string>public.plain-text</string>
+			</array>
+			<key>UTTypeDescription</key>
+			<string>Airspace Coordination Order</string>
+			<key>UTTypeIdentifier</key>
+			<string>com.serveraren.rut.aco</string>
+			<key>UTTypeTagSpecification</key>
+			<dict>
+				<key>public.filename-extension</key>
+				<array>
+					<string>aco</string>
+				</array>
+			</dict>
+		</dict>
 	</array>
 	<key>UTExportedTypeDeclarations</key>
 	<array>

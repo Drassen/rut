@@ -239,12 +239,14 @@ struct RutMapView: View {
                     }
                     // Shape selection tap in vector cursor mode (doesn't block pan)
                     .simultaneousGesture(
-                        SpatialTapGesture(coordinateSpace: .global)
+                        DragGesture(minimumDistance: 0, coordinateSpace: .global)
                             .onEnded { value in
                                 guard core.appMode == .vector,
                                       vectorStore.activeTool == .none,
                                       !vectorStore.isEditingShape else { return }
-                                if let hit = findNearestUserShape(at: value.location, proxy: proxy) {
+                                let d = hypot(value.translation.width, value.translation.height)
+                                guard d < 8 else { return }
+                                if let hit = findNearestUserShape(at: value.startLocation, proxy: proxy) {
                                     vectorStore.selectShape(id: hit.shapeId, layerId: hit.layerId)
                                 } else {
                                     vectorStore.deselectShape()
@@ -271,19 +273,25 @@ struct RutMapView: View {
                 }
             }
 
-            Picker("Map style", selection: $mapStyle) {
-                ForEach(RutMapStyle.allCases) { style in
-                    Text(style.displayName).tag(style)
+            VStack {
+                HStack {
+                    Picker("Map style", selection: $mapStyle) {
+                        ForEach(RutMapStyle.allCases) { style in
+                            Text(style.displayName).tag(style)
+                        }
+                    }
+                    .pickerStyle(.menu)
+                    .padding(.horizontal, 10)
+                    .padding(.vertical, 7)
+                    .background(RutTheme.surface.opacity(0.88))
+                    .foregroundColor(RutTheme.amber)
+                    .tint(RutTheme.amber)
+                    .cornerRadius(8)
+                    .overlay(RoundedRectangle(cornerRadius: 8).stroke(RutTheme.border, lineWidth: 1))
+                    Spacer()
                 }
+                Spacer()
             }
-            .pickerStyle(.menu)
-            .padding(.horizontal, 10)
-            .padding(.vertical, 7)
-            .background(RutTheme.surface.opacity(0.88))
-            .foregroundColor(RutTheme.amber)
-            .tint(RutTheme.amber)
-            .cornerRadius(8)
-            .overlay(RoundedRectangle(cornerRadius: 8).stroke(RutTheme.border, lineWidth: 1))
             .padding(12)
         }
         .alert("Confirm Move", isPresented: $showMoveConfirm) {
@@ -1117,7 +1125,6 @@ struct RutMapView: View {
             // Visual handles (non-interactive)
             if !verts.isEmpty {
                 Canvas { ctx, _ in
-                    let amber = Color(hex: "#D0A528")
                     if verts.count > 1 {
                         var path = Path()
                         if let first = proxy.convert(verts[0], to: .local) {
@@ -1131,13 +1138,13 @@ struct RutMapView: View {
                                 path.addLine(to: closePt)
                             }
                         }
-                        ctx.stroke(path, with: .color(amber), style: StrokeStyle(lineWidth: 2, dash: [6, 4]))
+                        ctx.stroke(path, with: .color(.white), style: StrokeStyle(lineWidth: 2, dash: [6, 4]))
                     }
                     for v in verts {
                         if let pt = proxy.convert(v, to: .local) {
                             let handle = Path(ellipseIn: CGRect(x: pt.x - 8, y: pt.y - 8, width: 16, height: 16))
-                            ctx.fill(handle, with: .color(amber))
-                            ctx.stroke(handle, with: .color(.white), lineWidth: 2)
+                            ctx.fill(handle, with: .color(.white))
+                            ctx.stroke(handle, with: .color(Color.white.opacity(0.5)), lineWidth: 2)
                         }
                     }
                 }

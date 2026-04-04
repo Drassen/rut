@@ -10,6 +10,8 @@ struct VectorToolbar: View {
     @State private var pendingShapeName = ""
     @State private var exportContainer: ExportContainer? = nil
     @State private var showShapeEditor = false
+    @State private var showRenameFolderAlert = false
+    @State private var renameFolderText = ""
 
     var body: some View {
         VStack(spacing: 0) {
@@ -32,8 +34,10 @@ struct VectorToolbar: View {
                         .buttonStyle(RutSecondaryButtonStyle())
                     }
 
-                    Button("Edit Properties") { showShapeEditor = true }
-                        .buttonStyle(RutSecondaryButtonStyle())
+                    if !isSystem {
+                        Button("Edit Properties") { showShapeEditor = true }
+                            .buttonStyle(RutSecondaryButtonStyle())
+                    }
 
                     if !isSystem {
                         Button {
@@ -61,13 +65,33 @@ struct VectorToolbar: View {
                     .buttonStyle(RutSecondaryButtonStyle())
                 } else {
                     // ── Default: tool pills ───────────────────────────────────
-                    toolButton(tool: .none,     icon: "cursorarrow",   label: "Select")
+                    toolButton(tool: .none, icon: "cursorarrow", label: "Select")
+
+                    Text("Create shape:")
+                        .font(.system(size: 11))
+                        .foregroundColor(RutTheme.textMuted)
+                        .padding(.leading, 6)
+
                     toolButton(tool: .point,    icon: "mappin",        label: "Point")
                     toolButton(tool: .polyline, icon: "line.diagonal", label: "Line")
                     toolButton(tool: .polygon,  icon: "triangle",      label: "Polygon")
                     toolButton(tool: .circle,   icon: "circle",        label: "Circle")
 
                     Spacer()
+
+                    // Edit Group Name — shown when a non-system folder is selected
+                    if let folderId = vectorStore.activeLayerId,
+                       vectorStore.activeShapeId == nil,
+                       !vectorStore.layerIsSystem(id: folderId) {
+                        Button("Edit group name") {
+                            if let name = vectorStore.layerName(id: folderId) {
+                                renameFolderText = name
+                            }
+                            showRenameFolderAlert = true
+                        }
+                        .buttonStyle(RutSecondaryButtonStyle())
+                        .padding(.trailing, 8)
+                    }
 
                     // Done / Undo — only when actively drawing
                     if vectorStore.activeTool != .none && vectorStore.drawing.isActive {
@@ -117,6 +141,16 @@ struct VectorToolbar: View {
                 vectorStore.drawing.cancel()
                 pendingShapeName = ""
             }
+        }
+        .alert("Edit group name", isPresented: $showRenameFolderAlert) {
+            TextField("Name", text: $renameFolderText)
+            Button("Save") {
+                if let id = vectorStore.activeLayerId {
+                    let name = renameFolderText.trimmingCharacters(in: .whitespaces)
+                    if !name.isEmpty { vectorStore.renameLayer(id: id, name: name) }
+                }
+            }
+            Button("Cancel", role: .cancel) { }
         }
         .sheet(isPresented: $showShapeEditor) {
             if let id = vectorStore.activeShapeId,

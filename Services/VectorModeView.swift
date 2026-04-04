@@ -88,40 +88,24 @@ struct VectorModeView: View {
         }
     }
 
-    // MARK: Mode toggle header (shown at top of panel in vector mode)
+    // MARK: Back button header (top of side panel in vector mode)
 
     private var modeToggleHeader: some View {
         VStack(spacing: 0) {
             HStack {
-                Spacer()
-                HStack(spacing: 2) {
-                    modeBtn(mode: .navigation, icon: "map.fill")
-                    modeBtn(mode: .vector,     icon: "scribble")
+                Button {
+                    core.appMode = .navigation
+                } label: {
+                    Label("Back", systemImage: "chevron.left")
                 }
-                .padding(3)
-                .background(RutTheme.surface2)
-                .clipShape(RoundedRectangle(cornerRadius: 8))
-                .overlay(RoundedRectangle(cornerRadius: 8).stroke(RutTheme.border, lineWidth: 1))
+                .buttonStyle(RutSecondaryButtonStyle())
+                Spacer()
             }
             .padding(.horizontal, 10)
             .padding(.vertical, 8)
             .background(RutTheme.surface)
             Rectangle().fill(RutTheme.border).frame(height: 1)
         }
-    }
-
-    @ViewBuilder
-    private func modeBtn(mode: AppMode, icon: String) -> some View {
-        let isActive = core.appMode == mode
-        Button { core.appMode = mode } label: {
-            Image(systemName: icon)
-                .font(.system(size: 13, weight: isActive ? .bold : .regular))
-                .foregroundColor(isActive ? .black : RutTheme.textDim)
-                .frame(width: 28, height: 24)
-                .background(isActive ? RutTheme.amber : Color.clear)
-                .clipShape(RoundedRectangle(cornerRadius: 6))
-        }
-        .buttonStyle(.plain)
     }
 
     // MARK: Map area (shared)

@@ -69,7 +69,8 @@ final class CoreServices: ObservableObject {
             RTEImportService(),
             RUTImportService(),
             APTImportService(),
-            NAVImportService()
+            NAVImportService(),
+            ACOImportService()
         ]
 
         // Register exporters
@@ -98,6 +99,14 @@ final class CoreServices: ObservableObject {
 
         vectorStore.objectWillChange
             .sink { [weak self] _ in self?.objectWillChange.send() }
+            .store(in: &cancellables)
+
+        // Deselect vector selection when leaving vector mode
+        $appMode
+            .dropFirst()
+            .sink { [weak self] mode in
+                if mode != .vector { self?.vectorStore.deselectShape() }
+            }
             .store(in: &cancellables)
     }
 

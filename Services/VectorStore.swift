@@ -140,6 +140,13 @@ final class VectorStore: ObservableObject {
     @Published var activeShapeLayerId: UUID? = nil
     @Published var isEditingShape: Bool = false
     @Published var editingVertices: [CLLocationCoordinate2D] = []
+    @Published var draggingLayerId: UUID? = nil
+    @Published var dragTargetIndex: Int? = nil
+    @Published var draggingLayerParentId: UUID? = nil  // nil = top-level
+    @Published var dragIntoTarget: Bool = false
+    @Published var draggingShapeId: UUID? = nil
+    @Published var draggingShapeLayerId: UUID? = nil
+    @Published var dragShapeTargetIndex: Int? = nil
 
     let drawing = DrawingStateMachine()
     private var drawingSink: AnyCancellable?
@@ -156,8 +163,9 @@ final class VectorStore: ObservableObject {
 
     func addLayer(name: String, parentId: UUID? = nil) {
         let newLayer = VectorLayer(name: name)
-        if let parentId {
-            mutateLayer(id: parentId, in: &layers) { $0.children.append(newLayer) }
+        let effectiveParent = parentId.flatMap { id in layerIsSystem(id: id) ? nil : id }
+        if let effectiveParent {
+            mutateLayer(id: effectiveParent, in: &layers) { $0.children.append(newLayer) }
         } else {
             layers.append(newLayer)
         }
@@ -179,6 +187,22 @@ final class VectorStore: ObservableObject {
 
     func renameLayer(id: UUID, name: String) {
         mutateLayer(id: id, in: &layers) { $0.name = name }
+    }
+
+    func findLayer(id: UUID) -> VectorLayer? {
+        findLayerRecursive(id: id, in: layers)
+    }
+
+    func layerName(id: UUID) -> String? {
+        findLayerRecursive(id: id, in: layers)?.name
+    }
+
+    private func findLayerRecursive(id: UUID, in search: [VectorLayer]) -> VectorLayer? {
+        for layer in search {
+            if layer.id == id { return layer }
+            if let found = findLayerRecursive(id: id, in: layer.children) { return found }
+        }
+        return nil
     }
 
     func setActiveLayer(_ id: UUID) {
@@ -204,13 +228,33 @@ final class VectorStore: ObservableObject {
         activeShapeId = id
         activeShapeLayerId = layerId
         activeLayerId = layerId
+        activeTool = .none
+        drawing.cancel()
         isEditingShape = false
         editingVertices = []
+        expandAncestors(of: layerId, in: &layers)
+    }
+
+    /// Expands every layer on the path from the root down to `targetId`.
+    @discardableResult
+    private func expandAncestors(of targetId: UUID, in search: inout [VectorLayer]) -> Bool {
+        for i in search.indices {
+            if search[i].id == targetId {
+                search[i].isExpanded = true
+                return true
+            }
+            if expandAncestors(of: targetId, in: &search[i].children) {
+                search[i].isExpanded = true
+                return true
+            }
+        }
+        return false
     }
 
     func deselectShape() {
         activeShapeId = nil
         activeShapeLayerId = nil
+        activeLayerId = nil
         isEditingShape = false
         editingVertices = []
     }
@@ -283,7 +327,147 @@ final class VectorStore: ObservableObject {
         }
     }
 
-    // MARK: - Reorder
+    // MARK: - Unified panel flat list (layers + shapes, for drag reorder)
+
+    enum FlatPanelEntry {
+        case layer(VectorLayer, parentId: UUID?, depth: Int)
+        case shape(VectorShape, layerId: UUID, depth: Int)
+
+        var id: UUID {
+            switch self {
+            case .layer(let l, _, _): return l.id
+            case .shape(let s, _, _): return s.id
+            }
+        }
+    }
+
+    func flatPanelEntries() -> [FlatPanelEntry] {
+        var result: [FlatPanelEntry] = []
+        collectPanelEntries(layers: layers, parentId: nil, depth: 0, into: &result)
+        return result
+    }
+
+    private func collectPanelEntries(layers: [VectorLayer], parentId: UUID?, depth: Int,
+                                      into result: inout [FlatPanelEntry]) {
+        for layer in layers {
+            result.append(.layer(layer, parentId: parentId, depth: depth))
+            if layer.isExpanded {
+                for shape in layer.shapes {
+                    result.append(.shape(shape, layerId: layer.id, depth: depth))
+                }
+                collectPanelEntries(layers: layer.children, parentId: layer.id,
+                                    depth: depth + 1, into: &result)
+            }
+        }
+    }
+
+    /// Move a shape to any position in the visible panel list (cross-layer).
+    func moveShapeToFlatPanel(shapeId: UUID, fromLayerId: UUID, toPanelIndex: Int) {
+        let flat = flatPanelEntries()
+        guard let movedShape = findShape(id: shapeId)?.shape else { return }
+        let clamped = max(0, min(flat.count - 1, toPanelIndex))
+        let target  = flat[clamped]
+
+        // Remove from source layer
+        mutateLayer(id: fromLayerId, in: &layers) { $0.shapes.removeAll { $0.id == shapeId } }
+
+        switch target {
+        case .shape(let targetShape, let targetLayerId, _):
+            guard !layerIsSystem(id: targetLayerId) else {
+                mutateLayer(id: fromLayerId, in: &layers) { $0.shapes.append(movedShape) }
+                return
+            }
+            mutateLayer(id: targetLayerId, in: &layers) { layer in
+                let idx = layer.shapes.firstIndex(where: { $0.id == targetShape.id }) ?? layer.shapes.count
+                layer.shapes.insert(movedShape, at: idx)
+            }
+        case .layer(let targetLayer, _, _):
+            guard !targetLayer.isSystem else {
+                mutateLayer(id: fromLayerId, in: &layers) { $0.shapes.append(movedShape) }
+                return
+            }
+            mutateLayer(id: targetLayer.id, in: &layers) { $0.shapes.append(movedShape) }
+        }
+    }
+
+    // MARK: - Flat layer list (for cross-level drag reorder)
+
+    struct FlatLayerEntry {
+        let layer: VectorLayer
+        let parentId: UUID?
+        let depth: Int
+    }
+
+    /// Returns all layers in current display order (DFS, respects isExpanded).
+    func flatLayerEntries() -> [FlatLayerEntry] {
+        var result: [FlatLayerEntry] = []
+        collectFlat(layers: layers, parentId: nil, depth: 0, into: &result)
+        return result
+    }
+
+    private func collectFlat(layers: [VectorLayer], parentId: UUID?, depth: Int,
+                              into result: inout [FlatLayerEntry]) {
+        for layer in layers {
+            result.append(FlatLayerEntry(layer: layer, parentId: parentId, depth: depth))
+            if layer.isExpanded {
+                collectFlat(layers: layer.children, parentId: layer.id, depth: depth + 1, into: &result)
+            }
+        }
+    }
+
+    /// Move a layer (by id) so it appears at the given flat index in the visible list.
+    /// If `asChild` is true the layer becomes the first child of the target row's layer.
+    func moveLayerToFlatIndex(_ id: UUID, flatIndex dest: Int, asChild: Bool = false) {
+        var flat = flatLayerEntries()
+        guard let sourceIdx = flat.firstIndex(where: { $0.layer.id == id }) else { return }
+        guard let movedLayer = findLayerRecursive(id: id, in: layers) else { return }
+        let clampedDest = max(0, min(flat.count - 1, dest))
+        guard !(clampedDest == sourceIdx && !asChild) else { return }
+
+        // Guard against dropping into own subtree
+        if asChild {
+            var cur: UUID? = flat[clampedDest].layer.id
+            while let c = cur {
+                if c == id { return }
+                cur = flat.first(where: { $0.layer.id == c })?.parentId
+            }
+        }
+
+        // Remove from current parent
+        let sourceEntry = flat[sourceIdx]
+        if let pId = sourceEntry.parentId {
+            mutateLayer(id: pId, in: &layers) { $0.children.removeAll { $0.id == id } }
+        } else {
+            layers.removeAll { $0.id == id }
+        }
+
+        // Recompute flat list after removal
+        flat = flatLayerEntries()
+
+        if asChild {
+            // Insert as first child of the target layer
+            let targetId = flat[max(0, min(flat.count - 1, clampedDest > sourceIdx ? clampedDest - 1 : clampedDest))].layer.id
+            mutateLayer(id: targetId, in: &layers) { $0.children.insert(movedLayer, at: 0) }
+        } else {
+            let adjusted = max(0, min(flat.count, clampedDest > sourceIdx ? clampedDest - 1 : clampedDest))
+            if adjusted >= flat.count {
+                layers.append(movedLayer)
+            } else {
+                let target = flat[adjusted]
+                if let pId = target.parentId {
+                    mutateLayer(id: pId, in: &layers) { parent in
+                        let idx = parent.children.firstIndex(where: { $0.id == target.layer.id }) ?? parent.children.count
+                        parent.children.insert(movedLayer, at: idx)
+                    }
+                } else {
+                    let idx = layers.firstIndex(where: { $0.id == target.layer.id }) ?? layers.count
+                    layers.insert(movedLayer, at: idx)
+                }
+            }
+        }
+    }
+
+    // MARK: - Reorder (within-level helpers kept for other uses)
 
     /// Move a top-level layer from one index to another.
     func moveTopLevelLayer(from source: Int, to destination: Int) {
@@ -382,8 +566,10 @@ final class VectorStore: ObservableObject {
             children.append(child)
         }
 
+        let wasExpanded = layers.first(where: { $0.id == systemId })?.isExpanded ?? false
         var systemLayer = VectorLayer(id: systemId, name: "LFV Luftrum", isSystem: true)
         systemLayer.isVisible = wasVisible
+        systemLayer.isExpanded = wasExpanded
         systemLayer.children = children
 
         if let idx = layers.firstIndex(where: { $0.id == systemId }) {
@@ -452,10 +638,19 @@ final class VectorStore: ObservableObject {
               let shape = drawing.commitAndReset(tool: activeTool, name: name, style: newShapeStyle)
         else { return }
 
+        let targetLayerId: UUID?
         if let layerId = activeLayerId {
             addShape(shape, to: layerId)
+            targetLayerId = layerId
         } else if let firstUser = layers.first(where: { !$0.isSystem }) {
             addShape(shape, to: firstUser.id)
+            targetLayerId = firstUser.id
+        } else {
+            targetLayerId = nil
+        }
+
+        if let layerId = targetLayerId {
+            selectShape(id: shape.id, layerId: layerId)
         }
     }
 

@@ -188,7 +188,7 @@ struct ContentView: View {
                     .padding(.horizontal, 32)
                     .fileImporter(
                         isPresented: $isImporting,
-                        allowedContentTypes: [.data],
+                        allowedContentTypes: [.item],
                         allowsMultipleSelection: true,
                         onCompletion: handleImport(result:)
                     )
@@ -254,7 +254,7 @@ struct ContentView: View {
                     .buttonStyle(RutSecondaryButtonStyle())
                     .fileImporter(
                         isPresented: $isImporting,
-                        allowedContentTypes: [.data],
+                        allowedContentTypes: [.item],
                         allowsMultipleSelection: true,
                         onCompletion: handleImport(result:)
                     )
@@ -276,7 +276,7 @@ struct ContentView: View {
                     Button {
                         core.appMode = .vector
                     } label: {
-                        Label("Mode", systemImage: "scribble")
+                        Label("Vector Mode", systemImage: "triangle")
                     }
                     .buttonStyle(RutSecondaryButtonStyle())
                 }
