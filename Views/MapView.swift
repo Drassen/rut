@@ -77,6 +77,9 @@ struct RutMapView: View {
     @State private var pendingRoutePointMove: PendingRoutePointMove? = nil
     @State private var showRoutePointMoveConfirm = false
 
+    // --- Vector vertex editing drag state ---
+    @State private var draggingEditVertexIndex: Int? = nil
+
     // --- Line-segment insertion state ---
     @State private var insertGhostCoord: CLLocationCoordinate2D? = nil
     @State private var insertSnapRef: RoutePointRef? = nil
@@ -234,6 +237,20 @@ struct RutMapView: View {
                             mapDragTargetChecked = false
                         }
                     }
+                    // Shape selection tap in vector cursor mode (doesn't block pan)
+                    .simultaneousGesture(
+                        SpatialTapGesture(coordinateSpace: .global)
+                            .onEnded { value in
+                                guard core.appMode == .vector,
+                                      vectorStore.activeTool == .none,
+                                      !vectorStore.isEditingShape else { return }
+                                if let hit = findNearestUserShape(at: value.location, proxy: proxy) {
+                                    vectorStore.selectShape(id: hit.shapeId, layerId: hit.layerId)
+                                } else {
+                                    vectorStore.deselectShape()
+                                }
+                            }
+                    )
 
                     // Canvas overlay always renders the active route line.
                     // Canvas overlay for 60fps route-point dragging.
@@ -247,15 +264,9 @@ struct RutMapView: View {
                             .allowsHitTesting(false)
                     }
 
-                    // Vector selection tap-catcher (cursor tool, not editing)
-                    if core.appMode == .vector && vectorStore.activeTool == .none && !vectorStore.isEditingShape {
-                        vectorSelectionOverlay(proxy: proxy)
-                    }
-
-                    // Editing vertex handles canvas
+                    // Editing vertex handles — hit-testable so direct drag works
                     if core.appMode == .vector && vectorStore.isEditingShape {
                         editingHandlesOverlay(proxy: proxy)
-                            .allowsHitTesting(false)
                     }
                 }
             }
@@ -1063,60 +1074,73 @@ struct RutMapView: View {
         }
     }
 
-    /// Transparent overlay that captures taps for shape selection (cursor tool).
-    @ViewBuilder
-    private func vectorSelectionOverlay(proxy: MapProxy) -> some View {
-        Color.clear
-            .contentShape(Rectangle())
-            .gesture(
-                DragGesture(minimumDistance: 0, coordinateSpace: .global)
-                    .onEnded { value in
-                        let d = hypot(value.translation.width, value.translation.height)
-                        guard d < 8 else { return }
-                        if let hit = findNearestUserShape(at: value.startLocation, proxy: proxy) {
-                            vectorStore.selectShape(id: hit.shapeId, layerId: hit.layerId)
-                        } else {
-                            vectorStore.deselectShape()
-                        }
-                    }
-            )
-    }
-
-    /// Canvas that draws editing vertex handles when isEditingShape.
+    /// Canvas + drag catcher for vertex editing.
+    /// Blocks single-finger pan during editing so vertices can be dragged directly.
     @ViewBuilder
     private func editingHandlesOverlay(proxy: MapProxy) -> some View {
         let verts = vectorStore.editingVertices
-        if !verts.isEmpty {
-            Canvas { ctx, _ in
-                let amber = Color(hex: "#D0A528")
-                // Draw connecting lines
-                if verts.count > 1 {
-                    var path = Path()
-                    if let first = proxy.convert(verts[0], to: .local) {
-                        path.move(to: first)
-                        for v in verts.dropFirst() {
-                            if let pt = proxy.convert(v, to: .local) { path.addLine(to: pt) }
+        ZStack {
+            // Invisible full-screen drag catcher
+            Color.clear
+                .contentShape(Rectangle())
+                .gesture(
+                    DragGesture(minimumDistance: 0, coordinateSpace: .global)
+                        .onChanged { value in
+                            if draggingEditVertexIndex == nil {
+                                draggingEditVertexIndex = nearestEditVertex(to: value.startLocation, proxy: proxy)
+                            }
+                            if let idx = draggingEditVertexIndex,
+                               let coord = proxy.convert(value.location, from: .global) {
+                                vectorStore.moveEditVertex(at: idx, to: coord)
+                            }
                         }
-                        // Close polygon if editing a polygon shape
-                        if let found = vectorStore.activeShapeId.flatMap({ vectorStore.findShape(id: $0) }),
-                           case .polygon = found.shape.geometry,
-                           let closePt = proxy.convert(verts[0], to: .local) {
-                            path.addLine(to: closePt)
+                        .onEnded { _ in
+                            draggingEditVertexIndex = nil
+                        }
+                )
+
+            // Visual handles (non-interactive)
+            if !verts.isEmpty {
+                Canvas { ctx, _ in
+                    let amber = Color(hex: "#D0A528")
+                    if verts.count > 1 {
+                        var path = Path()
+                        if let first = proxy.convert(verts[0], to: .local) {
+                            path.move(to: first)
+                            for v in verts.dropFirst() {
+                                if let pt = proxy.convert(v, to: .local) { path.addLine(to: pt) }
+                            }
+                            if let found = vectorStore.activeShapeId.flatMap({ vectorStore.findShape(id: $0) }),
+                               case .polygon = found.shape.geometry,
+                               let closePt = proxy.convert(verts[0], to: .local) {
+                                path.addLine(to: closePt)
+                            }
+                        }
+                        ctx.stroke(path, with: .color(amber), style: StrokeStyle(lineWidth: 2, dash: [6, 4]))
+                    }
+                    for v in verts {
+                        if let pt = proxy.convert(v, to: .local) {
+                            let handle = Path(ellipseIn: CGRect(x: pt.x - 8, y: pt.y - 8, width: 16, height: 16))
+                            ctx.fill(handle, with: .color(amber))
+                            ctx.stroke(handle, with: .color(.white), lineWidth: 2)
                         }
                     }
-                    ctx.stroke(path, with: .color(amber), style: StrokeStyle(lineWidth: 2, dash: [6, 4]))
                 }
-                // Draw vertex handles
-                for (i, v) in verts.enumerated() {
-                    if let pt = proxy.convert(v, to: .local) {
-                        let r: CGFloat = i == 0 ? 8 : 7
-                        let handle = Path(ellipseIn: CGRect(x: pt.x - r, y: pt.y - r, width: r*2, height: r*2))
-                        ctx.fill(handle, with: .color(amber))
-                        ctx.stroke(handle, with: .color(.white), lineWidth: 2)
-                    }
-                }
+                .allowsHitTesting(false)
             }
         }
+    }
+
+    private func nearestEditVertex(to point: CGPoint, proxy: MapProxy) -> Int? {
+        let threshold: CGFloat = 44
+        var best: (dist: CGFloat, index: Int)? = nil
+        for (i, vertex) in vectorStore.editingVertices.enumerated() {
+            if let pt = proxy.convert(vertex, to: .global) {
+                let d = hypot(pt.x - point.x, pt.y - point.y)
+                if d < threshold && (best == nil || d < best!.dist) { best = (d, i) }
+            }
+        }
+        return best?.index
     }
 
     /// Returns shapeId + layerId of the closest non-system user shape near a screen point.
