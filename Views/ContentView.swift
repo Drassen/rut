@@ -105,11 +105,6 @@ struct ContentView: View {
                 emptyStateView
             }
         }
-        .overlay(alignment: .topTrailing) {
-            appModeToggle
-                .padding(.top, 10)
-                .padding(.trailing, 12)
-        }
         .tint(RutTheme.amber)
         // ── Sheets & dialogs ──
         .sheet(item: $editorSheet) { wrapper in
@@ -278,6 +273,7 @@ struct ContentView: View {
                     }
                     .buttonStyle(RutSecondaryButtonStyle())
 
+                    appModeToggle
                 }
                 .padding(.horizontal, 14)
                 .padding(.vertical, 10)
