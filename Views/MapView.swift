@@ -147,18 +147,14 @@ struct RutMapView: View {
                         // 0. Vector layers (airspace + user-drawn, always behind nav data)
                         vectorLayersContent()
 
-                        // 1. Inaktiva rutter (nav mode only)
-                        if core.appMode == .navigation {
-                            inactiveRoutesContent(proxy: proxy)
-                        }
+                        // 1. Inaktiva rutter (dimmed in vector mode)
+                        inactiveRoutesContent(proxy: proxy)
 
                         // 2. Databas (dimmed in vector mode, no tap handlers)
                         databaseContent(proxy: proxy)
 
-                        // 3. Aktiv rutt (nav mode only)
-                        if core.appMode == .navigation {
-                            activeRouteContent(proxy: proxy)
-                        }
+                        // 3. Aktiv rutt (dimmed in vector mode)
+                        activeRouteContent(proxy: proxy)
                     }
                     .mapStyle(mapStyle.mapKitStyle)
                     .onMapCameraChange(frequency: .onEnd) { ctx in
@@ -378,7 +374,7 @@ struct RutMapView: View {
     @MapContentBuilder
     private func databaseContent(proxy: MapProxy) -> some MapContent {
         let isVector = core.appMode == .vector
-        let opacity = isVector ? 0.35 : (hasActiveRoute ? 0.8 : 1.0)
+        let opacity = isVector ? 0.60 : (hasActiveRoute ? 0.8 : 1.0)
         let scale   = hasActiveRoute && !isVector ? 0.8 : 1.0
 
         // --- USER AIRPORTS ---
@@ -492,10 +488,11 @@ struct RutMapView: View {
 
     @MapContentBuilder
     private func inactiveRoutesContent(proxy: MapProxy) -> some MapContent {
+        let vectorDim = core.appMode == .vector ? 0.60 : 1.0
         ForEach(navStore.routes.filter { $0.id != navStore.activeRouteId }) { route in
             let points = navStore.mapPoints(for: route)
             let coords = points.map { displayCoordinate(for: $0.coordinate) }
-            let dimFactor = hasActiveRoute ? 0.9 : 1.0
+            let dimFactor = (hasActiveRoute ? 0.9 : 1.0) * vectorDim
 
             if coords.count >= 2 {
                 MapPolyline(coordinates: coords)
@@ -530,6 +527,7 @@ struct RutMapView: View {
 
     @MapContentBuilder
     private func activeRouteContent(proxy: MapProxy) -> some MapContent {
+        let vectorDim = core.appMode == .vector ? 0.60 : 1.0
         if let route = navStore.activeRoute {
             let points = navStore.mapPoints(for: route)
             // Skip leg-distance labels while dragging — values are stale.
@@ -538,7 +536,7 @@ struct RutMapView: View {
             let coords = points.map { displayCoordinate(for: $0.coordinate) }
             if coords.count >= 2 {
                 MapPolyline(coordinates: coords)
-                    .stroke(isRoutePointDragActive ? Color.clear : colorActive, lineWidth: 6)
+                    .stroke(isRoutePointDragActive ? Color.clear : colorActive.opacity(vectorDim), lineWidth: 6)
             }
 
             ForEach(Array(points.enumerated()), id: \.offset) { pair in
@@ -550,9 +548,9 @@ struct RutMapView: View {
                 Annotation(p.name, coordinate: displayCoordinate(for: p.coordinate)) {
                     RouteMarkerShapeView(point: p, color: colorActive, contentColor: .white, waypointType: type, showLabel: showMapLabels)
                         // Hide while dragging — Canvas overlay renders the live marker instead.
-                        .opacity(isDragging ? 0 : 1)
+                        .opacity(isDragging ? 0 : vectorDim)
                         .zIndex(10)
-                        .onTapGesture { onPointTap?(p) }
+                        .onTapGesture { if core.appMode == .navigation { onPointTap?(p) } }
                 }
                 .annotationTitles(.hidden)
 

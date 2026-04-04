@@ -35,7 +35,6 @@ struct VectorModeView: View {
             VectorToolbar()
                 .environmentObject(vectorStore)
                 .environmentObject(toastManager)
-                .environmentObject(core)
         }
     }
 
