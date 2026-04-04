@@ -9,6 +9,7 @@ struct RutApp: App {
             ContentView()
                 .environmentObject(core)
                 .environmentObject(core.navStore)
+                .environmentObject(core.vectorStore)
                 .environmentObject(core.toastManager)
                 .preferredColorScheme(.dark)
         }

@@ -37,11 +37,15 @@ extension RouteExporting {
 
 // MARK: - CoreServices
 
+enum AppMode { case navigation, vector }
+
 final class CoreServices: ObservableObject {
     static let shared = CoreServices()
 
     @Published var navStore: NavigationStore
     @Published var toastManager: ToastManager
+    @Published var vectorStore: VectorStore
+    @Published var appMode: AppMode = .navigation
 
     let importServices: [RouteImporting]
     let exportServices: [any RouteExporting]
@@ -54,6 +58,7 @@ final class CoreServices: ObservableObject {
     ) {
         self.navStore = navStore
         self.toastManager = toastManager
+        self.vectorStore = VectorStore()
 
         // Register importers
         self.importServices = [
@@ -79,7 +84,8 @@ final class CoreServices: ObservableObject {
             RTEExportService(),
             RUTExportService(),
             APTExportService(),
-            NAVExportService()
+            NAVExportService(),
+            KMLVectorExportService()
         ]
 
         toastManager.objectWillChange
@@ -89,6 +95,17 @@ final class CoreServices: ObservableObject {
         navStore.objectWillChange
             .sink { [weak self] _ in self?.objectWillChange.send() }
             .store(in: &cancellables)
+
+        vectorStore.objectWillChange
+            .sink { [weak self] _ in self?.objectWillChange.send() }
+            .store(in: &cancellables)
+    }
+
+    /// Returns a NavigationDocument with current vectorLayers from VectorStore (non-system).
+    func currentDocument() -> NavigationDocument {
+        var doc = navStore.document
+        doc.vectorLayers = vectorStore.documentLayers()
+        return doc
     }
 
     // MARK: - Importer lookup
@@ -125,7 +142,8 @@ final class CoreServices: ObservableObject {
     @MainActor
     func importDocuments(from urls: [URL]) async {
         var newDoc = NavigationDocument()
-        
+        var importedVectorLayers: [VectorLayer] = []
+
         var importedRoutePoints = 0
         var importedAirports = 0
         var importedNavaids = 0
@@ -184,6 +202,13 @@ final class CoreServices: ObservableObject {
                 importedWaypoints += doc.userWaypoints.count
 
                 // Vi bygger upp en temporär store för att merga filen korrekt
+                // Collect vector layers from each imported file (avoid duplicating by name)
+                for layer in doc.vectorLayers where !layer.isSystem {
+                    if !importedVectorLayers.contains(where: { $0.name == layer.name }) {
+                        importedVectorLayers.append(layer)
+                    }
+                }
+
                 let tmpStore = NavigationStore()
                 tmpStore.document = newDoc
                 tmpStore.addOrMerge(document: doc)
@@ -195,10 +220,15 @@ final class CoreServices: ObservableObject {
             }
         }
 
-        // Här läggs allt in i huvud-databasen.
-        // Eftersom JSONDecoder behöll ordningen, och addOrMerge (förhoppningsvis) lägger till i slutet,
-        // så bibehålls ordningen.
+        // Merge navigation data into main store
         navStore.addOrMerge(document: newDoc)
+
+        // Sync vector layers collected from imported files (e.g. .rut files)
+        if !importedVectorLayers.isEmpty {
+            var docWithVectors = newDoc
+            docWithVectors.vectorLayers = importedVectorLayers
+            vectorStore.syncFromDocument(docWithVectors)
+        }
         
         // Tysta varningen om oanvänd variabel med _
         _ = newDoc.routes.map { $0.id }

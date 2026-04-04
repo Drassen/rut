@@ -15,10 +15,13 @@ struct RUTExportService: RouteExporting {
         // Om användaren valt specifika rutter, exporterar vi bara dem.
         // Annars exporterar vi hela dokumentet.
         var docToExport = document
-        
+
         if !selectedRoutes.isEmpty {
             docToExport.routes = selectedRoutes
         }
+
+        // Exclude system layers (e.g. airspace) — they are synthesised at runtime from WFS
+        docToExport.vectorLayers = docToExport.vectorLayers.filter { !$0.isSystem }
         
         // 2. Använd JSONEncoder istället för manuell ordbok.
         // Detta garanterar att nycklarna matchar modellerna i Models.swift (latitude vs lat etc).

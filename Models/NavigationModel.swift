@@ -143,4 +143,8 @@ struct NavigationDocument: Codable {
     // System Data (Read-only, Refereras, Exporteras EJ i DB-filer)
     var systemAirports: [JepAirport] = []
     var systemNavaids: [JepNavaid] = []
+
+    // Vector layers (user-drawn polygons, lines, etc.)
+    // System layers (airspace) are excluded from the document; default [] ensures backwards compat.
+    var vectorLayers: [VectorLayer] = []
 }

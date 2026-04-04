@@ -44,6 +44,8 @@ struct TriangleMarkerShape: Shape {
 
 struct RutMapView: View {
     @EnvironmentObject var navStore: NavigationStore
+    @EnvironmentObject var vectorStore: VectorStore
+    @EnvironmentObject var core: CoreServices
     @StateObject private var airspaceService = AirspaceService.shared
 
     var onPointTap: ((RouteMapPoint) -> Void)? = nil
@@ -142,17 +144,21 @@ struct RutMapView: View {
                 ZStack {
                     Map(position: $camera) {
 
-                        // 0. Airspace zones (bakgrund, ej klickbar)
-                        airspaceContent()
+                        // 0. Vector layers (airspace + user-drawn, always behind nav data)
+                        vectorLayersContent()
 
-                        // 1. Inaktiva rutter
-                        inactiveRoutesContent(proxy: proxy)
+                        // 1. Inaktiva rutter (nav mode only)
+                        if core.appMode == .navigation {
+                            inactiveRoutesContent(proxy: proxy)
+                        }
 
-                        // 2. Databas
+                        // 2. Databas (dimmed in vector mode, no tap handlers)
                         databaseContent(proxy: proxy)
 
-                        // 3. Aktiv rutt
-                        activeRouteContent(proxy: proxy)
+                        // 3. Aktiv rutt (nav mode only)
+                        if core.appMode == .navigation {
+                            activeRouteContent(proxy: proxy)
+                        }
                     }
                     .mapStyle(mapStyle.mapKitStyle)
                     .onMapCameraChange(frequency: .onEnd) { ctx in
@@ -163,6 +169,7 @@ struct RutMapView: View {
                     }
                     .task {
                         await airspaceService.fetchAllZones()
+                        vectorStore.syncAirspaceSystemLayer(zones: airspaceService.zones)
                     }
                     // Single map-level gesture handles both marker drag and new-point creation.
                     // LongPressGesture is NOT on annotation views, so normal pan is never blocked.
@@ -197,7 +204,7 @@ struct RutMapView: View {
                                 .onEnded { v in
                                     if let target = mapDragTarget {
                                         finalizeMapDragTarget(target, at: v.location, proxy: proxy)
-                                    } else {
+                                    } else if core.appMode == .navigation {
                                         if let coord = proxy.convert(v.startLocation, from: .global) {
                                             onMapLongPress?(coord)
                                         }
@@ -235,6 +242,13 @@ struct RutMapView: View {
                     // Canvas overlay for 60fps route-point dragging.
                     routePolylineOverlay(proxy: proxy)
                         .allowsHitTesting(false)
+
+                    // Vector drawing: transparent tap-catcher + preview overlay
+                    if core.appMode == .vector && vectorStore.activeTool != .none {
+                        drawingTapOverlay(proxy: proxy)
+                        drawingPreviewOverlay(proxy: proxy)
+                            .allowsHitTesting(false)
+                    }
                 }
             }
 
@@ -312,8 +326,44 @@ struct RutMapView: View {
         }
     }
 
-    // MARK: - 0. Airspace Zones
+    // MARK: - 0. Vector layers (airspace + user-drawn)
 
+    @MapContentBuilder
+    private func vectorLayersContent() -> some MapContent {
+        // Polygons (includes airspace from VectorStore system layer)
+        ForEach(vectorStore.visiblePolygons()) { item in
+            MapPolygon(coordinates: item.coordinates)
+                .foregroundStyle(Color(hex: item.style.fillColor).opacity(item.style.opacity))
+                .stroke(Color(hex: item.style.strokeColor).opacity(item.style.opacity),
+                        lineWidth: item.style.strokeWidth)
+        }
+        // Polylines
+        ForEach(vectorStore.visiblePolylines()) { item in
+            MapPolyline(coordinates: item.coordinates)
+                .stroke(Color(hex: item.style.strokeColor).opacity(item.style.opacity),
+                        lineWidth: item.style.strokeWidth)
+        }
+        // Circles
+        ForEach(vectorStore.visibleCircles()) { item in
+            MapCircle(center: item.center, radius: item.radiusMeters)
+                .foregroundStyle(Color(hex: item.style.fillColor).opacity(item.style.opacity * 0.3))
+                .stroke(Color(hex: item.style.strokeColor).opacity(item.style.opacity),
+                        lineWidth: item.style.strokeWidth)
+        }
+        // Points rendered as annotations
+        ForEach(vectorStore.visiblePoints()) { item in
+            Annotation(item.name, coordinate: item.coordinate) {
+                Circle()
+                    .fill(Color(hex: item.style.strokeColor).opacity(item.style.opacity))
+                    .frame(width: 10, height: 10)
+            }
+            .annotationTitles(.hidden)
+        }
+    }
+
+    // MARK: - 0b. Legacy airspace fallback (kept for nav mode until VectorStore is populated)
+    // This function is unused — vectorLayersContent() handles airspace via VectorStore.
+    // Kept here to preserve the original function signature for reference.
     @MapContentBuilder
     private func airspaceContent() -> some MapContent {
         ForEach(airspaceService.zones) { zone in
@@ -327,9 +377,9 @@ struct RutMapView: View {
 
     @MapContentBuilder
     private func databaseContent(proxy: MapProxy) -> some MapContent {
-
-        let opacity = hasActiveRoute ? 0.8 : 1.0
-        let scale   = hasActiveRoute ? 0.8 : 1.0
+        let isVector = core.appMode == .vector
+        let opacity = isVector ? 0.35 : (hasActiveRoute ? 0.8 : 1.0)
+        let scale   = hasActiveRoute && !isVector ? 0.8 : 1.0
 
         // --- USER AIRPORTS ---
         ForEach(Array(navStore.document.userAirports.enumerated()), id: \.offset) { index, airport in
@@ -343,8 +393,10 @@ struct RutMapView: View {
                         .opacity(opacity)
                         .scaleEffect(scale)
                         .onTapGesture {
-                            onPointTap?(RouteMapPoint(coordinate: airport.coordinate,
-                                                      name: airport.id, indexInRoute: -1, kind: .userAirport))
+                            if !isVector {
+                                onPointTap?(RouteMapPoint(coordinate: airport.coordinate,
+                                                          name: airport.id, indexInRoute: -1, kind: .userAirport))
+                            }
                         }
                 }
                 .annotationTitles(.hidden)
@@ -363,8 +415,10 @@ struct RutMapView: View {
                         .opacity(opacity)
                         .scaleEffect(scale)
                         .onTapGesture {
-                            onPointTap?(RouteMapPoint(coordinate: navaid.coordinate,
-                                                      name: navaid.id, indexInRoute: -1, kind: .userNavaid))
+                            if !isVector {
+                                onPointTap?(RouteMapPoint(coordinate: navaid.coordinate,
+                                                          name: navaid.id, indexInRoute: -1, kind: .userNavaid))
+                            }
                         }
                 }
                 .annotationTitles(.hidden)
@@ -880,6 +934,96 @@ struct RutMapView: View {
     private func forceMapRedraw() {
         guard let mv = findMKMapView() else { return }
         mv.setCenter(mv.centerCoordinate, animated: false)
+    }
+
+    // MARK: - Vector drawing overlays
+
+    /// Transparent overlay that captures taps/drags for vector shape drawing.
+    @ViewBuilder
+    private func drawingTapOverlay(proxy: MapProxy) -> some View {
+        Color.clear
+            .contentShape(Rectangle())
+            .gesture(
+                DragGesture(minimumDistance: 0, coordinateSpace: .global)
+                    .onChanged { value in
+                        if let coord = proxy.convert(value.location, from: .global) {
+                            vectorStore.drawing.handleGhostMove(to: coord)
+                        }
+                    }
+                    .onEnded { value in
+                        // Treat as tap when movement is minimal
+                        let d = hypot(value.translation.width, value.translation.height)
+                        if d < 8, let coord = proxy.convert(value.startLocation, from: .global) {
+                            vectorStore.drawing.handleTap(at: coord, tool: vectorStore.activeTool)
+                            // Auto-commit point immediately
+                            if vectorStore.activeTool == .point && vectorStore.drawing.isActive {
+                                vectorStore.commitDrawing(name: "Point")
+                            }
+                        }
+                    }
+            )
+    }
+
+    /// Canvas overlay that draws the in-progress vector shape preview.
+    @ViewBuilder
+    private func drawingPreviewOverlay(proxy: MapProxy) -> some View {
+        let vertices = vectorStore.drawing.vertices
+        let ghost    = vectorStore.drawing.ghostCoord
+        let tool     = vectorStore.activeTool
+
+        if !vertices.isEmpty {
+            Canvas { ctx, _ in
+                let color = CGColor(red: 0.816, green: 0.647, blue: 0.157, alpha: 1) // amber
+
+                switch tool {
+                case .polyline, .polygon:
+                    var path = Path()
+                    var points = vertices
+                    if let g = ghost { points.append(g) }
+                    if let first = points.first, let pt = proxy.convert(first, to: .local) {
+                        path.move(to: pt)
+                        for coord in points.dropFirst() {
+                            if let pt = proxy.convert(coord, to: .local) { path.addLine(to: pt) }
+                        }
+                        if tool == .polygon, let closePt = proxy.convert(points[0], to: .local) {
+                            path.addLine(to: closePt)
+                        }
+                    }
+                    ctx.stroke(path, with: .color(Color(hex: "#D0A528")), style: StrokeStyle(lineWidth: 2, dash: [6, 4]))
+
+                case .circle:
+                    let center = vertices[0]
+                    let radiusCoord = ghost ?? (vertices.count > 1 ? vertices[1] : center)
+                    if let cPt = proxy.convert(center, to: .local),
+                       let ePt = proxy.convert(radiusCoord, to: .local) {
+                        let r = hypot(ePt.x - cPt.x, ePt.y - cPt.y)
+                        let circle = Path(ellipseIn: CGRect(x: cPt.x - r, y: cPt.y - r,
+                                                            width: r * 2, height: r * 2))
+                        ctx.stroke(circle, with: .color(Color(hex: "#D0A528")),
+                                   style: StrokeStyle(lineWidth: 2, dash: [6, 4]))
+                        ctx.fill(circle, with: .color(Color(hex: "#D0A52820")))
+                    }
+
+                case .point:
+                    if let pt = proxy.convert(vertices[0], to: .local) {
+                        let dot = Path(ellipseIn: CGRect(x: pt.x - 6, y: pt.y - 6, width: 12, height: 12))
+                        ctx.fill(dot, with: .color(Color(hex: "#D0A528")))
+                    }
+
+                case .none:
+                    break
+                }
+
+                // Draw vertex dots
+                for v in vertices {
+                    if let pt = proxy.convert(v, to: .local) {
+                        let dot = Path(ellipseIn: CGRect(x: pt.x - 4, y: pt.y - 4, width: 8, height: 8))
+                        ctx.fill(dot, with: .color(.white))
+                        ctx.stroke(dot, with: .color(Color(hex: "#D0A528")), lineWidth: 1.5)
+                    }
+                }
+            }
+        }
     }
 }
 
