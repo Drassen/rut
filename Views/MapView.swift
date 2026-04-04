@@ -510,7 +510,7 @@ struct RutMapView: View {
                             color: colorInactive.opacity(dimFactor),
                             contentColor: .white.opacity(0.8 * dimFactor),
                             waypointType: type,
-                            showLabel: showMapLabels
+                            showLabel: showMapLabels && core.appMode == .navigation
                         )
                         .scaleEffect(hasActiveRoute ? 0.9 : 1.0)
                         .onTapGesture {
@@ -546,7 +546,7 @@ struct RutMapView: View {
                 let isDragging = isRoutePointDragActive && draggingRoutePointIdx == idx
 
                 Annotation(p.name, coordinate: displayCoordinate(for: p.coordinate)) {
-                    RouteMarkerShapeView(point: p, color: colorActive, contentColor: .white, waypointType: type, showLabel: showMapLabels)
+                    RouteMarkerShapeView(point: p, color: colorActive, contentColor: .white, waypointType: type, showLabel: showMapLabels && !isVector)
                         // Hide while dragging — Canvas overlay renders the live marker instead.
                         .opacity(isDragging ? 0 : vectorDim)
                         .zIndex(10)
@@ -554,7 +554,7 @@ struct RutMapView: View {
                 }
                 .annotationTitles(.hidden)
 
-                if showMapLabels && idx < points.count - 1 && idx < legDistances.count {
+                if showMapLabels && !isVector && idx < points.count - 1 && idx < legDistances.count {
                     let safeP = displayCoordinate(for: p.coordinate)
                     let safeNext = displayCoordinate(for: points[idx + 1].coordinate)
                     let mid = CLLocationCoordinate2D(
