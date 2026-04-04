@@ -91,21 +91,23 @@ struct VectorModeView: View {
     // MARK: Mode toggle header (shown at top of panel in vector mode)
 
     private var modeToggleHeader: some View {
-        HStack {
-            Spacer()
-            HStack(spacing: 2) {
-                modeBtn(mode: .navigation, icon: "map.fill")
-                modeBtn(mode: .vector,     icon: "scribble")
+        VStack(spacing: 0) {
+            HStack {
+                Spacer()
+                HStack(spacing: 2) {
+                    modeBtn(mode: .navigation, icon: "map.fill")
+                    modeBtn(mode: .vector,     icon: "scribble")
+                }
+                .padding(3)
+                .background(RutTheme.surface2)
+                .clipShape(RoundedRectangle(cornerRadius: 8))
+                .overlay(RoundedRectangle(cornerRadius: 8).stroke(RutTheme.border, lineWidth: 1))
             }
-            .padding(3)
-            .background(RutTheme.surface2)
-            .clipShape(RoundedRectangle(cornerRadius: 8))
-            .overlay(RoundedRectangle(cornerRadius: 8).stroke(RutTheme.border, lineWidth: 1))
+            .padding(.horizontal, 10)
+            .padding(.vertical, 8)
+            .background(RutTheme.surface)
+            Rectangle().fill(RutTheme.border).frame(height: 1)
         }
-        .padding(.horizontal, 10)
-        .padding(.vertical, 8)
-        .background(RutTheme.surface)
-        Rectangle().fill(RutTheme.border).frame(height: 1)
     }
 
     @ViewBuilder
