@@ -527,7 +527,8 @@ struct RutMapView: View {
 
     @MapContentBuilder
     private func activeRouteContent(proxy: MapProxy) -> some MapContent {
-        let vectorDim = core.appMode == .vector ? 0.60 : 1.0
+        let isVector  = core.appMode == .vector
+        let vectorDim = isVector ? 0.60 : 1.0
         if let route = navStore.activeRoute {
             let points = navStore.mapPoints(for: route)
             // Skip leg-distance labels while dragging — values are stale.
