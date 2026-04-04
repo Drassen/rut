@@ -344,14 +344,14 @@ struct RutMapView: View {
             let sel = item.id == selectedId
             MapPolygon(coordinates: item.coordinates)
                 .foregroundStyle(Color(hex: item.style.fillColor).opacity(item.style.opacity))
-                .stroke(sel ? RutTheme.amber : Color(hex: item.style.strokeColor).opacity(item.style.opacity),
+                .stroke(sel ? Color.white : Color(hex: item.style.strokeColor).opacity(item.style.opacity),
                         lineWidth: sel ? item.style.strokeWidth + 2 : item.style.strokeWidth)
         }
         // Polylines
         ForEach(vectorStore.visiblePolylines()) { item in
             let sel = item.id == selectedId
             MapPolyline(coordinates: item.coordinates)
-                .stroke(sel ? RutTheme.amber : Color(hex: item.style.strokeColor).opacity(item.style.opacity),
+                .stroke(sel ? Color.white : Color(hex: item.style.strokeColor).opacity(item.style.opacity),
                         lineWidth: sel ? item.style.strokeWidth + 2 : item.style.strokeWidth)
         }
         // Circles
@@ -359,7 +359,7 @@ struct RutMapView: View {
             let sel = item.id == selectedId
             MapCircle(center: item.center, radius: item.radiusMeters)
                 .foregroundStyle(Color(hex: item.style.fillColor).opacity(item.style.opacity * 0.3))
-                .stroke(sel ? RutTheme.amber : Color(hex: item.style.strokeColor).opacity(item.style.opacity),
+                .stroke(sel ? Color.white : Color(hex: item.style.strokeColor).opacity(item.style.opacity),
                         lineWidth: sel ? item.style.strokeWidth + 2 : item.style.strokeWidth)
         }
         // Points rendered as annotations
@@ -368,7 +368,7 @@ struct RutMapView: View {
             Annotation(item.name, coordinate: item.coordinate) {
                 Image(systemName: "mappin.circle.fill")
                     .font(.system(size: sel ? 22 : 18))
-                    .foregroundStyle(sel ? RutTheme.amber : Color(hex: item.style.strokeColor).opacity(item.style.opacity))
+                    .foregroundStyle(sel ? Color.white : Color(hex: item.style.strokeColor).opacity(item.style.opacity))
             }
             .annotationTitles(.hidden)
         }
