@@ -143,12 +143,12 @@ struct VectorLayerRowView: View {
                 .foregroundColor(RutTheme.textDim)
                 .lineLimit(1)
 
-            Spacer(minLength: 4)
-
-            // Color dot
+            // Color dot (right after name)
             Circle()
                 .fill(Color(hex: shape.style.strokeColor))
                 .frame(width: 10, height: 10)
+
+            Spacer(minLength: 4)
 
             // Delete
             Button(role: .destructive) {
@@ -174,7 +174,7 @@ struct VectorLayerRowView: View {
         switch geo {
         case .point:    return "circle.fill"
         case .polyline: return "line.diagonal"
-        case .polygon:  return "hexagon"
+        case .polygon:  return "triangle"
         case .circle:   return "circle"
         }
     }
