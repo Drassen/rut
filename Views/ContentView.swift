@@ -239,26 +239,6 @@ struct ContentView: View {
 
             VStack(spacing: 0) {
 
-                // ── Route tiles ──
-                if !navStore.routes.isEmpty {
-                    ScrollView(.horizontal, showsIndicators: false) {
-                        HStack(spacing: 8) {
-                            ForEach(navStore.routes) { route in
-                                RouteTileView(
-                                    route: route,
-                                    isActive: route.id == navStore.activeRouteId,
-                                    onTap: { handleRouteTap(route) },
-                                    onClose: { navStore.deleteRoute(route) }
-                                )
-                            }
-                        }
-                        .padding(.horizontal, 14)
-                        .padding(.vertical, 10)
-                    }
-                    .background(RutTheme.surface)
-                    divider
-                }
-
                 // ── Stats + toolbar ──
                 HStack(spacing: 8) {
                     let uAp = navStore.document.userAirports.count
@@ -341,6 +321,26 @@ struct ContentView: View {
                 .environmentObject(core.vectorStore)
                 .environmentObject(core)
                 .frame(minHeight: 200)
+
+                // ── Route tiles ──
+                if !navStore.routes.isEmpty {
+                    divider
+                    ScrollView(.horizontal, showsIndicators: false) {
+                        HStack(spacing: 8) {
+                            ForEach(navStore.routes) { route in
+                                RouteTileView(
+                                    route: route,
+                                    isActive: route.id == navStore.activeRouteId,
+                                    onTap: { handleRouteTap(route) },
+                                    onClose: { navStore.deleteRoute(route) }
+                                )
+                            }
+                        }
+                        .padding(.horizontal, 14)
+                        .padding(.vertical, 10)
+                    }
+                    .background(RutTheme.surface)
+                }
 
                 divider
 
