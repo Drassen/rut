@@ -13,6 +13,5 @@ struct RutApp: App {
                 .environmentObject(core.toastManager)
                 .preferredColorScheme(.dark)
         }
-        .handlesExternalEvents(matching: Set(arrayLiteral: "*"))
     }
 }
