@@ -81,9 +81,9 @@ enum VectorGeometry: Codable {
 
 struct VectorStyle: Codable, Equatable {
     /// Stroke color as hex #RRGGBB
-    var strokeColor: String  = "#D0A528"
-    /// Fill color as hex #RRGGBB. Empty string = no fill.
-    var fillColor: String    = "#D0A52840"
+    var strokeColor: String  = "#8B5CF6"
+    /// Fill color as hex #RRGGBBAA
+    var fillColor: String    = "#8B5CF640"
     var strokeWidth: Double  = 2.0
     var opacity: Double      = 1.0
 }

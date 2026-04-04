@@ -18,11 +18,9 @@ struct VectorLayerRowView: View {
         VStack(alignment: .leading, spacing: 0) {
             layerRow
             if layer.isExpanded {
-                // Shapes
                 ForEach(layer.shapes) { shape in
                     shapeRow(shape)
                 }
-                // Children (recursive)
                 ForEach(layer.children) { child in
                     VectorLayerRowView(layer: child, depth: depth + 1)
                         .environmentObject(vectorStore)
@@ -36,9 +34,15 @@ struct VectorLayerRowView: View {
         }
     }
 
+    // MARK: - Layer row
+
     private var layerRow: some View {
-        HStack(spacing: 6) {
-            // Indent
+        let isFolderSelected  = vectorStore.activeLayerId == layer.id && vectorStore.activeShapeId == nil
+        let hasSelectedChild  = !isFolderSelected && layerContainsActiveShape(layer)
+        let showAmberBg       = isFolderSelected || hasSelectedChild
+        let nameColor: Color  = isFolderSelected ? .white : RutTheme.textDim
+
+        return HStack(spacing: 6) {
             Color.clear.frame(width: CGFloat(depth) * indent, height: 1)
 
             // Expand/collapse chevron
@@ -55,7 +59,7 @@ struct VectorLayerRowView: View {
             }
             .buttonStyle(.plain)
 
-            // Visibility eye
+            // Visibility eye (always available, even for system layers)
             Button { vectorStore.toggleLayerVisibility(id: layer.id) } label: {
                 Image(systemName: layer.isVisible ? "eye" : "eye.slash")
                     .font(.system(size: 12))
@@ -63,20 +67,20 @@ struct VectorLayerRowView: View {
             }
             .buttonStyle(.plain)
 
-            // Folder icon
+            // Folder / lock icon
             Image(systemName: layer.isSystem ? "lock.fill" : "folder.fill")
                 .font(.system(size: 12))
-                .foregroundColor(layer.isSystem ? RutTheme.textMuted : RutTheme.amber)
+                .foregroundColor(layer.isSystem ? RutTheme.textMuted : RutTheme.textDim)
 
             // Name
             Text(layer.name)
                 .font(.system(size: 13, weight: .medium))
-                .foregroundColor(isActiveLayer ? RutTheme.amber : RutTheme.text)
+                .foregroundColor(nameColor)
                 .lineLimit(1)
 
             Spacer(minLength: 4)
 
-            // Delete button (not for system layers)
+            // Delete — non-system layers only
             if !layer.isSystem {
                 Button(role: .destructive) {
                     vectorStore.deleteLayer(id: layer.id)
@@ -90,29 +94,30 @@ struct VectorLayerRowView: View {
         }
         .padding(.horizontal, 8)
         .padding(.vertical, 9)
-        .background(
-            isActiveLayer
-                ? RutTheme.amber.opacity(0.08)
-                : Color.clear
-        )
+        .background(showAmberBg ? RutTheme.amber.opacity(0.15) : Color.clear)
         .contentShape(Rectangle())
         .onTapGesture {
             vectorStore.setActiveLayer(layer.id)
+            vectorStore.deselectShape()
         }
         .onLongPressGesture {
-            if !layer.isSystem {
-                renameText = layer.name
-                showRenameAlert = true
-            }
+            guard !layer.isSystem else { return }
+            renameText = layer.name
+            showRenameAlert = true
         }
     }
 
+    // MARK: - Shape row
+
     @ViewBuilder
     private func shapeRow(_ shape: VectorShape) -> some View {
+        let isSelected = vectorStore.activeShapeId == shape.id
+        let nameColor: Color = isSelected ? .white : RutTheme.textDim
+
         HStack(spacing: 6) {
             Color.clear.frame(width: CGFloat(depth + 1) * indent + 14, height: 1)
 
-            // Visibility
+            // Visibility — eye always available (even in system layers)
             Button {
                 var updated = shape
                 updated.isVisible.toggle()
@@ -132,38 +137,33 @@ struct VectorLayerRowView: View {
             // Name
             Text(shape.name)
                 .font(.system(size: 12))
-                .foregroundColor(RutTheme.textDim)
+                .foregroundColor(nameColor)
                 .lineLimit(1)
 
-            // Color dot (right after name)
+            // Color dot
             Circle()
                 .fill(Color(hex: shape.style.strokeColor))
                 .frame(width: 10, height: 10)
 
             Spacer(minLength: 4)
-
-            // Delete
-            Button(role: .destructive) {
-                vectorStore.deleteShape(shapeId: shape.id, in: layer.id)
-            } label: {
-                Image(systemName: "trash")
-                    .font(.system(size: 10))
-                    .foregroundColor(RutTheme.textMuted)
-            }
-            .buttonStyle(.plain)
         }
         .padding(.horizontal, 8)
         .padding(.vertical, 4)
-        .background(vectorStore.activeShapeId == shape.id
-            ? RutTheme.amber.opacity(0.08)
-            : Color.clear)
+        .background(isSelected ? RutTheme.amber.opacity(0.15) : Color.clear)
         .contentShape(Rectangle())
         .onTapGesture {
             vectorStore.selectShape(id: shape.id, layerId: layer.id)
         }
     }
 
-    private var isActiveLayer: Bool { vectorStore.activeLayerId == layer.id }
+    // MARK: - Helpers
+
+    /// Recursively checks if this layer or any descendant contains the active shape.
+    private func layerContainsActiveShape(_ l: VectorLayer) -> Bool {
+        guard let activeId = vectorStore.activeShapeId else { return false }
+        if l.shapes.contains(where: { $0.id == activeId }) { return true }
+        return l.children.contains { layerContainsActiveShape($0) }
+    }
 
     private func shapeIcon(_ geo: VectorGeometry) -> String {
         switch geo {

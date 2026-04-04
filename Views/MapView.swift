@@ -350,8 +350,9 @@ struct RutMapView: View {
     @MapContentBuilder
     private func vectorLayersContent() -> some MapContent {
         let selectedId = vectorStore.activeShapeId
+        let editingId  = vectorStore.isEditingShape ? selectedId : nil
         // Polygons (includes airspace from VectorStore system layer)
-        ForEach(vectorStore.visiblePolygons()) { item in
+        ForEach(vectorStore.visiblePolygons().filter { $0.id != editingId }) { item in
             let sel = item.id == selectedId
             MapPolygon(coordinates: item.coordinates)
                 .foregroundStyle(Color(hex: item.style.fillColor).opacity(item.style.opacity))
@@ -359,27 +360,43 @@ struct RutMapView: View {
                         lineWidth: sel ? item.style.strokeWidth + 2 : item.style.strokeWidth)
         }
         // Polylines
-        ForEach(vectorStore.visiblePolylines()) { item in
+        ForEach(vectorStore.visiblePolylines().filter { $0.id != editingId }) { item in
             let sel = item.id == selectedId
             MapPolyline(coordinates: item.coordinates)
                 .stroke(sel ? Color.white : Color(hex: item.style.strokeColor).opacity(item.style.opacity),
                         lineWidth: sel ? item.style.strokeWidth + 2 : item.style.strokeWidth)
         }
         // Circles
-        ForEach(vectorStore.visibleCircles()) { item in
+        ForEach(vectorStore.visibleCircles().filter { $0.id != editingId }) { item in
             let sel = item.id == selectedId
             MapCircle(center: item.center, radius: item.radiusMeters)
                 .foregroundStyle(Color(hex: item.style.fillColor).opacity(item.style.opacity * 0.3))
                 .stroke(sel ? Color.white : Color(hex: item.style.strokeColor).opacity(item.style.opacity),
                         lineWidth: sel ? item.style.strokeWidth + 2 : item.style.strokeWidth)
         }
-        // Points rendered as annotations
-        ForEach(vectorStore.visiblePoints()) { item in
+        // Points rendered as annotations with name label
+        ForEach(vectorStore.visiblePoints().filter { $0.id != editingId }) { item in
             let sel = item.id == selectedId
-            Annotation(item.name, coordinate: item.coordinate) {
-                Image(systemName: "mappin.circle.fill")
-                    .font(.system(size: sel ? 22 : 18))
-                    .foregroundStyle(sel ? Color.white : Color(hex: item.style.strokeColor).opacity(item.style.opacity))
+            Annotation(item.name, coordinate: item.coordinate, anchor: .bottom) {
+                VStack(spacing: 2) {
+                    Image(systemName: "mappin.circle.fill")
+                        .font(.system(size: sel ? 22 : 18))
+                        .foregroundStyle(sel ? Color.white : Color(hex: item.style.strokeColor).opacity(item.style.opacity))
+                        .onTapGesture {
+                            if core.appMode == .vector {
+                                vectorStore.selectShape(id: item.id, layerId: item.layerId)
+                            }
+                        }
+                    if core.appMode == .vector {
+                        Text(item.name)
+                            .font(.system(size: 10, weight: .medium))
+                            .foregroundStyle(Color.white)
+                            .padding(.horizontal, 4)
+                            .padding(.vertical, 1)
+                            .background(Color.black.opacity(0.55))
+                            .clipShape(RoundedRectangle(cornerRadius: 3))
+                    }
+                }
             }
             .annotationTitles(.hidden)
         }
@@ -1021,8 +1038,6 @@ struct RutMapView: View {
 
         if !vertices.isEmpty {
             Canvas { ctx, _ in
-                let color = CGColor(red: 0.816, green: 0.647, blue: 0.157, alpha: 1) // amber
-
                 switch tool {
                 case .polyline, .polygon:
                     var path = Path()
@@ -1037,7 +1052,7 @@ struct RutMapView: View {
                             path.addLine(to: closePt)
                         }
                     }
-                    ctx.stroke(path, with: .color(Color(hex: "#D0A528")), style: StrokeStyle(lineWidth: 2, dash: [6, 4]))
+                    ctx.stroke(path, with: .color(.white), style: StrokeStyle(lineWidth: 2, dash: [6, 4]))
 
                 case .circle:
                     let center = vertices[0]
@@ -1047,15 +1062,15 @@ struct RutMapView: View {
                         let r = hypot(ePt.x - cPt.x, ePt.y - cPt.y)
                         let circle = Path(ellipseIn: CGRect(x: cPt.x - r, y: cPt.y - r,
                                                             width: r * 2, height: r * 2))
-                        ctx.stroke(circle, with: .color(Color(hex: "#D0A528")),
+                        ctx.stroke(circle, with: .color(.white),
                                    style: StrokeStyle(lineWidth: 2, dash: [6, 4]))
-                        ctx.fill(circle, with: .color(Color(hex: "#D0A52820")))
+                        ctx.fill(circle, with: .color(Color.white.opacity(0.08)))
                     }
 
                 case .point:
                     if let pt = proxy.convert(vertices[0], to: .local) {
                         let dot = Path(ellipseIn: CGRect(x: pt.x - 6, y: pt.y - 6, width: 12, height: 12))
-                        ctx.fill(dot, with: .color(Color(hex: "#D0A528")))
+                        ctx.fill(dot, with: .color(.white))
                     }
 
                 case .none:
@@ -1067,7 +1082,7 @@ struct RutMapView: View {
                     if let pt = proxy.convert(v, to: .local) {
                         let dot = Path(ellipseIn: CGRect(x: pt.x - 4, y: pt.y - 4, width: 8, height: 8))
                         ctx.fill(dot, with: .color(.white))
-                        ctx.stroke(dot, with: .color(Color(hex: "#D0A528")), lineWidth: 1.5)
+                        ctx.stroke(dot, with: .color(Color.white.opacity(0.5)), lineWidth: 1.5)
                     }
                 }
             }

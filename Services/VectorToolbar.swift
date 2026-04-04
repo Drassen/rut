@@ -24,13 +24,31 @@ struct VectorToolbar: View {
                     Spacer()
                 } else if vectorStore.activeShapeId != nil && vectorStore.activeTool == .none {
                     // ── Shape selected ────────────────────────────────────────
-                    Button(selectedShapeIsPoint ? "Move" : "Edit Shape") {
-                        vectorStore.beginEditingShape()
+                    let isSystem = selectedShapeIsSystem
+                    if !isSystem {
+                        Button(selectedShapeIsPoint ? "Move" : "Edit Shape") {
+                            vectorStore.beginEditingShape()
+                        }
+                        .buttonStyle(RutSecondaryButtonStyle())
                     }
-                    .buttonStyle(RutSecondaryButtonStyle())
 
                     Button("Edit Properties") { showShapeEditor = true }
                         .buttonStyle(RutSecondaryButtonStyle())
+
+                    if !isSystem {
+                        Button {
+                            if let id = vectorStore.activeShapeId,
+                               let layerId = vectorStore.activeShapeLayerId {
+                                vectorStore.deleteShape(shapeId: id, in: layerId)
+                                vectorStore.deselectShape()
+                            }
+                        } label: {
+                            Image(systemName: "trash")
+                                .font(.system(size: 13))
+                                .foregroundColor(.red)
+                        }
+                        .buttonStyle(RutSecondaryButtonStyle())
+                    }
 
                     Spacer()
 
@@ -76,7 +94,7 @@ struct VectorToolbar: View {
                     Button {
                         exportVector()
                     } label: {
-                        Image(systemName: "square.and.arrow.up")
+                        Label("Export", systemImage: "square.and.arrow.up")
                     }
                     .buttonStyle(RutSecondaryButtonStyle())
                     .sheet(item: $exportContainer) { container in
@@ -114,6 +132,11 @@ struct VectorToolbar: View {
               let found = vectorStore.findShape(id: id) else { return false }
         if case .point = found.shape.geometry { return true }
         return false
+    }
+
+    private var selectedShapeIsSystem: Bool {
+        guard let layerId = vectorStore.activeShapeLayerId else { return false }
+        return vectorStore.layerIsSystem(id: layerId)
     }
 
     @ViewBuilder

@@ -185,6 +185,19 @@ final class VectorStore: ObservableObject {
         activeLayerId = id
     }
 
+    /// Returns true if the layer (or any ancestor) has isSystem = true.
+    func layerIsSystem(id: UUID) -> Bool {
+        layerIsSystemRecursive(id: id, in: layers)
+    }
+
+    private func layerIsSystemRecursive(id: UUID, in search: [VectorLayer]) -> Bool {
+        for layer in search {
+            if layer.id == id { return layer.isSystem }
+            if layerIsSystemRecursive(id: id, in: layer.children) { return true }
+        }
+        return false
+    }
+
     // MARK: - Shape Selection & Editing
 
     func selectShape(id: UUID, layerId: UUID) {
@@ -267,6 +280,39 @@ final class VectorStore: ObservableObject {
             let dist = CLLocation(latitude: vertices[0].latitude, longitude: vertices[0].longitude)
                 .distance(from: CLLocation(latitude: vertices[1].latitude, longitude: vertices[1].longitude))
             return .circle(lat: vertices[0].latitude, lon: vertices[0].longitude, radiusMeters: dist)
+        }
+    }
+
+    // MARK: - Reorder
+
+    /// Move a top-level layer from one index to another.
+    func moveTopLevelLayer(from source: Int, to destination: Int) {
+        guard source != destination,
+              source >= 0, source < layers.count,
+              destination >= 0, destination < layers.count else { return }
+        let item = layers.remove(at: source)
+        layers.insert(item, at: destination)
+    }
+
+    /// Move a child layer within its parent.
+    func moveChildLayer(id: UUID, from source: Int, to destination: Int, inParentId: UUID) {
+        mutateLayer(id: inParentId, in: &layers) { parent in
+            guard source != destination,
+                  source >= 0, source < parent.children.count,
+                  destination >= 0, destination < parent.children.count else { return }
+            let item = parent.children.remove(at: source)
+            parent.children.insert(item, at: destination)
+        }
+    }
+
+    /// Move a shape within its layer.
+    func moveShape(from source: Int, to destination: Int, inLayerId: UUID) {
+        mutateLayer(id: inLayerId, in: &layers) { layer in
+            guard source != destination,
+                  source >= 0, source < layer.shapes.count,
+                  destination >= 0, destination < layer.shapes.count else { return }
+            let item = layer.shapes.remove(at: source)
+            layer.shapes.insert(item, at: destination)
         }
     }
 

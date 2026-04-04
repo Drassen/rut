@@ -262,18 +262,23 @@ struct ContentView: View {
                     Button {
                         showDatabase = true
                     } label: {
-                        Image(systemName: "list.bullet.rectangle")
+                        Label("Database", systemImage: "list.bullet.rectangle")
                     }
                     .buttonStyle(RutSecondaryButtonStyle())
 
                     Button {
                         showSettingsSheet = true
                     } label: {
-                        Image(systemName: "gearshape")
+                        Label("Settings", systemImage: "gearshape")
                     }
                     .buttonStyle(RutSecondaryButtonStyle())
 
-                    appModeToggle
+                    Button {
+                        core.appMode = .vector
+                    } label: {
+                        Label("Mode", systemImage: "scribble")
+                    }
+                    .buttonStyle(RutSecondaryButtonStyle())
                 }
                 .padding(.horizontal, 14)
                 .padding(.vertical, 10)
@@ -281,7 +286,6 @@ struct ContentView: View {
 
                 // ── Route tiles ──
                 if !navStore.routes.isEmpty {
-                    divider
                     ScrollView(.horizontal, showsIndicators: false) {
                         HStack(spacing: 8) {
                             ForEach(navStore.routes) { route in
@@ -396,31 +400,6 @@ struct ContentView: View {
         Rectangle()
             .fill(RutTheme.border)
             .frame(height: 1)
-    }
-
-    private var appModeToggle: some View {
-        HStack(spacing: 2) {
-            modeToggleButton(mode: .navigation, icon: "map.fill")
-            modeToggleButton(mode: .vector,     icon: "scribble")
-        }
-        .padding(3)
-        .background(RutTheme.surface2)
-        .clipShape(RoundedRectangle(cornerRadius: 8))
-        .overlay(RoundedRectangle(cornerRadius: 8).stroke(RutTheme.border, lineWidth: 1))
-    }
-
-    @ViewBuilder
-    private func modeToggleButton(mode: AppMode, icon: String) -> some View {
-        let isActive = core.appMode == mode
-        Button { core.appMode = mode } label: {
-            Image(systemName: icon)
-                .font(.system(size: 13, weight: isActive ? .bold : .regular))
-                .foregroundColor(isActive ? .black : RutTheme.textDim)
-                .frame(width: 28, height: 24)
-                .background(isActive ? RutTheme.amber : Color.clear)
-                .clipShape(RoundedRectangle(cornerRadius: 6))
-        }
-        .buttonStyle(.plain)
     }
 
     // MARK: - Logic

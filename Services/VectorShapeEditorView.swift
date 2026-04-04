@@ -12,18 +12,15 @@ struct VectorShapeEditorView: View {
     @State private var fillColorUI: Color
     @State private var strokeWidth: Double
     @State private var opacity: Double
-    @State private var isVisible: Bool
-    @State private var confirmDelete = false
 
     init(shape: VectorShape, layerId: UUID) {
         self.shape   = shape
         self.layerId = layerId
-        _name           = State(initialValue: shape.name)
-        _strokeColorUI  = State(initialValue: Color(hex: shape.style.strokeColor))
-        _fillColorUI    = State(initialValue: Color(hex: shape.style.fillColor.isEmpty ? "#00000000" : shape.style.fillColor))
-        _strokeWidth    = State(initialValue: shape.style.strokeWidth)
-        _opacity        = State(initialValue: shape.style.opacity)
-        _isVisible      = State(initialValue: shape.isVisible)
+        _name          = State(initialValue: shape.name)
+        _strokeColorUI = State(initialValue: Color(hex: shape.style.strokeColor))
+        _fillColorUI   = State(initialValue: Color(hex: shape.style.fillColor.isEmpty ? "#00000000" : shape.style.fillColor))
+        _strokeWidth   = State(initialValue: shape.style.strokeWidth)
+        _opacity       = State(initialValue: shape.style.opacity)
     }
 
     var body: some View {
@@ -31,7 +28,6 @@ struct VectorShapeEditorView: View {
             Form {
                 Section("General") {
                     TextField("Name", text: $name)
-                    Toggle("Visible", isOn: $isVisible)
                 }
 
                 Section("Style") {
@@ -54,19 +50,8 @@ struct VectorShapeEditorView: View {
                         }
                     }
                 }
-
-                Section("Geometry") {
-                    LabeledContent("Type", value: shape.geometry.geometryTypeName)
-                    LabeledContent("Vertices", value: "\(shape.geometry.vertexCount)")
-                }
-
-                Section {
-                    Button("Delete shape", role: .destructive) {
-                        confirmDelete = true
-                    }
-                }
             }
-            .navigationTitle("Shape")
+            .navigationTitle("Properties")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .topBarLeading) {
@@ -77,13 +62,6 @@ struct VectorShapeEditorView: View {
                         .bold()
                 }
             }
-            .confirmationDialog("Delete this shape?", isPresented: $confirmDelete, titleVisibility: .visible) {
-                Button("Delete", role: .destructive) {
-                    vectorStore.deleteShape(shapeId: shape.id, in: layerId)
-                    dismiss()
-                }
-                Button("Cancel", role: .cancel) { }
-            }
         }
         .tint(RutTheme.amber)
     }
@@ -91,7 +69,6 @@ struct VectorShapeEditorView: View {
     private func save() {
         var updated = shape
         updated.name = name
-        updated.isVisible = isVisible
         updated.style.strokeColor = strokeColorUI.toHexString()
         updated.style.fillColor   = fillColorUI.toHexString(includeAlpha: true)
         updated.style.strokeWidth = strokeWidth
