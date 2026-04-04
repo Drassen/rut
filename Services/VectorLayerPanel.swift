@@ -25,6 +25,11 @@ struct VectorLayerPanel: View {
                             Rectangle().fill(RutTheme.border).frame(height: 0.5)
                         }
                     }
+                    // Tap on empty space deselects
+                    Color.clear
+                        .frame(maxWidth: .infinity, minHeight: 60)
+                        .contentShape(Rectangle())
+                        .onTapGesture { vectorStore.activeLayerId = nil }
                 }
             }
         }
@@ -33,7 +38,9 @@ struct VectorLayerPanel: View {
             TextField("Layer name", text: $newLayerName)
             Button("Add") {
                 let name = newLayerName.trimmingCharacters(in: .whitespaces)
-                if !name.isEmpty { vectorStore.addLayer(name: name) }
+                if !name.isEmpty {
+                    vectorStore.addLayer(name: name, parentId: vectorStore.activeLayerId)
+                }
                 newLayerName = ""
             }
             Button("Cancel", role: .cancel) { newLayerName = "" }
@@ -42,7 +49,7 @@ struct VectorLayerPanel: View {
 
     private var panelHeader: some View {
         HStack {
-            Text("Layers")
+            Text(vectorStore.activeLayerId != nil ? "Layers (sublayer)" : "Layers")
                 .font(.system(size: 13, weight: .semibold))
                 .foregroundColor(RutTheme.text)
             Spacer()
