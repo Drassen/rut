@@ -25,29 +25,7 @@ struct VectorLayerPanel: View {
                             .padding()
                     } else {
                         ForEach(Array(vectorStore.layers.enumerated()), id: \.element.id) { index, layer in
-                            VStack(spacing: 0) {
-                                // Drop zone indicator above this row
-                                if dragOverLayerId == layer.id {
-                                    Rectangle()
-                                        .fill(RutTheme.amber)
-                                        .frame(height: 2)
-                                }
-
-                                VectorLayerRowView(layer: layer, depth: 0)
-                                    .environmentObject(vectorStore)
-                                    .opacity(draggingLayerId == layer.id ? 0.4 : 1.0)
-                                    .onDrag {
-                                        draggingLayerId = layer.id
-                                        return NSItemProvider(object: layer.id.uuidString as NSString)
-                                    }
-                                    .onDrop(of: [.plainText], isTargeted: { targeted in
-                                        dragOverLayerId = targeted ? layer.id : nil
-                                    }) { providers in
-                                        handleDrop(providers: providers, targetIndex: index)
-                                        return true
-                                    }
-                            }
-                            Rectangle().fill(RutTheme.border).frame(height: 0.5)
+                            layerEntry(layer: layer, index: index)
                         }
                     }
                     // Tap on empty space deselects
@@ -73,6 +51,29 @@ struct VectorLayerPanel: View {
             }
             Button("Cancel", role: .cancel) { newLayerName = "" }
         }
+    }
+
+    @ViewBuilder
+    private func layerEntry(layer: VectorLayer, index: Int) -> some View {
+        VStack(spacing: 0) {
+            if dragOverLayerId == layer.id {
+                Rectangle().fill(RutTheme.amber).frame(height: 2)
+            }
+            VectorLayerRowView(layer: layer, depth: 0)
+                .environmentObject(vectorStore)
+                .opacity(draggingLayerId == layer.id ? 0.4 : 1.0)
+                .onDrag {
+                    draggingLayerId = layer.id
+                    return NSItemProvider(object: layer.id.uuidString as NSString)
+                }
+                .onDrop(of: [.plainText], isTargeted: { targeted in
+                    dragOverLayerId = targeted ? layer.id : nil
+                }) { providers in
+                    handleDrop(providers: providers, targetIndex: index)
+                    return true
+                }
+        }
+        Rectangle().fill(RutTheme.border).frame(height: 0.5)
     }
 
     private var panelHeader: some View {
