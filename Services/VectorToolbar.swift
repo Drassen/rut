@@ -9,52 +9,79 @@ struct VectorToolbar: View {
     @State private var showNewShapeNameAlert = false
     @State private var pendingShapeName = ""
     @State private var exportContainer: ExportContainer? = nil
+    @State private var showShapeEditor = false
 
     var body: some View {
         VStack(spacing: 0) {
             Rectangle().fill(RutTheme.border).frame(height: 1)
             HStack(spacing: 8) {
-                // Drawing tool pills
-                toolButton(tool: .none,     icon: "cursorarrow",         label: "Select")
-                toolButton(tool: .point,    icon: "circle.fill",         label: "Point")
-                toolButton(tool: .polyline, icon: "line.diagonal",       label: "Line")
-                toolButton(tool: .polygon,  icon: "triangle",            label: "Polygon")
-                toolButton(tool: .circle,   icon: "circle",              label: "Circle")
-
-                Spacer()
-
-                // Done / Undo — only when actively drawing
-                if vectorStore.activeTool != .none && vectorStore.drawing.isActive {
-                    Button {
-                        vectorStore.drawing.undoLastVertex()
-                    } label: {
-                        Image(systemName: "arrow.uturn.backward")
+                if vectorStore.isEditingShape {
+                    // ── Editing mode ──────────────────────────────────────────
+                    Button("Done") { vectorStore.commitShapeEdit() }
+                        .buttonStyle(RutPrimaryButtonStyle())
+                    Button("Cancel") { vectorStore.cancelShapeEdit() }
+                        .buttonStyle(RutSecondaryButtonStyle())
+                    Spacer()
+                } else if vectorStore.activeShapeId != nil && vectorStore.activeTool == .none {
+                    // ── Shape selected ────────────────────────────────────────
+                    Button(selectedShapeIsPoint ? "Move" : "Edit Shape") {
+                        vectorStore.beginEditingShape()
                     }
                     .buttonStyle(RutSecondaryButtonStyle())
 
-                    Button("Done") {
-                        if vectorStore.activeLayerId == nil {
-                            // No layer selected — prompt to create one or use first
-                            if vectorStore.layers.first(where: { !$0.isSystem }) == nil {
-                                vectorStore.addLayer(name: "Layer 1")
-                            }
-                        }
-                        pendingShapeName = defaultName()
-                        showNewShapeNameAlert = true
+                    Button("Edit Properties") { showShapeEditor = true }
+                        .buttonStyle(RutSecondaryButtonStyle())
+
+                    Spacer()
+
+                    Button {
+                        vectorStore.deselectShape()
+                    } label: {
+                        Image(systemName: "xmark")
+                            .font(.system(size: 13, weight: .semibold))
                     }
-                    .buttonStyle(RutPrimaryButtonStyle())
-                }
+                    .buttonStyle(RutSecondaryButtonStyle())
+                } else {
+                    // ── Default: tool pills ───────────────────────────────────
+                    toolButton(tool: .none,     icon: "cursorarrow",   label: "Select")
+                    toolButton(tool: .point,    icon: "mappin",        label: "Point")
+                    toolButton(tool: .polyline, icon: "line.diagonal", label: "Line")
+                    toolButton(tool: .polygon,  icon: "triangle",      label: "Polygon")
+                    toolButton(tool: .circle,   icon: "circle",        label: "Circle")
 
-                // KML export
-                Button {
-                    exportVector()
-                } label: {
-                    Image(systemName: "square.and.arrow.up")
-                }
-                .buttonStyle(RutSecondaryButtonStyle())
+                    Spacer()
 
-                .sheet(item: $exportContainer) { container in
-                    MultiFileExportController(fileURLs: container.urls) { _ in }
+                    // Done / Undo — only when actively drawing
+                    if vectorStore.activeTool != .none && vectorStore.drawing.isActive {
+                        Button {
+                            vectorStore.drawing.undoLastVertex()
+                        } label: {
+                            Image(systemName: "arrow.uturn.backward")
+                        }
+                        .buttonStyle(RutSecondaryButtonStyle())
+
+                        Button("Done") {
+                            if vectorStore.activeLayerId == nil {
+                                if vectorStore.layers.first(where: { !$0.isSystem }) == nil {
+                                    vectorStore.addLayer(name: "Layer 1")
+                                }
+                            }
+                            pendingShapeName = defaultName()
+                            showNewShapeNameAlert = true
+                        }
+                        .buttonStyle(RutPrimaryButtonStyle())
+                    }
+
+                    // KML export
+                    Button {
+                        exportVector()
+                    } label: {
+                        Image(systemName: "square.and.arrow.up")
+                    }
+                    .buttonStyle(RutSecondaryButtonStyle())
+                    .sheet(item: $exportContainer) { container in
+                        MultiFileExportController(fileURLs: container.urls) { _ in }
+                    }
                 }
             }
             .padding(.horizontal, 14)
@@ -73,6 +100,20 @@ struct VectorToolbar: View {
                 pendingShapeName = ""
             }
         }
+        .sheet(isPresented: $showShapeEditor) {
+            if let id = vectorStore.activeShapeId,
+               let found = vectorStore.findShape(id: id) {
+                VectorShapeEditorView(shape: found.shape, layerId: found.layerId)
+                    .environmentObject(vectorStore)
+            }
+        }
+    }
+
+    private var selectedShapeIsPoint: Bool {
+        guard let id = vectorStore.activeShapeId,
+              let found = vectorStore.findShape(id: id) else { return false }
+        if case .point = found.shape.geometry { return true }
+        return false
     }
 
     @ViewBuilder
@@ -109,7 +150,6 @@ struct VectorToolbar: View {
     private func exportVector() {
         let exporter = KMLVectorExportService()
         do {
-            // Build a minimal document just with vector layers
             var doc = NavigationDocument()
             doc.vectorLayers = CoreServices.shared.vectorStore.documentLayers()
             let files = try exporter.export(document: doc, selectedRoutes: [])

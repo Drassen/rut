@@ -11,7 +11,6 @@ struct VectorLayerRowView: View {
 
     @State private var showRenameAlert = false
     @State private var renameText = ""
-    @State private var editingShape: (shape: VectorShape, layerId: UUID)? = nil
 
     private let indent: CGFloat = 16
 
@@ -34,13 +33,6 @@ struct VectorLayerRowView: View {
             TextField("Name", text: $renameText)
             Button("Save") { vectorStore.renameLayer(id: layer.id, name: renameText) }
             Button("Cancel", role: .cancel) { }
-        }
-        .sheet(item: Binding(
-            get: { editingShape.map { IdentifiedShape(shape: $0.shape, layerId: $0.layerId) } },
-            set: { if $0 == nil { editingShape = nil } }
-        )) { identified in
-            VectorShapeEditorView(shape: identified.shape, layerId: identified.layerId)
-                .environmentObject(vectorStore)
         }
     }
 
@@ -162,9 +154,12 @@ struct VectorLayerRowView: View {
         }
         .padding(.horizontal, 8)
         .padding(.vertical, 4)
+        .background(vectorStore.activeShapeId == shape.id
+            ? RutTheme.amber.opacity(0.08)
+            : Color.clear)
         .contentShape(Rectangle())
         .onTapGesture {
-            editingShape = (shape: shape, layerId: layer.id)
+            vectorStore.selectShape(id: shape.id, layerId: layer.id)
         }
     }
 
@@ -178,11 +173,4 @@ struct VectorLayerRowView: View {
         case .circle:   return "circle"
         }
     }
-}
-
-// Wrapper to make optional sheet binding work
-private struct IdentifiedShape: Identifiable {
-    let id = UUID()
-    let shape: VectorShape
-    let layerId: UUID
 }

@@ -6,31 +6,39 @@ import Combine
 
 struct FlatVectorPolygon: Identifiable {
     let id: UUID
+    let layerId: UUID
     let name: String
     let coordinates: [CLLocationCoordinate2D]
     let style: VectorStyle
+    let isSystem: Bool
 }
 
 struct FlatVectorPolyline: Identifiable {
     let id: UUID
+    let layerId: UUID
     let name: String
     let coordinates: [CLLocationCoordinate2D]
     let style: VectorStyle
+    let isSystem: Bool
 }
 
 struct FlatVectorCircle: Identifiable {
     let id: UUID
+    let layerId: UUID
     let name: String
     let center: CLLocationCoordinate2D
     let radiusMeters: Double
     let style: VectorStyle
+    let isSystem: Bool
 }
 
 struct FlatVectorPoint: Identifiable {
     let id: UUID
+    let layerId: UUID
     let name: String
     let coordinate: CLLocationCoordinate2D
     let style: VectorStyle
+    let isSystem: Bool
 }
 
 // MARK: - DrawingTool
@@ -128,6 +136,10 @@ final class VectorStore: ObservableObject {
     @Published var activeLayerId: UUID? = nil
     @Published var activeTool: DrawingTool = .none
     @Published var newShapeStyle: VectorStyle = VectorStyle()
+    @Published var activeShapeId: UUID? = nil
+    @Published var activeShapeLayerId: UUID? = nil
+    @Published var isEditingShape: Bool = false
+    @Published var editingVertices: [CLLocationCoordinate2D] = []
 
     let drawing = DrawingStateMachine()
     private var drawingSink: AnyCancellable?
@@ -171,6 +183,91 @@ final class VectorStore: ObservableObject {
 
     func setActiveLayer(_ id: UUID) {
         activeLayerId = id
+    }
+
+    // MARK: - Shape Selection & Editing
+
+    func selectShape(id: UUID, layerId: UUID) {
+        activeShapeId = id
+        activeShapeLayerId = layerId
+        activeLayerId = layerId
+        isEditingShape = false
+        editingVertices = []
+    }
+
+    func deselectShape() {
+        activeShapeId = nil
+        activeShapeLayerId = nil
+        isEditingShape = false
+        editingVertices = []
+    }
+
+    func findShape(id: UUID) -> (shape: VectorShape, layerId: UUID)? {
+        findShapeRecursive(id: id, in: layers)
+    }
+
+    private func findShapeRecursive(id: UUID, in search: [VectorLayer]) -> (shape: VectorShape, layerId: UUID)? {
+        for layer in search {
+            if let shape = layer.shapes.first(where: { $0.id == id }) { return (shape, layer.id) }
+            if let found = findShapeRecursive(id: id, in: layer.children) { return found }
+        }
+        return nil
+    }
+
+    func beginEditingShape() {
+        guard let id = activeShapeId, let found = findShape(id: id) else { return }
+        editingVertices = extractVertices(from: found.shape)
+        isEditingShape = true
+    }
+
+    func commitShapeEdit() {
+        guard let id = activeShapeId, let layerId = activeShapeLayerId,
+              let found = findShape(id: id) else { isEditingShape = false; return }
+        var updated = found.shape
+        updated.geometry = buildGeometry(from: updated.geometry, vertices: editingVertices)
+        updateShape(updated, in: layerId)
+        isEditingShape = false
+        editingVertices = []
+    }
+
+    func cancelShapeEdit() {
+        isEditingShape = false
+        editingVertices = []
+    }
+
+    func moveEditVertex(at index: Int, to coord: CLLocationCoordinate2D) {
+        guard index < editingVertices.count else { return }
+        editingVertices[index] = coord
+    }
+
+    private func extractVertices(from shape: VectorShape) -> [CLLocationCoordinate2D] {
+        switch shape.geometry {
+        case .point(let lat, let lon):
+            return [CLLocationCoordinate2D(latitude: lat, longitude: lon)]
+        case .polyline(let coords), .polygon(let coords):
+            return coords.map { CLLocationCoordinate2D(latitude: $0[0], longitude: $0[1]) }
+        case .circle(let lat, let lon, let r):
+            let center = CLLocationCoordinate2D(latitude: lat, longitude: lon)
+            let edgeLat = lat + (r / 111_320.0)
+            return [center, CLLocationCoordinate2D(latitude: edgeLat, longitude: lon)]
+        }
+    }
+
+    private func buildGeometry(from original: VectorGeometry, vertices: [CLLocationCoordinate2D]) -> VectorGeometry {
+        switch original {
+        case .point:
+            guard let v = vertices.first else { return original }
+            return .point(lat: v.latitude, lon: v.longitude)
+        case .polyline:
+            return .polyline(coordinates: vertices.map { [$0.latitude, $0.longitude] })
+        case .polygon:
+            return .polygon(coordinates: vertices.map { [$0.latitude, $0.longitude] })
+        case .circle:
+            guard vertices.count >= 2 else { return original }
+            let dist = CLLocation(latitude: vertices[0].latitude, longitude: vertices[0].longitude)
+                .distance(from: CLLocation(latitude: vertices[1].latitude, longitude: vertices[1].longitude))
+            return .circle(lat: vertices[0].latitude, lon: vertices[0].longitude, radiusMeters: dist)
+        }
     }
 
     // MARK: - Shape CRUD
@@ -254,11 +351,11 @@ final class VectorStore: ObservableObject {
 
     func visiblePolygons() -> [FlatVectorPolygon] {
         var result: [FlatVectorPolygon] = []
-        collectByType(from: layers, parentVisible: true) { shape in
+        collectByType(from: layers, parentVisible: true, isSystem: false) { shape, layerId, sys in
             if case .polygon(let coords) = shape.geometry {
                 let cl = coords.map { CLLocationCoordinate2D(latitude: $0[0], longitude: $0[1]) }
-                result.append(FlatVectorPolygon(id: shape.id, name: shape.name,
-                                               coordinates: cl, style: shape.style))
+                result.append(FlatVectorPolygon(id: shape.id, layerId: layerId, name: shape.name,
+                                               coordinates: cl, style: shape.style, isSystem: sys))
             }
         }
         return result
@@ -266,11 +363,11 @@ final class VectorStore: ObservableObject {
 
     func visiblePolylines() -> [FlatVectorPolyline] {
         var result: [FlatVectorPolyline] = []
-        collectByType(from: layers, parentVisible: true) { shape in
+        collectByType(from: layers, parentVisible: true, isSystem: false) { shape, layerId, sys in
             if case .polyline(let coords) = shape.geometry {
                 let cl = coords.map { CLLocationCoordinate2D(latitude: $0[0], longitude: $0[1]) }
-                result.append(FlatVectorPolyline(id: shape.id, name: shape.name,
-                                                coordinates: cl, style: shape.style))
+                result.append(FlatVectorPolyline(id: shape.id, layerId: layerId, name: shape.name,
+                                                coordinates: cl, style: shape.style, isSystem: sys))
             }
         }
         return result
@@ -278,12 +375,12 @@ final class VectorStore: ObservableObject {
 
     func visibleCircles() -> [FlatVectorCircle] {
         var result: [FlatVectorCircle] = []
-        collectByType(from: layers, parentVisible: true) { shape in
+        collectByType(from: layers, parentVisible: true, isSystem: false) { shape, layerId, sys in
             if case .circle(let lat, let lon, let r) = shape.geometry {
                 result.append(FlatVectorCircle(
-                    id: shape.id, name: shape.name,
+                    id: shape.id, layerId: layerId, name: shape.name,
                     center: CLLocationCoordinate2D(latitude: lat, longitude: lon),
-                    radiusMeters: r, style: shape.style))
+                    radiusMeters: r, style: shape.style, isSystem: sys))
             }
         }
         return result
@@ -291,12 +388,12 @@ final class VectorStore: ObservableObject {
 
     func visiblePoints() -> [FlatVectorPoint] {
         var result: [FlatVectorPoint] = []
-        collectByType(from: layers, parentVisible: true) { shape in
+        collectByType(from: layers, parentVisible: true, isSystem: false) { shape, layerId, sys in
             if case .point(let lat, let lon) = shape.geometry {
                 result.append(FlatVectorPoint(
-                    id: shape.id, name: shape.name,
+                    id: shape.id, layerId: layerId, name: shape.name,
                     coordinate: CLLocationCoordinate2D(latitude: lat, longitude: lon),
-                    style: shape.style))
+                    style: shape.style, isSystem: sys))
             }
         }
         return result
@@ -340,12 +437,13 @@ final class VectorStore: ObservableObject {
         return false
     }
 
-    private func collectByType(from layers: [VectorLayer], parentVisible: Bool,
-                               handler: (VectorShape) -> Void) {
+    private func collectByType(from layers: [VectorLayer], parentVisible: Bool, isSystem: Bool,
+                               handler: (VectorShape, UUID, Bool) -> Void) {
         for layer in layers {
             let visible = parentVisible && layer.isVisible
-            if visible { layer.shapes.filter { $0.isVisible }.forEach(handler) }
-            collectByType(from: layer.children, parentVisible: visible, handler: handler)
+            let sys = isSystem || layer.isSystem
+            if visible { layer.shapes.filter { $0.isVisible }.forEach { handler($0, layer.id, sys) } }
+            collectByType(from: layer.children, parentVisible: visible, isSystem: sys, handler: handler)
         }
     }
 }

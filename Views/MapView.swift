@@ -136,6 +136,7 @@ struct RutMapView: View {
         case userNavaid(UserNavaid)
         case routePoint(index: Int)
         case lineSegment(segmentIndex: Int) // Converted to .routePoint in onChanged
+        case vectorVertex(index: Int)
     }
 
     var body: some View {
@@ -245,6 +246,17 @@ struct RutMapView: View {
                         drawingPreviewOverlay(proxy: proxy)
                             .allowsHitTesting(false)
                     }
+
+                    // Vector selection tap-catcher (cursor tool, not editing)
+                    if core.appMode == .vector && vectorStore.activeTool == .none && !vectorStore.isEditingShape {
+                        vectorSelectionOverlay(proxy: proxy)
+                    }
+
+                    // Editing vertex handles canvas
+                    if core.appMode == .vector && vectorStore.isEditingShape {
+                        editingHandlesOverlay(proxy: proxy)
+                            .allowsHitTesting(false)
+                    }
                 }
             }
 
@@ -326,32 +338,37 @@ struct RutMapView: View {
 
     @MapContentBuilder
     private func vectorLayersContent() -> some MapContent {
+        let selectedId = vectorStore.activeShapeId
         // Polygons (includes airspace from VectorStore system layer)
         ForEach(vectorStore.visiblePolygons()) { item in
+            let sel = item.id == selectedId
             MapPolygon(coordinates: item.coordinates)
                 .foregroundStyle(Color(hex: item.style.fillColor).opacity(item.style.opacity))
-                .stroke(Color(hex: item.style.strokeColor).opacity(item.style.opacity),
-                        lineWidth: item.style.strokeWidth)
+                .stroke(sel ? RutTheme.amber : Color(hex: item.style.strokeColor).opacity(item.style.opacity),
+                        lineWidth: sel ? item.style.strokeWidth + 2 : item.style.strokeWidth)
         }
         // Polylines
         ForEach(vectorStore.visiblePolylines()) { item in
+            let sel = item.id == selectedId
             MapPolyline(coordinates: item.coordinates)
-                .stroke(Color(hex: item.style.strokeColor).opacity(item.style.opacity),
-                        lineWidth: item.style.strokeWidth)
+                .stroke(sel ? RutTheme.amber : Color(hex: item.style.strokeColor).opacity(item.style.opacity),
+                        lineWidth: sel ? item.style.strokeWidth + 2 : item.style.strokeWidth)
         }
         // Circles
         ForEach(vectorStore.visibleCircles()) { item in
+            let sel = item.id == selectedId
             MapCircle(center: item.center, radius: item.radiusMeters)
                 .foregroundStyle(Color(hex: item.style.fillColor).opacity(item.style.opacity * 0.3))
-                .stroke(Color(hex: item.style.strokeColor).opacity(item.style.opacity),
-                        lineWidth: item.style.strokeWidth)
+                .stroke(sel ? RutTheme.amber : Color(hex: item.style.strokeColor).opacity(item.style.opacity),
+                        lineWidth: sel ? item.style.strokeWidth + 2 : item.style.strokeWidth)
         }
         // Points rendered as annotations
         ForEach(vectorStore.visiblePoints()) { item in
+            let sel = item.id == selectedId
             Annotation(item.name, coordinate: item.coordinate) {
-                Circle()
-                    .fill(Color(hex: item.style.strokeColor).opacity(item.style.opacity))
-                    .frame(width: 10, height: 10)
+                Image(systemName: "mappin.circle.fill")
+                    .font(.system(size: sel ? 22 : 18))
+                    .foregroundStyle(sel ? RutTheme.amber : Color(hex: item.style.strokeColor).opacity(item.style.opacity))
             }
             .annotationTitles(.hidden)
         }
@@ -596,6 +613,23 @@ struct RutMapView: View {
         var closestDist = CGFloat.infinity
         var result: MapDragTarget? = nil
 
+        // When editing a vector shape, only vertex handles are draggable
+        if vectorStore.isEditingShape {
+            for (i, vertex) in vectorStore.editingVertices.enumerated() {
+                if let pt = proxy.convert(vertex, to: .global) {
+                    let dist = hypot(pt.x - screenPoint.x, pt.y - screenPoint.y)
+                    if dist < threshold && dist < closestDist {
+                        closestDist = dist
+                        result = .vectorVertex(index: i)
+                    }
+                }
+            }
+            return result
+        }
+
+        // In vector mode without editing, no nav markers are draggable
+        guard core.appMode == .navigation else { return nil }
+
         // User airports (visible ones – not in any route)
         for airport in navStore.document.userAirports {
             guard !activeRouteIDs.contains(airport.id) && !inactiveRouteIDs.contains(airport.id) else { continue }
@@ -666,6 +700,8 @@ struct RutMapView: View {
         case .lineSegment:
             insertGhostCoord = coord
             insertSnapRef = findSnapTarget(at: screenPoint, proxy: proxy)
+        case .vectorVertex(let index):
+            vectorStore.moveEditVertex(at: index, to: coord)
         }
     }
 
@@ -707,6 +743,8 @@ struct RutMapView: View {
             }
             insertGhostCoord = nil
             insertSnapRef = nil
+        case .vectorVertex(let index):
+            vectorStore.moveEditVertex(at: index, to: coord)
         }
     }
 
@@ -1023,6 +1061,121 @@ struct RutMapView: View {
                 }
             }
         }
+    }
+
+    /// Transparent overlay that captures taps for shape selection (cursor tool).
+    @ViewBuilder
+    private func vectorSelectionOverlay(proxy: MapProxy) -> some View {
+        Color.clear
+            .contentShape(Rectangle())
+            .gesture(
+                DragGesture(minimumDistance: 0, coordinateSpace: .global)
+                    .onEnded { value in
+                        let d = hypot(value.translation.width, value.translation.height)
+                        guard d < 8 else { return }
+                        if let hit = findNearestUserShape(at: value.startLocation, proxy: proxy) {
+                            vectorStore.selectShape(id: hit.shapeId, layerId: hit.layerId)
+                        } else {
+                            vectorStore.deselectShape()
+                        }
+                    }
+            )
+    }
+
+    /// Canvas that draws editing vertex handles when isEditingShape.
+    @ViewBuilder
+    private func editingHandlesOverlay(proxy: MapProxy) -> some View {
+        let verts = vectorStore.editingVertices
+        if !verts.isEmpty {
+            Canvas { ctx, _ in
+                let amber = Color(hex: "#D0A528")
+                // Draw connecting lines
+                if verts.count > 1 {
+                    var path = Path()
+                    if let first = proxy.convert(verts[0], to: .local) {
+                        path.move(to: first)
+                        for v in verts.dropFirst() {
+                            if let pt = proxy.convert(v, to: .local) { path.addLine(to: pt) }
+                        }
+                        // Close polygon if editing a polygon shape
+                        if let found = vectorStore.activeShapeId.flatMap({ vectorStore.findShape(id: $0) }),
+                           case .polygon = found.shape.geometry,
+                           let closePt = proxy.convert(verts[0], to: .local) {
+                            path.addLine(to: closePt)
+                        }
+                    }
+                    ctx.stroke(path, with: .color(amber), style: StrokeStyle(lineWidth: 2, dash: [6, 4]))
+                }
+                // Draw vertex handles
+                for (i, v) in verts.enumerated() {
+                    if let pt = proxy.convert(v, to: .local) {
+                        let r: CGFloat = i == 0 ? 8 : 7
+                        let handle = Path(ellipseIn: CGRect(x: pt.x - r, y: pt.y - r, width: r*2, height: r*2))
+                        ctx.fill(handle, with: .color(amber))
+                        ctx.stroke(handle, with: .color(.white), lineWidth: 2)
+                    }
+                }
+            }
+        }
+    }
+
+    /// Returns shapeId + layerId of the closest non-system user shape near a screen point.
+    private func findNearestUserShape(at point: CGPoint, proxy: MapProxy) -> (shapeId: UUID, layerId: UUID)? {
+        let lineThr: CGFloat = 22
+        let pointThr: CGFloat = 32
+        var bestDist = CGFloat.infinity
+        var result: (UUID, UUID)? = nil
+
+        func tryBeat(dist: CGFloat, id: UUID, lid: UUID) {
+            if dist < bestDist { bestDist = dist; result = (id, lid) }
+        }
+
+        for item in vectorStore.visiblePoints() where !item.isSystem {
+            if let pt = proxy.convert(item.coordinate, to: .global) {
+                let d = hypot(point.x - pt.x, point.y - pt.y)
+                if d < pointThr { tryBeat(dist: d, id: item.id, lid: item.layerId) }
+            }
+        }
+        for item in vectorStore.visiblePolylines() where !item.isSystem {
+            for i in 0..<(item.coordinates.count - 1) {
+                if let a = proxy.convert(item.coordinates[i], to: .global),
+                   let b = proxy.convert(item.coordinates[i+1], to: .global) {
+                    let d = distPointToSegment(point, a, b)
+                    if d < lineThr { tryBeat(dist: d, id: item.id, lid: item.layerId) }
+                }
+            }
+        }
+        for item in vectorStore.visiblePolygons() where !item.isSystem {
+            for i in 0..<item.coordinates.count {
+                let j = (i + 1) % item.coordinates.count
+                if let a = proxy.convert(item.coordinates[i], to: .global),
+                   let b = proxy.convert(item.coordinates[j], to: .global) {
+                    let d = distPointToSegment(point, a, b)
+                    if d < lineThr { tryBeat(dist: d, id: item.id, lid: item.layerId) }
+                }
+            }
+        }
+        for item in vectorStore.visibleCircles() where !item.isSystem {
+            if let centerPt = proxy.convert(item.center, to: .global) {
+                let edgeLat = item.center.latitude + (item.radiusMeters / 111_320.0)
+                let edgeCoord = CLLocationCoordinate2D(latitude: edgeLat, longitude: item.center.longitude)
+                let screenRadius = proxy.convert(edgeCoord, to: .global)
+                    .map { hypot($0.x - centerPt.x, $0.y - centerPt.y) } ?? 0
+                let distToEdge = abs(hypot(point.x - centerPt.x, point.y - centerPt.y) - screenRadius)
+                if distToEdge < lineThr { tryBeat(dist: distToEdge, id: item.id, lid: item.layerId) }
+            }
+        }
+        return result
+    }
+
+    /// Distance from point P to segment AB.
+    private func distPointToSegment(_ p: CGPoint, _ a: CGPoint, _ b: CGPoint) -> CGFloat {
+        let ab = CGPoint(x: b.x - a.x, y: b.y - a.y)
+        let lenSq = ab.x * ab.x + ab.y * ab.y
+        guard lenSq > 0 else { return hypot(p.x - a.x, p.y - a.y) }
+        let t = max(0, min(1, ((p.x - a.x) * ab.x + (p.y - a.y) * ab.y) / lenSq))
+        let proj = CGPoint(x: a.x + t * ab.x, y: a.y + t * ab.y)
+        return hypot(p.x - proj.x, p.y - proj.y)
     }
 }
 
