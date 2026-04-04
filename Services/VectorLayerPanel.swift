@@ -1,5 +1,4 @@
 import SwiftUI
-import UniformTypeIdentifiers
 
 // MARK: - VectorLayerPanel
 
@@ -8,8 +7,6 @@ struct VectorLayerPanel: View {
     @State private var showAddLayerAlert = false
     @State private var newLayerName = ""
 
-    // Drag-to-reorder state
-    @State private var draggingLayerId: UUID? = nil
     @State private var dragOverLayerId: UUID? = nil
 
     var body: some View {
@@ -61,16 +58,18 @@ struct VectorLayerPanel: View {
             }
             VectorLayerRowView(layer: layer, depth: 0)
                 .environmentObject(vectorStore)
-                .opacity(draggingLayerId == layer.id ? 0.4 : 1.0)
-                .onDrag {
-                    draggingLayerId = layer.id
-                    return NSItemProvider(object: layer.id.uuidString as NSString)
-                }
-                .onDrop(of: [.plainText], isTargeted: { targeted in
-                    dragOverLayerId = targeted ? layer.id : nil
-                }) { providers in
-                    handleDrop(providers: providers, targetIndex: index)
+                .draggable(layer.id.uuidString)
+                .dropDestination(for: String.self) { items, _ in
+                    guard let idString = items.first,
+                          let sourceId = UUID(uuidString: idString),
+                          let sourceIndex = vectorStore.layers.firstIndex(where: { $0.id == sourceId })
+                    else { return false }
+                    let dest = index > sourceIndex ? index - 1 : index
+                    vectorStore.moveTopLevelLayer(from: sourceIndex, to: dest)
+                    dragOverLayerId = nil
                     return true
+                } isTargeted: { targeted in
+                    dragOverLayerId = targeted ? layer.id : nil
                 }
         }
         Rectangle().fill(RutTheme.border).frame(height: 0.5)
@@ -96,20 +95,4 @@ struct VectorLayerPanel: View {
         .padding(.vertical, 8)
     }
 
-    private func handleDrop(providers: [NSItemProvider], targetIndex: Int) {
-        providers.first?.loadObject(ofClass: NSString.self) { item, _ in
-            guard let idString = item as? String,
-                  let sourceId = UUID(uuidString: idString),
-                  let sourceIndex = vectorStore.layers.firstIndex(where: { $0.id == sourceId }) else {
-                DispatchQueue.main.async { self.draggingLayerId = nil; self.dragOverLayerId = nil }
-                return
-            }
-            DispatchQueue.main.async {
-                let dest = targetIndex > sourceIndex ? targetIndex - 1 : targetIndex
-                vectorStore.moveTopLevelLayer(from: sourceIndex, to: dest)
-                self.draggingLayerId = nil
-                self.dragOverLayerId = nil
-            }
-        }
-    }
 }
