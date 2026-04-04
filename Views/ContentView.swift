@@ -105,6 +105,11 @@ struct ContentView: View {
                 emptyStateView
             }
         }
+        .overlay(alignment: .topTrailing) {
+            appModeToggle
+                .padding(.top, 10)
+                .padding(.trailing, 12)
+        }
         .tint(RutTheme.amber)
         // ── Sheets & dialogs ──
         .sheet(item: $editorSheet) { wrapper in
@@ -213,9 +218,8 @@ struct ContentView: View {
     // MARK: - Main View (with data)
 
     private var mainView: some View {
-        let content: AnyView
         if core.appMode == .vector {
-            content = AnyView(
+            return AnyView(
                 ZStack {
                     VectorModeView()
                         .environmentObject(navStore)
@@ -225,16 +229,8 @@ struct ContentView: View {
                     ToastOverlay().environmentObject(toastManager)
                 }
             )
-        } else {
-            content = AnyView(navigationModeView)
         }
-        return AnyView(
-            content.overlay(alignment: .topTrailing) {
-                appModeToggle
-                    .padding(.top, 10)
-                    .padding(.trailing, 12)
-            }
-        )
+        return AnyView(navigationModeView)
     }
 
     private var navigationModeView: some View {
