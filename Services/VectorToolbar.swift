@@ -5,6 +5,7 @@ import SwiftUI
 struct VectorToolbar: View {
     @EnvironmentObject var vectorStore: VectorStore
     @EnvironmentObject var toastManager: ToastManager
+    @EnvironmentObject var core: CoreServices
 
     @State private var showNewShapeNameAlert = false
     @State private var pendingShapeName = ""
@@ -18,7 +19,7 @@ struct VectorToolbar: View {
                 toolButton(tool: .none,     icon: "cursorarrow",         label: "Select")
                 toolButton(tool: .point,    icon: "circle.fill",         label: "Point")
                 toolButton(tool: .polyline, icon: "line.diagonal",       label: "Line")
-                toolButton(tool: .polygon,  icon: "hexagon",             label: "Polygon")
+                toolButton(tool: .polygon,  icon: "triangle",            label: "Polygon")
                 toolButton(tool: .circle,   icon: "circle",              label: "Circle")
 
                 Spacer()
@@ -52,6 +53,18 @@ struct VectorToolbar: View {
                     Image(systemName: "square.and.arrow.up")
                 }
                 .buttonStyle(RutSecondaryButtonStyle())
+
+                // Mode toggle back to navigation
+                Button { core.appMode = .navigation } label: {
+                    Image(systemName: "map.fill")
+                        .font(.system(size: 13))
+                        .foregroundColor(RutTheme.textDim)
+                        .frame(width: 32, height: 28)
+                        .background(RutTheme.surface2)
+                        .clipShape(RoundedRectangle(cornerRadius: 6))
+                        .overlay(RoundedRectangle(cornerRadius: 6).stroke(RutTheme.border, lineWidth: 1))
+                }
+                .buttonStyle(.plain)
                 .sheet(item: $exportContainer) { container in
                     MultiFileExportController(fileURLs: container.urls) { _ in }
                 }
@@ -64,6 +77,7 @@ struct VectorToolbar: View {
             TextField("Name", text: $pendingShapeName)
             Button("Add") {
                 vectorStore.commitDrawing(name: pendingShapeName)
+                vectorStore.activeTool = .none
                 pendingShapeName = ""
             }
             Button("Cancel", role: .cancel) {

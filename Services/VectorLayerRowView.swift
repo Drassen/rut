@@ -81,15 +81,6 @@ struct VectorLayerRowView: View {
                 .font(.system(size: 13, weight: .medium))
                 .foregroundColor(isActiveLayer ? RutTheme.amber : RutTheme.text)
                 .lineLimit(1)
-                .onTapGesture {
-                    vectorStore.setActiveLayer(layer.id)
-                }
-                .onLongPressGesture {
-                    if !layer.isSystem {
-                        renameText = layer.name
-                        showRenameAlert = true
-                    }
-                }
 
             Spacer(minLength: 4)
 
@@ -106,13 +97,22 @@ struct VectorLayerRowView: View {
             }
         }
         .padding(.horizontal, 8)
-        .padding(.vertical, 5)
+        .padding(.vertical, 9)
         .background(
             isActiveLayer
                 ? RutTheme.amber.opacity(0.08)
                 : Color.clear
         )
         .contentShape(Rectangle())
+        .onTapGesture {
+            vectorStore.setActiveLayer(layer.id)
+        }
+        .onLongPressGesture {
+            if !layer.isSystem {
+                renameText = layer.name
+                showRenameAlert = true
+            }
+        }
     }
 
     @ViewBuilder
