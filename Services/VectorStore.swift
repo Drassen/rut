@@ -62,6 +62,10 @@ final class DrawingStateMachine: ObservableObject {
         }
     }
 
+    func handleGhostMove(to coord: CLLocationCoordinate2D) {
+        ghostCoord = coord
+    }
+
     func handleTap(at coord: CLLocationCoordinate2D, tool: DrawingTool) {
         switch tool {
         case .none:    break
