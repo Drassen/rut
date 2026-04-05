@@ -88,9 +88,10 @@ struct VectorToolbar: View {
                         .padding(.leading, 6)
 
                     toolButton(tool: .point,    icon: "mappin.circle.fill", label: "Point")
-                    toolButton(tool: .polyline, icon: "line.diagonal", label: "Line")
-                    toolButton(tool: .polygon,  icon: "triangle",      label: "Polygon")
-                    toolButton(tool: .circle,   icon: "circle",        label: "Circle")
+                    toolButton(tool: .polyline, icon: "line.diagonal",      label: "Line")
+                    toolButton(tool: .zigzag,   icon: "waveform.path",      label: "Zigzag")
+                    toolButton(tool: .polygon,  icon: "triangle",           label: "Polygon")
+                    toolButton(tool: .circle,   icon: "circle",             label: "Circle")
 
                     Spacer()
 
@@ -580,6 +581,7 @@ struct VectorToolbar: View {
         switch vectorStore.activeTool {
         case .point:    base = "Point"
         case .polyline: base = "Line"
+        case .zigzag:   base = "Zigzag"
         case .polygon:  base = "Polygon"
         case .circle:   base = "Circle"
         case .none:     base = "Shape"

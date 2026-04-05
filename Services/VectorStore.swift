@@ -49,6 +49,7 @@ enum DrawingTool: Equatable {
     case polyline
     case polygon
     case circle
+    case zigzag
 }
 
 // MARK: - DrawingStateMachine
@@ -67,6 +68,7 @@ final class DrawingStateMachine: ObservableObject {
         case .circle:  return 2
         case .polyline: return 2
         case .polygon:  return 3
+        case .zigzag:  return 2
         }
     }
 
@@ -78,7 +80,7 @@ final class DrawingStateMachine: ObservableObject {
         switch tool {
         case .none:    break
         case .point:   vertices = [coord]
-        case .polyline, .polygon: vertices.append(coord)
+        case .polyline, .polygon, .zigzag: vertices.append(coord)
         case .circle:
             if vertices.isEmpty {
                 vertices = [coord]   // tap 1 = center
@@ -118,10 +120,97 @@ final class DrawingStateMachine: ObservableObject {
             return VectorShape(name: name,
                                geometry: .circle(lat: center.latitude, lon: center.longitude, radiusMeters: dist),
                                style: style)
+        case .zigzag:
+            guard vertices.count >= 2 else { return nil }
+            let zigzagCoords = Self.makeZigzagCoords(from: vertices)
+            return VectorShape(name: name,
+                               geometry: .polyline(coordinates: zigzagCoords.map { [$0.latitude, $0.longitude] }),
+                               style: style)
         }
     }
 
     func cancel() { reset() }
+
+    // MARK: - Zigzag geometry
+
+    /// Converts an axis polyline into a zigzag polyline.
+    /// Teeth are at 30° to the axis, total width 50 m (±25 m from center).
+    static func makeZigzagCoords(from axis: [CLLocationCoordinate2D]) -> [CLLocationCoordinate2D] {
+        let halfWidth = 25.0                                   // meters each side
+        let angleRad  = 30.0 * .pi / 180.0
+        let stepAlong = halfWidth / tan(angleRad)              // ~43.3 m along axis per half-period
+
+        var result: [CLLocationCoordinate2D] = [axis[0]]
+        var distSinceLastPeak = 0.0
+        var side = 1.0
+
+        for segIdx in 0 ..< axis.count - 1 {
+            let from = axis[segIdx]
+            let to   = axis[segIdx + 1]
+            let segLen = geoDistance(from, to)
+            guard segLen > 0 else { continue }
+            let bear = geoBearing(from, to)
+
+            var walked = 0.0
+            while walked < segLen {
+                let nextPeakAt = stepAlong - distSinceLastPeak
+                if nextPeakAt > segLen - walked {
+                    distSinceLastPeak += segLen - walked
+                    break
+                }
+                walked += nextPeakAt
+                distSinceLastPeak = 0.0
+                let center = geoInterpolate(from: from, to: to, fraction: walked / segLen)
+                let peak   = geoOffset(from: center, bearingDeg: bear + 90.0, meters: side * halfWidth)
+                result.append(peak)
+                side = -side
+            }
+        }
+        result.append(axis.last!)
+        return result
+    }
+
+    // MARK: - Geo helpers (flat-earth approximation, sufficient at tactical scales)
+
+    private static func geoDistance(_ a: CLLocationCoordinate2D,
+                                    _ b: CLLocationCoordinate2D) -> Double {
+        CLLocation(latitude: a.latitude, longitude: a.longitude)
+            .distance(from: CLLocation(latitude: b.latitude, longitude: b.longitude))
+    }
+
+    private static func geoBearing(_ from: CLLocationCoordinate2D,
+                                   _ to: CLLocationCoordinate2D) -> Double {
+        let lat1 = from.latitude  * .pi / 180
+        let lat2 = to.latitude    * .pi / 180
+        let dLon = (to.longitude - from.longitude) * .pi / 180
+        let y = sin(dLon) * cos(lat2)
+        let x = cos(lat1) * sin(lat2) - sin(lat1) * cos(lat2) * cos(dLon)
+        return atan2(y, x) * 180 / .pi
+    }
+
+    private static func geoInterpolate(from: CLLocationCoordinate2D,
+                                       to: CLLocationCoordinate2D,
+                                       fraction: Double) -> CLLocationCoordinate2D {
+        CLLocationCoordinate2D(
+            latitude:  from.latitude  + (to.latitude  - from.latitude)  * fraction,
+            longitude: from.longitude + (to.longitude - from.longitude) * fraction
+        )
+    }
+
+    private static func geoOffset(from coord: CLLocationCoordinate2D,
+                                  bearingDeg: Double,
+                                  meters: Double) -> CLLocationCoordinate2D {
+        let R = 6_371_000.0
+        let d = meters / R
+        let brng = bearingDeg * .pi / 180
+        let lat1 = coord.latitude  * .pi / 180
+        let lon1 = coord.longitude * .pi / 180
+        let lat2 = asin(sin(lat1) * cos(d) + cos(lat1) * sin(d) * cos(brng))
+        let lon2 = lon1 + atan2(sin(brng) * sin(d) * cos(lat1),
+                                cos(d) - sin(lat1) * sin(lat2))
+        return CLLocationCoordinate2D(latitude: lat2 * 180 / .pi,
+                                     longitude: lon2 * 180 / .pi)
+    }
 
     private func reset() {
         vertices = []
