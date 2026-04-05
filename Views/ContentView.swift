@@ -158,14 +158,17 @@ struct ContentView: View {
             NavigationStack {
                 List {
                     Section {
-                        ForEach(toastManager.importWarnings, id: \.self) { warning in
+                        Text("These records could not be parsed and were skipped:")
+                            .font(.subheadline)
+                            .foregroundStyle(.secondary)
+                    }
+                    ForEach(Array(toastManager.importWarnings.enumerated()), id: \.offset) { idx, warning in
+                        Section("Record \(idx + 1)") {
                             Text(warning)
-                                .font(.system(.body, design: .monospaced))
+                                .font(.system(.footnote, design: .monospaced))
                                 .foregroundStyle(.primary)
+                                .textSelection(.enabled)
                         }
-                    } header: {
-                        Text("These records had missing or unparseable coordinates and were skipped.")
-                            .textCase(nil)
                     }
                 }
                 .navigationTitle(toastManager.importWarningTitle)

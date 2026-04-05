@@ -88,9 +88,8 @@ struct ACOImportService: RouteImporting {
             if let shape = parseUsmtfRecord(record) {
                 shapes.append(shape)
             } else {
-                // Extract ACMID name/type for a readable warning
-                let label = usmtfRecordLabel(record)
-                warnings.append(label)
+                let trimmed = record.trimmingCharacters(in: .whitespacesAndNewlines)
+                warnings.append(trimmed)
             }
         }
         return (shapes, warnings)
@@ -401,7 +400,9 @@ struct ACOImportService: RouteImporting {
                 shapes.append(VectorShape(name: n, notes: notes,
                     geometry: .point(lat: p.latitude, lon: p.longitude), style: style))
             } else {
-                warnings.append("\(n) (Class: \(cls)) — no parseable coordinates")
+                // Reconstruct raw OpenAir block for display
+                let raw = "AC \(cls)\(name.isEmpty ? "" : "\nAN \(name)")\n(no parseable coordinates)"
+                warnings.append(raw)
             }
         }
 
