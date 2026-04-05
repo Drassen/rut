@@ -188,6 +188,16 @@ struct VectorToolbar: View {
         }
     }
 
+    private var exportButtonLabel: String {
+        if vectorStore.activeShapeId != nil {
+            return "Export Shape"
+        } else if vectorStore.activeLayerId != nil {
+            return "Export Group"
+        } else {
+            return "Export All"
+        }
+    }
+
     // MARK: - Export menu
 
     @ViewBuilder
@@ -195,7 +205,7 @@ struct VectorToolbar: View {
         Button {
             showExportDialog = true
         } label: {
-            Label("Export", systemImage: "square.and.arrow.up")
+            Label(exportButtonLabel, systemImage: "square.and.arrow.up")
         }
         .buttonStyle(RutSecondaryButtonStyle())
         .confirmationDialog("Export format", isPresented: $showExportDialog) {
