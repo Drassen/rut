@@ -132,8 +132,10 @@ struct VectorToolbar: View {
                         .buttonStyle(RutPrimaryButtonStyle())
                     }
 
-                    formatPicker
-                    exportButton
+                    if !(vectorStore.activeTool != .none && vectorStore.drawing.isActive) {
+                        formatPicker
+                        exportButton
+                    }
                 }
             }
             .padding(.horizontal, 14)
