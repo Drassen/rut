@@ -88,11 +88,11 @@ struct ACOImportService: RouteImporting {
             // Skip file-level header blocks (no ACMID/ line = not a shape record)
             guard record.contains("ACMID/") else { continue }
             let result = parseUsmtfRecordFull(record)
+            let trimmed = record.trimmingCharacters(in: .whitespacesAndNewlines)
             if let shape = result.shape {
                 shapes.append(shape)
-                if let w = result.extraWarning { warnings.append(w) }
+                if let w = result.extraWarning { warnings.append("\(w)\n\n\(trimmed)") }
             } else {
-                let trimmed = record.trimmingCharacters(in: .whitespacesAndNewlines)
                 if let reason = result.extraWarning {
                     warnings.append("\(reason)\n\n\(trimmed)")
                 } else {
