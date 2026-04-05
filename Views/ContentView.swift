@@ -102,11 +102,7 @@ struct ContentView: View {
 
     var body: some View {
         Group {
-            if hasAnyData {
-                mainView
-            } else {
-                emptyStateView
-            }
+            mainView
         }
         .tint(RutTheme.amber)
         // ── Sheets & dialogs ──
