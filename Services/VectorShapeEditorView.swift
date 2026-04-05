@@ -47,8 +47,12 @@ struct VectorShapeEditorView: View {
                                 } label: {
                                     VStack(spacing: 4) {
                                         Image(systemName: icon.sfSymbol)
+                                            .symbolRenderingMode(.palette)
                                             .font(.system(size: 24))
-                                            .foregroundStyle(pointIcon == icon ? RutTheme.amber : Color.primary)
+                                            .foregroundStyle(
+                                                pointIcon == icon ? RutTheme.amber : Color.primary,
+                                                Color.white
+                                            )
                                         Text(icon.displayName)
                                             .font(.system(size: 9))
                                             .foregroundStyle(pointIcon == icon ? RutTheme.amber : Color.secondary)

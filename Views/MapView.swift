@@ -394,8 +394,12 @@ struct RutMapView: View {
             Annotation(item.name, coordinate: item.coordinate, anchor: .center) {
                 VStack(spacing: 2) {
                     Image(systemName: item.style.pointIcon.sfSymbol)
+                        .symbolRenderingMode(.palette)
                         .font(.system(size: (sel ? 22 : 18) * item.style.iconScale))
-                        .foregroundStyle(sel ? Color.white : Color(hex: item.style.strokeColor).opacity(item.style.opacity))
+                        .foregroundStyle(
+                            sel ? Color.white : Color(hex: item.style.strokeColor).opacity(item.style.opacity),
+                            sel ? Color.white.opacity(0.6) : Color.white
+                        )
                         .onTapGesture {
                             if core.appMode == .vector {
                                 vectorStore.selectShape(id: item.id, layerId: item.layerId)
