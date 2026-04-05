@@ -151,6 +151,36 @@ struct ContentView: View {
         .sheet(isPresented: $showSettingsSheet) {
             SettingsView()
         }
+        .sheet(isPresented: Binding(
+            get: { !toastManager.importWarnings.isEmpty },
+            set: { if !$0 { toastManager.importWarnings = []; toastManager.importWarningTitle = "" } }
+        )) {
+            NavigationStack {
+                List {
+                    Section {
+                        ForEach(toastManager.importWarnings, id: \.self) { warning in
+                            Text(warning)
+                                .font(.system(.body, design: .monospaced))
+                                .foregroundStyle(.primary)
+                        }
+                    } header: {
+                        Text("These records had missing or unparseable coordinates and were skipped.")
+                            .textCase(nil)
+                    }
+                }
+                .navigationTitle(toastManager.importWarningTitle)
+                .navigationBarTitleDisplayMode(.inline)
+                .toolbar {
+                    ToolbarItem(placement: .topBarTrailing) {
+                        Button("Done") {
+                            toastManager.importWarnings = []
+                            toastManager.importWarningTitle = ""
+                        }
+                    }
+                }
+            }
+            .tint(RutTheme.amber)
+        }
         .fileImporter(
             isPresented: $isSelectingDefaultFile,
             allowedContentTypes: [.rut, .apt, .nav],

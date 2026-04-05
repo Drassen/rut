@@ -210,6 +210,36 @@ final class CoreServices: ObservableObject {
                     finalImporter = baseImporter
                 }
                 
+                // For ACO files, capture parse warnings
+                if let acoImporter = finalImporter as? ACOImportService {
+                    let (layer, warnings) = try acoImporter.importLayerWithWarnings(from: localURL)
+                    var acoDoc = NavigationDocument()
+                    if !layer.shapes.isEmpty { acoDoc.vectorLayers = [layer] }
+                    if !warnings.isEmpty {
+                        await MainActor.run {
+                            toastManager.importWarningTitle = "ACO import: \(warnings.count) record(s) could not be parsed"
+                            toastManager.importWarnings = warnings
+                        }
+                    }
+                    let doc = acoDoc
+                    importedRoutePoints += doc.routes.reduce(0) { $0 + $1.pointRefs.count }
+                    importedRoutesCount += doc.routes.count
+                    importedAirports    += doc.userAirports.count
+                    importedNavaids     += doc.userNavaids.count
+                    importedWaypoints   += doc.userWaypoints.count
+                    for layer in doc.vectorLayers where !layer.isSystem {
+                        if !importedVectorLayers.contains(where: { $0.name == layer.name }) {
+                            importedVectorLayers.append(layer)
+                            importedVectorShapes += layer.shapes.count
+                        }
+                    }
+                    let tmpStore = NavigationStore()
+                    tmpStore.document = newDoc
+                    tmpStore.addOrMerge(document: doc)
+                    newDoc = tmpStore.document
+                    continue
+                }
+
                 let doc = try finalImporter.importDocument(from: localURL)
 
                 importedRoutePoints += doc.routes.reduce(0) { $0 + $1.pointRefs.count }

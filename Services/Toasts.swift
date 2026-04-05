@@ -27,7 +27,12 @@ final class ToastManager: ObservableObject {
     @Published var message: String = ""
     @Published var isVisible: Bool = false
     @Published var level: Toast.Level = .info
-    
+
+    /// Non-empty when an import produced warnings that didn't parse.
+    /// Cleared when the user dismisses the warning sheet.
+    @Published var importWarnings: [String] = []
+    @Published var importWarningTitle: String = ""
+
     private var dismissWorkItem: DispatchWorkItem?
 
     init() {}

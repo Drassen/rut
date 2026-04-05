@@ -11,20 +11,27 @@ struct ACOImportService: RouteImporting {
     let supportedExtensions = ["aco", "txt"]
 
     func importDocument(from url: URL) throws -> NavigationDocument {
-        let layer = try importLayer(from: url)
+        let (layer, _) = try importLayerWithWarnings(from: url)
         var doc = NavigationDocument()
         if !layer.shapes.isEmpty { doc.vectorLayers = [layer] }
         return doc
     }
 
-    func importLayer(from url: URL) throws -> VectorLayer {
+    /// Import and return both the layer and any parse warnings (unparseable records).
+    func importLayerWithWarnings(from url: URL) throws -> (VectorLayer, [String]) {
         let raw = try String(contentsOf: url, encoding: .utf8)
         let isUsmtf = raw.contains("ACMID/") || raw.contains("SHAPE/") || raw.contains("LATLONG/")
+            || raw.contains("GRID/") || raw.contains("MGRS/")
         let name = isUsmtf ? (extractMsgid(from: raw) ?? url.deletingPathExtension().lastPathComponent)
                            : url.deletingPathExtension().lastPathComponent
-        let shapes = isUsmtf ? parseUsmtf(raw) : parseOpenAir(raw)
+        let (shapes, warnings) = isUsmtf ? parseUsmtfWithWarnings(raw) : parseOpenAirWithWarnings(raw)
         var layer = VectorLayer(name: name)
         layer.shapes = shapes
+        return (layer, warnings)
+    }
+
+    func importLayer(from url: URL) throws -> VectorLayer {
+        let (layer, _) = try importLayerWithWarnings(from: url)
         return layer
     }
 
@@ -57,6 +64,10 @@ struct ACOImportService: RouteImporting {
     // -------------------------------------------------------------------------
 
     private func parseUsmtf(_ text: String) -> [VectorShape] {
+        parseUsmtfWithWarnings(text).0
+    }
+
+    private func parseUsmtfWithWarnings(_ text: String) -> ([VectorShape], [String]) {
         // Split into records at each ACMID/ occurrence
         var records: [String] = []
         var current = ""
@@ -71,7 +82,43 @@ struct ACOImportService: RouteImporting {
         }
         if !current.isEmpty { records.append(current) }
 
-        return records.compactMap { parseUsmtfRecord($0) }
+        var shapes: [VectorShape] = []
+        var warnings: [String] = []
+        for record in records {
+            if let shape = parseUsmtfRecord(record) {
+                shapes.append(shape)
+            } else {
+                // Extract ACMID name/type for a readable warning
+                let label = usmtfRecordLabel(record)
+                warnings.append(label)
+            }
+        }
+        return (shapes, warnings)
+    }
+
+    /// Returns a human-readable label for an unparseable USMTF record.
+    private func usmtfRecordLabel(_ block: String) -> String {
+        var name = "", type = "", shape = ""
+        for rawLine in block.components(separatedBy: .newlines) {
+            let line = rawLine.trimmingCharacters(in: .whitespaces)
+                .replacingOccurrences(of: "//", with: "").trimmingCharacters(in: .whitespaces)
+            let fields = line.components(separatedBy: "/").map { $0.trimmingCharacters(in: .whitespaces) }
+            guard let key = fields.first else { continue }
+            switch key {
+            case "ACMID":
+                for f in fields.dropFirst() {
+                    if f.hasPrefix("NAME:") { name = String(f.dropFirst(5)) }
+                    if f.hasPrefix("TYPE:") { type = String(f.dropFirst(5)) }
+                }
+            case "SHAPE": shape = fields.dropFirst().first ?? ""
+            default: break
+            }
+        }
+        var parts: [String] = []
+        if !name.isEmpty { parts.append(name) }
+        if !type.isEmpty { parts.append("TYPE:\(type)") }
+        if !shape.isEmpty { parts.append("SHAPE:\(shape)") }
+        return parts.isEmpty ? "(unknown record)" : parts.joined(separator: " ")
     }
 
     private func parseUsmtfRecord(_ block: String) -> VectorShape? {
@@ -318,7 +365,12 @@ struct ACOImportService: RouteImporting {
     // -------------------------------------------------------------------------
 
     private func parseOpenAir(_ text: String) -> [VectorShape] {
+        parseOpenAirWithWarnings(text).0
+    }
+
+    private func parseOpenAirWithWarnings(_ text: String) -> ([VectorShape], [String]) {
         var shapes: [VectorShape] = []
+        var warnings: [String] = []
         var cls = "", name = ""
         var points: [CLLocationCoordinate2D] = []
         var center: CLLocationCoordinate2D?
@@ -348,6 +400,8 @@ struct ACOImportService: RouteImporting {
             } else if let p = points.first {
                 shapes.append(VectorShape(name: n, notes: notes,
                     geometry: .point(lat: p.latitude, lon: p.longitude), style: style))
+            } else {
+                warnings.append("\(n) (Class: \(cls)) — no parseable coordinates")
             }
         }
 
@@ -371,7 +425,7 @@ struct ACOImportService: RouteImporting {
             }
         }
         flush()
-        return shapes
+        return (shapes, warnings)
     }
 
     private func parseOpenAirCoord(_ raw: String) -> CLLocationCoordinate2D? {
