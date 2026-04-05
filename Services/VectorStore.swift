@@ -726,7 +726,11 @@ final class VectorStore: ObservableObject {
 
     func commitDrawing(name: String) {
         let effectiveStyle: VectorStyle
-        if activeTool == .zigzag {
+        if activeTool == .point {
+            var s = newShapeStyle
+            s.strokeColor = "#FFFFFF"
+            effectiveStyle = s
+        } else if activeTool == .zigzag {
             var s = newShapeStyle
             switch zigzagWidth {
             case 50: s.strokeColor = "#FF0000"; s.strokeWidth = 4
