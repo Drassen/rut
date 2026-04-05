@@ -629,7 +629,12 @@ struct VectorToolbar: View {
         switch vectorStore.activeTool {
         case .point:    base = "Point"
         case .polyline: base = "Line"
-        case .zigzag:   base = "Zigzag"
+        case .zigzag:
+            switch vectorStore.zigzagWidth {
+            case 50: base = "RLED"
+            case 25: base = "GLED"
+            default: base = "SLED"
+            }
         case .polygon:  base = "Polygon"
         case .circle:   base = "Circle"
         case .none:     base = "Shape"
