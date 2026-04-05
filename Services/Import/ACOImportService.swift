@@ -122,12 +122,21 @@ struct ACOImportService: RouteImporting {
                 for f in fields.dropFirst() {
                     if let c = parseCompact(f) { coords.append(c) }
                 }
+            case "GRID", "MGRS":
+                for f in fields.dropFirst() {
+                    if let c = MGRSConverter.toCoordinate(f) { coords.append(c) }
+                }
             case "POINT":
                 for f in fields.dropFirst() {
                     if f.hasPrefix("RADIUS:") {
                         let r = f.dropFirst(7).replacingOccurrences(of: "NM", with: "")
                         radiusNM = Double(r) ?? 0
+                    } else if f.hasPrefix("GRID:") || f.hasPrefix("MGRS:") {
+                        let mgrs = String(f.drop(while: { $0 != ":" }).dropFirst())
+                        center = MGRSConverter.toCoordinate(mgrs)
                     } else if let c = parseCompact(f) {
+                        center = c
+                    } else if let c = MGRSConverter.toCoordinate(f) {
                         center = c
                     }
                 }
