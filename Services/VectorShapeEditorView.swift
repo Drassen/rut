@@ -46,13 +46,17 @@ struct VectorShapeEditorView: View {
                                     pointIcon = icon
                                 } label: {
                                     VStack(spacing: 4) {
-                                        Image(systemName: icon.sfSymbol)
-                                            .symbolRenderingMode(.palette)
-                                            .font(.system(size: 24))
-                                            .foregroundStyle(
-                                                pointIcon == icon ? RutTheme.amber : Color.primary,
-                                                Color.white
-                                            )
+                                        let tint: Color = pointIcon == icon ? RutTheme.amber : Color.primary
+                                        AsyncImage(url: URL(string: icon.rawValue)) { phase in
+                                            if let img = phase.image {
+                                                img.resizable().scaledToFit().colorMultiply(tint)
+                                            } else {
+                                                Image(systemName: icon.sfSymbol)
+                                                    .symbolRenderingMode(.palette)
+                                                    .foregroundStyle(tint, Color.white)
+                                            }
+                                        }
+                                        .frame(width: 28, height: 28)
                                         Text(icon.displayName)
                                             .font(.system(size: 9))
                                             .foregroundStyle(pointIcon == icon ? RutTheme.amber : Color.secondary)

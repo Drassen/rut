@@ -393,13 +393,19 @@ struct RutMapView: View {
             let sel = item.id == selectedId
             Annotation(item.name, coordinate: item.coordinate, anchor: .center) {
                 VStack(spacing: 2) {
-                    Image(systemName: item.style.pointIcon.sfSymbol)
-                        .symbolRenderingMode(.palette)
-                        .font(.system(size: (sel ? 22 : 18) * item.style.iconScale))
-                        .foregroundStyle(
-                            sel ? Color.white : Color(hex: item.style.strokeColor).opacity(item.style.opacity),
-                            sel ? Color.white.opacity(0.6) : Color.white
-                        )
+                    let iconSize = (sel ? 28.0 : 22.0) * item.style.iconScale
+                    let iconColor = sel ? Color.white : Color(hex: item.style.strokeColor).opacity(item.style.opacity)
+                    AsyncImage(url: URL(string: item.style.pointIcon.rawValue)) { phase in
+                        if let img = phase.image {
+                            img.resizable().scaledToFit()
+                                .colorMultiply(iconColor)
+                        } else {
+                            Image(systemName: item.style.pointIcon.sfSymbol)
+                                .symbolRenderingMode(.palette)
+                                .foregroundStyle(iconColor, Color.white)
+                        }
+                    }
+                    .frame(width: iconSize, height: iconSize)
                         .onTapGesture {
                             if core.appMode == .vector {
                                 vectorStore.selectShape(id: item.id, layerId: item.layerId)
