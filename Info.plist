@@ -114,6 +114,19 @@
 		</dict>
 		<dict>
 			<key>CFBundleTypeName</key>
+			<string>KMZ File</string>
+			<key>CFBundleTypeRole</key>
+			<string>Viewer</string>
+			<key>LSHandlerRank</key>
+			<string>Alternate</string>
+			<key>LSItemContentTypes</key>
+			<array>
+				<string>com.serveraren.rut.kmz</string>
+				<string>com.google.earth.kmz</string>
+			</array>
+		</dict>
+		<dict>
+			<key>CFBundleTypeName</key>
 			<string>Airspace Coordination Order</string>
 			<key>CFBundleTypeRole</key>
 			<string>Viewer</string>
@@ -306,6 +319,27 @@
 				<key>public.mime-type</key>
 				<array>
 					<string>application/vnd.google-earth.kml+xml</string>
+				</array>
+			</dict>
+		</dict>
+		<dict>
+			<key>UTTypeConformsTo</key>
+			<array>
+				<string>public.zip-archive</string>
+			</array>
+			<key>UTTypeDescription</key>
+			<string>KMZ File</string>
+			<key>UTTypeIdentifier</key>
+			<string>com.serveraren.rut.kmz</string>
+			<key>UTTypeTagSpecification</key>
+			<dict>
+				<key>public.filename-extension</key>
+				<array>
+					<string>kmz</string>
+				</array>
+				<key>public.mime-type</key>
+				<array>
+					<string>application/vnd.google-earth.kmz</string>
 				</array>
 			</dict>
 		</dict>
