@@ -354,6 +354,8 @@ struct VectorToolbar: View {
 
         switch shape.geometry {
         case .point(let lat, let lon):
+            let iconUrl   = shape.style.pointIcon.rawValue
+            let iconScale = String(format: "%.2f", shape.style.iconScale)
             return """
             <?xml version="1.0" encoding="UTF-8"?>
             <event version="2.0" uid="\(uid)" type="a-f-G-U-C" how="h-e"
@@ -361,7 +363,8 @@ struct VectorToolbar: View {
               <point lat="\(lat)" lon="\(lon)" hae="0" ce="9999999" le="9999999"/>
               <detail>
                 <contact callsign="\(xmlEscape(shape.name))"/>
-                <color value="\(strokeARGB)"/>\(remarks)
+                <color value="\(strokeARGB)"/>
+                <usericon iconsetpath="\(iconUrl)" scale="\(iconScale)"/>\(remarks)
               </detail>
             </event>
             """

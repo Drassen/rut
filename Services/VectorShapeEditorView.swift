@@ -13,6 +13,8 @@ struct VectorShapeEditorView: View {
     @State private var fillColorUI: Color
     @State private var strokeWidth: Double
     @State private var opacity: Double
+    @State private var pointIcon: VectorPointIcon
+    @State private var iconScale: Double
 
     init(shape: VectorShape, layerId: UUID) {
         self.shape   = shape
@@ -23,6 +25,8 @@ struct VectorShapeEditorView: View {
         _fillColorUI   = State(initialValue: Color(hex: shape.style.fillColor.isEmpty ? "#00000000" : shape.style.fillColor))
         _strokeWidth   = State(initialValue: shape.style.strokeWidth)
         _opacity       = State(initialValue: shape.style.opacity)
+        _pointIcon     = State(initialValue: shape.style.pointIcon)
+        _iconScale     = State(initialValue: shape.style.iconScale)
     }
 
     var body: some View {
@@ -34,6 +38,51 @@ struct VectorShapeEditorView: View {
                         .lineLimit(4...8)
                 }
 
+                if isPoint {
+                    Section("Icon") {
+                        LazyVGrid(columns: Array(repeating: GridItem(.flexible()), count: 5), spacing: 12) {
+                            ForEach(VectorPointIcon.allCases, id: \.self) { icon in
+                                Button {
+                                    pointIcon = icon
+                                } label: {
+                                    VStack(spacing: 4) {
+                                        Image(systemName: icon.sfSymbol)
+                                            .font(.system(size: 24))
+                                            .foregroundStyle(pointIcon == icon ? RutTheme.amber : Color.primary)
+                                        Text(icon.displayName)
+                                            .font(.system(size: 9))
+                                            .foregroundStyle(pointIcon == icon ? RutTheme.amber : Color.secondary)
+                                    }
+                                    .frame(maxWidth: .infinity)
+                                    .padding(.vertical, 6)
+                                    .background(pointIcon == icon ? RutTheme.amber.opacity(0.12) : Color.clear)
+                                    .clipShape(RoundedRectangle(cornerRadius: 8))
+                                }
+                                .buttonStyle(.plain)
+                            }
+                        }
+                        .padding(.vertical, 4)
+                    }
+                    Section("Style") {
+                        ColorPicker("Icon color", selection: $strokeColorUI, supportsOpacity: false)
+                        LabeledContent("Scale") {
+                            HStack {
+                                Slider(value: $iconScale, in: 0.5...3.0, step: 0.25)
+                                Text(String(format: "×%.2g", iconScale))
+                                    .foregroundStyle(.secondary)
+                                    .frame(width: 40)
+                            }
+                        }
+                        LabeledContent("Opacity") {
+                            HStack {
+                                Slider(value: $opacity, in: 0...1, step: 0.05)
+                                Text(String(format: "%.0f%%", opacity * 100))
+                                    .foregroundStyle(.secondary)
+                                    .frame(width: 40)
+                            }
+                        }
+                    }
+                } else {
                 Section("Style") {
                     ColorPicker("Stroke color", selection: $strokeColorUI, supportsOpacity: false)
                     if !isPolyline {
@@ -56,6 +105,7 @@ struct VectorShapeEditorView: View {
                         }
                     }
                 }
+                }
             }
             .navigationTitle("Properties")
             .navigationBarTitleDisplayMode(.inline)
@@ -72,6 +122,11 @@ struct VectorShapeEditorView: View {
         .tint(RutTheme.amber)
     }
 
+    private var isPoint: Bool {
+        if case .point = shape.geometry { return true }
+        return false
+    }
+
     private var isPolyline: Bool {
         if case .polyline = shape.geometry { return true }
         return false
@@ -85,6 +140,8 @@ struct VectorShapeEditorView: View {
         updated.style.fillColor   = fillColorUI.toHexString(includeAlpha: true)
         updated.style.strokeWidth = strokeWidth
         updated.style.opacity     = opacity
+        updated.style.pointIcon   = pointIcon
+        updated.style.iconScale   = iconScale
         vectorStore.updateShape(updated, in: layerId)
     }
 }

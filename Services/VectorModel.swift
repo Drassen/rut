@@ -77,6 +77,36 @@ enum VectorGeometry: Codable {
     }
 }
 
+// MARK: - VectorPointIcon
+
+enum VectorPointIcon: String, Codable, CaseIterable {
+    case square   = "http://maps.google.com/mapfiles/kml/shapes/square.png"
+    case triangle = "http://maps.google.com/mapfiles/kml/shapes/triangle.png"
+    case donut    = "http://maps.google.com/mapfiles/kml/shapes/donut.png"
+    case caution  = "http://maps.google.com/mapfiles/kml/shapes/caution.png"
+    case circle   = "http://maps.google.com/mapfiles/kml/paddle/wht-circle.png"
+
+    var sfSymbol: String {
+        switch self {
+        case .square:   return "square.fill"
+        case .triangle: return "triangle.fill"
+        case .donut:    return "circle"
+        case .caution:  return "exclamationmark.triangle.fill"
+        case .circle:   return "circle.fill"
+        }
+    }
+
+    var displayName: String {
+        switch self {
+        case .square:   return "Square"
+        case .triangle: return "Triangle"
+        case .donut:    return "Donut"
+        case .caution:  return "Caution"
+        case .circle:   return "Circle"
+        }
+    }
+}
+
 // MARK: - VectorStyle
 
 struct VectorStyle: Codable, Equatable {
@@ -86,6 +116,10 @@ struct VectorStyle: Codable, Equatable {
     var fillColor: String    = "#8B5CF640"
     var strokeWidth: Double  = 2.0
     var opacity: Double      = 1.0
+    /// Point-only: which KML icon shape to use
+    var pointIcon: VectorPointIcon = .circle
+    /// Point-only: icon render scale multiplier (0.5 – 3.0)
+    var iconScale: Double    = 1.0
 }
 
 // MARK: - VectorShape

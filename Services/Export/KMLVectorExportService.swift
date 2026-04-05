@@ -46,20 +46,31 @@ struct KMLVectorExportService: RouteExporting {
         lines.append("\(indent)<Placemark>")
         lines.append("\(indent)  <name>\(esc(shape.name))</name>")
         if !shape.isVisible { lines.append("\(indent)  <visibility>0</visibility>") }
-        appendStyle(shape.style, indent: indent + "  ", to: &lines)
+        let isPoint: Bool
+        if case .point = shape.geometry { isPoint = true } else { isPoint = false }
+        appendStyle(shape.style, isPoint: isPoint, indent: indent + "  ", to: &lines)
         appendGeometry(shape.geometry, indent: indent + "  ", to: &lines)
         lines.append("\(indent)</Placemark>")
     }
 
-    private func appendStyle(_ style: VectorStyle, indent: String, to lines: inout [String]) {
+    private func appendStyle(_ style: VectorStyle, isPoint: Bool, indent: String, to lines: inout [String]) {
         lines.append("\(indent)<Style>")
-        lines.append("\(indent)  <LineStyle>")
-        lines.append("\(indent)    <color>\(kmlColor(style.strokeColor, alpha: style.opacity))</color>")
-        lines.append("\(indent)    <width>\(Int(style.strokeWidth.rounded()))</width>")
-        lines.append("\(indent)  </LineStyle>")
-        lines.append("\(indent)  <PolyStyle>")
-        lines.append("\(indent)    <color>\(kmlColor(style.fillColor, alpha: style.opacity * 0.4))</color>")
-        lines.append("\(indent)  </PolyStyle>")
+        if isPoint {
+            lines.append("\(indent)  <IconStyle>")
+            lines.append("\(indent)    <color>\(kmlColor(style.strokeColor, alpha: style.opacity))</color>")
+            lines.append("\(indent)    <scale>\(String(format: "%.2f", style.iconScale))</scale>")
+            lines.append("\(indent)    <Icon><href>\(style.pointIcon.rawValue)</href></Icon>")
+            lines.append("\(indent)    <hotSpot x=\"0.5\" y=\"0.5\" xunits=\"fraction\" yunits=\"fraction\"/>")
+            lines.append("\(indent)  </IconStyle>")
+        } else {
+            lines.append("\(indent)  <LineStyle>")
+            lines.append("\(indent)    <color>\(kmlColor(style.strokeColor, alpha: style.opacity))</color>")
+            lines.append("\(indent)    <width>\(Int(style.strokeWidth.rounded()))</width>")
+            lines.append("\(indent)  </LineStyle>")
+            lines.append("\(indent)  <PolyStyle>")
+            lines.append("\(indent)    <color>\(kmlColor(style.fillColor, alpha: style.opacity * 0.4))</color>")
+            lines.append("\(indent)  </PolyStyle>")
+        }
         lines.append("\(indent)</Style>")
     }
 

@@ -391,10 +391,10 @@ struct RutMapView: View {
         // Points rendered as annotations with name label
         ForEach(vectorStore.visiblePoints().filter { $0.id != editingId }) { item in
             let sel = item.id == selectedId
-            Annotation(item.name, coordinate: item.coordinate, anchor: .bottom) {
+            Annotation(item.name, coordinate: item.coordinate, anchor: .center) {
                 VStack(spacing: 2) {
-                    Image(systemName: "mappin.circle.fill")
-                        .font(.system(size: sel ? 22 : 18))
+                    Image(systemName: item.style.pointIcon.sfSymbol)
+                        .font(.system(size: (sel ? 22 : 18) * item.style.iconScale))
                         .foregroundStyle(sel ? Color.white : Color(hex: item.style.strokeColor).opacity(item.style.opacity))
                         .onTapGesture {
                             if core.appMode == .vector {
