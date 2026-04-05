@@ -109,6 +109,30 @@ struct VectorToolbar: View {
                         .padding(.trailing, 8)
                     }
 
+                    // Zigzag width picker
+                    if vectorStore.activeTool == .zigzag && vectorStore.drawing.isActive {
+                        HStack(spacing: 4) {
+                            Text("Width:")
+                                .font(.system(size: 11))
+                                .foregroundColor(RutTheme.textMuted)
+                            ForEach([15.0, 25.0, 50.0], id: \.self) { w in
+                                let sel = vectorStore.zigzagWidth == w
+                                Button("\(Int(w))m") {
+                                    vectorStore.zigzagWidth = w
+                                }
+                                .font(.system(size: 12, weight: sel ? .bold : .regular))
+                                .foregroundColor(sel ? .black : RutTheme.text)
+                                .padding(.horizontal, 8)
+                                .padding(.vertical, 4)
+                                .background(sel ? RutTheme.amber : RutTheme.surface2)
+                                .clipShape(RoundedRectangle(cornerRadius: 6))
+                                .overlay(RoundedRectangle(cornerRadius: 6).stroke(
+                                    sel ? RutTheme.amber : RutTheme.border, lineWidth: 1))
+                                .buttonStyle(.plain)
+                            }
+                        }
+                    }
+
                     // Done / Undo — only when actively drawing
                     if vectorStore.activeTool != .none && vectorStore.drawing.isActive {
                         Button {

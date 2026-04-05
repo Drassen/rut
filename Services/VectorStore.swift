@@ -94,7 +94,7 @@ final class DrawingStateMachine: ObservableObject {
         if !vertices.isEmpty { vertices.removeLast() }
     }
 
-    func commitAndReset(tool: DrawingTool, name: String, style: VectorStyle) -> VectorShape? {
+    func commitAndReset(tool: DrawingTool, name: String, style: VectorStyle, widthMeters: Double = 50) -> VectorShape? {
         defer { reset() }
         switch tool {
         case .none:
@@ -122,7 +122,7 @@ final class DrawingStateMachine: ObservableObject {
                                style: style)
         case .zigzag:
             guard vertices.count >= 2 else { return nil }
-            let zigzagCoords = Self.makeZigzagCoords(from: vertices)
+            let zigzagCoords = Self.makeZigzagCoords(from: vertices, widthMeters: widthMeters)
             return VectorShape(name: name,
                                geometry: .polyline(coordinates: zigzagCoords.map { [$0.latitude, $0.longitude] }),
                                style: style)
@@ -135,8 +135,8 @@ final class DrawingStateMachine: ObservableObject {
 
     /// Converts an axis polyline into a zigzag polyline.
     /// Teeth are at 30° to the axis, total width 50 m (±25 m from center).
-    static func makeZigzagCoords(from axis: [CLLocationCoordinate2D]) -> [CLLocationCoordinate2D] {
-        let halfWidth = 25.0                                   // meters each side
+    static func makeZigzagCoords(from axis: [CLLocationCoordinate2D], widthMeters: Double = 50) -> [CLLocationCoordinate2D] {
+        let halfWidth = widthMeters / 2                        // meters each side
         let angleRad  = 30.0 * .pi / 180.0
         let stepAlong = halfWidth / tan(angleRad)              // ~43.3 m along axis per half-period
 
@@ -233,6 +233,7 @@ final class VectorStore: ObservableObject {
     /// Separate @Published so the map can gate airspace rendering without
     /// going through layers (which re-renders user shapes too).
     @Published var airspaceVisible: Bool = true
+    @Published var zigzagWidth: Double = 50
 
     // Drag state is panel-local — NOT @Published to avoid triggering map re-renders on every finger move
     var draggingLayerId: UUID? = nil
@@ -725,7 +726,7 @@ final class VectorStore: ObservableObject {
 
     func commitDrawing(name: String) {
         guard activeTool != .none,
-              let shape = drawing.commitAndReset(tool: activeTool, name: name, style: newShapeStyle)
+              let shape = drawing.commitAndReset(tool: activeTool, name: name, style: newShapeStyle, widthMeters: zigzagWidth)
         else { return }
 
         let targetLayerId: UUID
