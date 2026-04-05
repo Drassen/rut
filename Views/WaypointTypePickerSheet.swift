@@ -12,11 +12,9 @@ struct WaypointTypePickerSheet: View {
     // Lokala state-variabler för redigering
     @State private var editedId: String = ""
     @State private var editedName: String = ""
-    @State private var editedLat: String = ""
-    @State private var editedLon: String = ""
-    @State private var editedElev: String = ""
-    @State private var mgrsText: String = ""
-    @State private var mgrsValid: Bool? = nil
+    @State private var editedLat: Double = 0
+    @State private var editedLon: Double = 0
+    @State private var editedElev: Double = 0
     
     var body: some View {
         NavigationStack { // Använd NavigationStack istället för NavigationView (modernare)
@@ -51,43 +49,12 @@ struct WaypointTypePickerSheet: View {
                     }
                     
                     // SEKTION 2: Redigering av Position
-                    Section(header: Text("Position")) {
-                        HStack {
-                            TextField("MGRS (e.g. 33VXF1234567890)", text: $mgrsText)
-                                .textInputAutocapitalization(.characters)
-                                .autocorrectionDisabled()
-                                .keyboardType(.asciiCapable)
-                                .onChange(of: mgrsText) { _, new in
-                                    let trimmed = new.trimmingCharacters(in: .whitespaces)
-                                    guard !trimmed.isEmpty else { mgrsValid = nil; return }
-                                    if CoordinateParser.looksLikeMGRS(trimmed) {
-                                        if let coord = CoordinateParser.parseMGRS(trimmed) {
-                                            editedLat = String(format: "%.6f", coord.latitude)
-                                            editedLon = String(format: "%.6f", coord.longitude)
-                                            mgrsValid = true
-                                        } else {
-                                            mgrsValid = false
-                                        }
-                                    } else {
-                                        mgrsValid = nil
-                                    }
-                                }
-                            if let valid = mgrsValid {
-                                Image(systemName: valid ? "checkmark.circle.fill" : "xmark.circle.fill")
-                                    .foregroundColor(valid ? .green : .red)
-                                    .font(.system(size: 14))
-                            }
-                        }
-
-                        TextField("Latitude", text: $editedLat)
-                            .keyboardType(.decimalPad)
-
-                        TextField("Longitude", text: $editedLon)
-                            .keyboardType(.decimalPad)
-
-                        TextField("Elevation (m)", text: $editedElev)
-                            .keyboardType(.decimalPad)
-                    }
+                    CoordinateInputSection(
+                        lat: $editedLat,
+                        lon: $editedLon,
+                        showElevation: true,
+                        elev: $editedElev
+                    )
                 }
                 
                 // SEKTION 3: Logik
@@ -205,32 +172,21 @@ struct WaypointTypePickerSheet: View {
         return navStore.document.userWaypoints.first(where: { $0.id == ref.refId })
     }
     
-    private func parseDouble(_ str: String) -> Double? {
-        let clean = str.replacingOccurrences(of: ",", with: ".")
-        return Double(clean)
-    }
-    
     private var isModified: Bool {
         guard let wp = currentWaypoint else { return false }
-        
-        let lat = parseDouble(editedLat) ?? wp.latitude
-        let lon = parseDouble(editedLon) ?? wp.longitude
-        let elev = parseDouble(editedElev) ?? wp.elevation
-        
-        let coordsChanged = abs(wp.latitude - lat) > 0.000001 ||
-                            abs(wp.longitude - lon) > 0.000001 ||
-                            abs(wp.elevation - elev) > 0.1
-        
+        let coordsChanged = abs(wp.latitude  - editedLat)  > 0.000001 ||
+                            abs(wp.longitude - editedLon)  > 0.000001 ||
+                            abs(wp.elevation - editedElev) > 0.1
         return wp.id != editedId || wp.name != editedName || coordsChanged
     }
-    
+
     private func loadInitialValues() {
         if let wp = currentWaypoint {
-            editedId = wp.id
+            editedId   = wp.id
             editedName = wp.name
-            editedLat = String(wp.latitude)
-            editedLon = String(wp.longitude)
-            editedElev = String(format: "%.0f", wp.elevation)
+            editedLat  = wp.latitude
+            editedLon  = wp.longitude
+            editedElev = wp.elevation
         }
     }
     
@@ -238,25 +194,15 @@ struct WaypointTypePickerSheet: View {
     
     private func saveAsCustomPoint() {
         guard let wp = currentWaypoint else { return }
-        
-        let lat = parseDouble(editedLat) ?? wp.latitude
-        let lon = parseDouble(editedLon) ?? wp.longitude
-        let elev = parseDouble(editedElev) ?? wp.elevation
-        
-        let finalLat = min(max(lat, -90.0), 90.0)
-        let finalLon = min(max(lon, -180.0), 180.0)
-        
-        // Uppdatera waypoint OCH sätt typ till CUSTOM
         navStore.updateWaypoint(
             originalId: wp.id,
             newName: editedName,
             newId: editedId,
-            type: .custom, // VIKTIGT: Sätt typen till Custom här
-            latitude: finalLat,
-            longitude: finalLon,
-            elevation: elev
+            type: .custom,
+            latitude:  min(max(editedLat,  -90),  90),
+            longitude: min(max(editedLon, -180), 180),
+            elevation: editedElev
         )
-        
         dismiss()
     }
     

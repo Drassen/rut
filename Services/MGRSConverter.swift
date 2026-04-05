@@ -7,7 +7,87 @@ import CoreLocation
 
 enum MGRSConverter {
 
-    // MARK: - Public entry point
+    // MARK: - WGS84 → MGRS (1m precision = 5+5 digits)
+
+    static func fromCoordinate(_ coord: CLLocationCoordinate2D, precision: Int = 5) -> String? {
+        let lat = coord.latitude
+        let lon = coord.longitude
+        guard lat >= -80, lat <= 84, lon >= -180, lon <= 180 else { return nil }
+
+        // UTM zone
+        let zoneNum = Int((lon + 180) / 6) + 1
+        let isNorth = lat >= 0
+
+        guard let (easting, northing) = latLonToUTM(lat: lat, lon: lon, zone: zoneNum) else { return nil }
+
+        // Band letter
+        let bandLetters: [Character] = ["C","D","E","F","G","H","J","K","L","M",
+                                        "N","P","Q","R","S","T","U","V","W","X"]
+        let bandIdx = max(0, min(Int((lat + 80) / 8), 19))
+        let band = bandLetters[bandIdx]
+
+        // 100km column letter (sq1)
+        let setNum = (zoneNum - 1) % 3
+        let colSets: [[Character]] = [
+            ["A","B","C","D","E","F","G","H"],
+            ["J","K","L","M","N","P","Q","R"],
+            ["S","T","U","V","W","X","Y","Z"]
+        ]
+        let colIdx = Int(easting / 100_000) - 1   // 1-based column → 0-based index
+        guard colIdx >= 0 && colIdx < 8 else { return nil }
+        let sq1 = colSets[setNum][colIdx]
+
+        // 100km row letter (sq2)
+        let rowLetters: [Character] = ["A","B","C","D","E","F","G","H","J","K",
+                                       "L","M","N","P","Q","R","S","T","U","V"]
+        let rowOffset = (zoneNum % 2 == 0) ? 5 : 0
+        let rowIdx = (Int(northing / 100_000) + rowOffset) % 20
+        let sq2 = rowLetters[rowIdx]
+
+        // Numeric part: easting and northing within 100km square, zero-padded to `precision` digits
+        let e = Int(easting.truncatingRemainder(dividingBy: 100_000))
+        let n = Int(northing.truncatingRemainder(dividingBy: 100_000))
+        let fmt = "%0\(precision)d"
+        let eStr = String(format: fmt, e / Int(pow(10.0, Double(5 - precision))))
+        let nStr = String(format: fmt, n / Int(pow(10.0, Double(5 - precision))))
+
+        return "\(zoneNum)\(band)\(sq1)\(sq2)\(eStr)\(nStr)"
+    }
+
+    private static func latLonToUTM(lat: Double, lon: Double, zone: Int) -> (easting: Double, northing: Double)? {
+        let a  = 6_378_137.0
+        let f  = 1.0 / 298.257_223_563
+        let b  = a * (1 - f)
+        let e2 = 1 - (b * b) / (a * a)
+        let k0 = 0.9996
+
+        let latR = lat * .pi / 180
+        let lonR = lon * .pi / 180
+        let lon0 = Double(zone * 6 - 183) * .pi / 180
+
+        let N = a / sqrt(1 - e2 * sin(latR) * sin(latR))
+        let T = tan(latR) * tan(latR)
+        let C = e2 / (1 - e2) * cos(latR) * cos(latR)
+        let A = cos(latR) * (lonR - lon0)
+
+        let e4 = e2 * e2; let e6 = e4 * e2
+        let M = a * ((1 - e2/4 - 3*e4/64 - 5*e6/256) * latR
+                   - (3*e2/8 + 3*e4/32 + 45*e6/1024) * sin(2*latR)
+                   + (15*e4/256 + 45*e6/1024) * sin(4*latR)
+                   - (35*e6/3072) * sin(6*latR))
+
+        let easting = k0 * N * (A + (1 - T + C) * A*A*A/6
+            + (5 - 18*T + T*T + 72*C - 58*e2/(1-e2)) * A*A*A*A*A/120) + 500_000
+
+        var northing = k0 * (M + N * tan(latR) * (A*A/2
+            + (5 - T + 9*C + 4*C*C) * A*A*A*A/24
+            + (61 - 58*T + T*T + 600*C - 330*e2/(1-e2)) * A*A*A*A*A*A/720))
+        if lat < 0 { northing += 10_000_000 }
+
+        return (easting, northing)
+    }
+
+    // MARK: - MGRS → WGS84
 
     /// Converts an MGRS string to WGS84 lat/lon. Returns nil if the string is invalid.
     static func toCoordinate(_ raw: String) -> CLLocationCoordinate2D? {

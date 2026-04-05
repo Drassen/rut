@@ -121,33 +121,12 @@ struct PointEditorView: View {
             }
             
             // --- SEKTION 3: POSITION ---
-            Section("Position") {
-                if !isReadOnly {
-                    MGRSCoordinateField(label: "MGRS", lat: $lat, lon: $lon, disabled: isReadOnly)
-                }
-                Grid(alignment: .leading, verticalSpacing: 10) {
-                    GridRow {
-                        Text("Lat:")
-                        TextField("Latitude", value: $lat, format: .number.precision(.fractionLength(4...6)))
-                            .keyboardType(.numbersAndPunctuation)
-                            .disabled(isReadOnly)
-                    }
-                    GridRow {
-                        Text("Lon:")
-                        TextField("Longitude", value: $lon, format: .number.precision(.fractionLength(4...6)))
-                            .keyboardType(.numbersAndPunctuation)
-                            .disabled(isReadOnly)
-                    }
-                    if !isSystemNavaidOrAirport {
-                        GridRow {
-                            Text("Elev (ft):")
-                            TextField("Elevation", value: $elev, format: .number)
-                                .keyboardType(.numbersAndPunctuation)
-                                .disabled(isReadOnly)
-                        }
-                    }
-                }
-            }
+            CoordinateInputSection(
+                lat: $lat, lon: $lon,
+                disabled: isReadOnly,
+                showElevation: !isSystemNavaidOrAirport,
+                elev: $elev
+            )
             
             // --- SEKTION 4: DETALJER ---
             detailsSection
