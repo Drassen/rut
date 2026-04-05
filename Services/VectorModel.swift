@@ -86,6 +86,16 @@ enum VectorPointIcon: String, Codable, CaseIterable {
     case caution  = "http://maps.google.com/mapfiles/kml/shapes/caution.png"
     case circle   = "http://maps.google.com/mapfiles/kml/paddle/wht-circle.png"
 
+    var assetName: String {
+        switch self {
+        case .square:   return "kml-icon-square"
+        case .triangle: return "kml-icon-triangle"
+        case .donut:    return "kml-icon-donut"
+        case .caution:  return "kml-icon-caution"
+        case .circle:   return "kml-icon-circle"
+        }
+    }
+
     var displayName: String {
         switch self {
         case .square:   return "Square"
@@ -105,45 +115,11 @@ struct VectorPointIconView: View {
     let size: CGFloat
 
     var body: some View {
-        Group {
-            switch icon {
-            case .square:
-                Rectangle()
-                    .fill(color)
-                    .overlay(Rectangle().stroke(Color.white.opacity(0.5), lineWidth: max(1, size * 0.06)))
-            case .triangle:
-                TriangleShape()
-                    .fill(color)
-                    .overlay(TriangleShape().stroke(Color.white.opacity(0.5), lineWidth: max(1, size * 0.06)))
-            case .donut:
-                Circle()
-                    .stroke(color, lineWidth: size * 0.22)
-            case .caution:
-                ZStack {
-                    TriangleShape().fill(color)
-                    Text("!")
-                        .font(.system(size: size * 0.55, weight: .black))
-                        .foregroundStyle(Color.white)
-                        .offset(y: size * 0.08)
-                }
-            case .circle:
-                Circle()
-                    .fill(color)
-                    .overlay(Circle().stroke(Color.white, lineWidth: max(1, size * 0.1)))
-            }
-        }
-        .frame(width: size, height: size)
-    }
-}
-
-private struct TriangleShape: Shape {
-    func path(in rect: CGRect) -> Path {
-        var p = Path()
-        p.move(to: CGPoint(x: rect.midX, y: rect.minY))
-        p.addLine(to: CGPoint(x: rect.maxX, y: rect.maxY))
-        p.addLine(to: CGPoint(x: rect.minX, y: rect.maxY))
-        p.closeSubpath()
-        return p
+        Image(icon.assetName)
+            .resizable()
+            .scaledToFit()
+            .colorMultiply(color)
+            .frame(width: size, height: size)
     }
 }
 
