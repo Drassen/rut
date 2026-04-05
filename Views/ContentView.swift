@@ -137,10 +137,10 @@ struct ContentView: View {
             Button("Cancel", role: .cancel) { }
         }
         .confirmationDialog("KML Export", isPresented: $showKMLSubDialog, titleVisibility: .visible) {
-            if !navStore.document.userAirports.isEmpty  { Button("Airports")  { executeKMLExport(id: "kml-airports") } }
-            if !navStore.document.userNavaids.isEmpty   { Button("Navaids")   { executeKMLExport(id: "kml-navaids")  } }
-            if !navStore.document.userWaypoints.isEmpty { Button("Waypoints") { executeKMLExport(id: "kml-waypoints")} }
-            if !navStore.routes.isEmpty                  { Button("Routes")    { executeKMLExport(id: "kml-route")   } }
+            if navStore.activeRouteId != nil              { Button("Active Route (.KML)")   { executeKMLExport(id: "kml-route")      } }
+            if !navStore.document.userAirports.isEmpty   { Button("User Airports (.KML)")  { executeKMLExport(id: "kml-airports")   } }
+            if !navStore.document.userNavaids.isEmpty    { Button("User Navaids (.KML)")   { executeKMLExport(id: "kml-navaids")    } }
+            if !navStore.document.userWaypoints.isEmpty  { Button("User Waypoints (.KML)") { executeKMLExport(id: "kml-waypoints")  } }
             Button("Cancel", role: .cancel) { }
         }
         .alert("Export Complete", isPresented: $showA109ExportCompleteAlert) {
@@ -613,7 +613,14 @@ struct ContentView: View {
             toastManager.show(message: "KML exporter '\(id)' not found."); return
         }
         do {
-            let files = try exporter.export(document: navStore.document, routes: navStore.routes)
+            let routesForExport: [Route]
+            if id == "kml-route", let activeId = navStore.activeRouteId,
+               let active = navStore.document.routes.first(where: { $0.id == activeId }) {
+                routesForExport = [active]
+            } else {
+                routesForExport = navStore.routes
+            }
+            let files = try exporter.export(document: navStore.document, routes: routesForExport)
             guard !files.isEmpty else { toastManager.show(message: "Nothing to export.", kind: .info); return }
             let tempDir = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
             try FileManager.default.createDirectory(at: tempDir, withIntermediateDirectories: true)

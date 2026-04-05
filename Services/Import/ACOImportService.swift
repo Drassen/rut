@@ -79,6 +79,8 @@ struct ACOImportService: RouteImporting {
         var type     = ""
         var shape    = ""
         var widthNM  = 0.0
+        var altLow   = ""
+        var altHigh  = ""
         var coords:  [CLLocationCoordinate2D] = []
         var center:  CLLocationCoordinate2D?
         var radiusNM = 0.0
@@ -109,6 +111,13 @@ struct ACOImportService: RouteImporting {
                         widthNM = Double(w) ?? 0
                     }
                 }
+            case "ALT":
+                for f in fields.dropFirst() {
+                    if f.hasPrefix("LOW:") { altLow = String(f.dropFirst(4)) }
+                    else if f.hasPrefix("HIGH:") { altHigh = String(f.dropFirst(5)) }
+                    else if altLow.isEmpty { altLow = f }
+                    else if altHigh.isEmpty { altHigh = f }
+                }
             case "LATLONG":
                 for f in fields.dropFirst() {
                     if let c = parseCompact(f) { coords.append(c) }
@@ -130,11 +139,23 @@ struct ACOImportService: RouteImporting {
         guard !displayName.isEmpty else { return nil }
         let style = styleForType(type)
 
+        var noteParts: [String] = []
+        if !type.isEmpty                  { noteParts.append("Type: \(type)") }
+        if !altLow.isEmpty || !altHigh.isEmpty {
+            let alt = [altLow.isEmpty ? nil : "Low: \(altLow)",
+                       altHigh.isEmpty ? nil : "High: \(altHigh)"]
+                        .compactMap { $0 }.joined(separator: ", ")
+            noteParts.append("Alt: \(alt)")
+        }
+        if widthNM > 0                    { noteParts.append("Width: \(widthNM) NM") }
+        if radiusNM > 0                   { noteParts.append("Radius: \(radiusNM) NM") }
+        let notes = noteParts.joined(separator: "\n")
+
         switch shape {
         case "CIRCLE":
             guard let c = center else { return nil }
             return VectorShape(
-                name: displayName,
+                name: displayName, notes: notes,
                 geometry: .circle(lat: c.latitude, lon: c.longitude,
                                   radiusMeters: radiusNM * 1_852),
                 style: style)
@@ -142,7 +163,7 @@ struct ACOImportService: RouteImporting {
         case "POINT":
             guard let c = center ?? coords.first else { return nil }
             return VectorShape(
-                name: displayName,
+                name: displayName, notes: notes,
                 geometry: .point(lat: c.latitude, lon: c.longitude),
                 style: style)
 
@@ -150,16 +171,16 @@ struct ACOImportService: RouteImporting {
             guard coords.count >= 3 else { return nil }
             var ring = coords.map { [$0.latitude, $0.longitude] }
             if ring.first! != ring.last! { ring.append(ring[0]) }
-            return VectorShape(name: displayName, geometry: .polygon(coordinates: ring), style: style)
+            return VectorShape(name: displayName, notes: notes, geometry: .polygon(coordinates: ring), style: style)
 
         case "CORRIDOR", "LINE":
             guard coords.count >= 2 else { return nil }
             if widthNM > 0 {
                 let poly = corridorPolygon(points: coords, halfWidthM: widthNM * 926)
-                return VectorShape(name: displayName, geometry: .polygon(coordinates: poly), style: style)
+                return VectorShape(name: displayName, notes: notes, geometry: .polygon(coordinates: poly), style: style)
             }
             return VectorShape(
-                name: displayName,
+                name: displayName, notes: notes,
                 geometry: .polyline(coordinates: coords.map { [$0.latitude, $0.longitude] }),
                 style: style)
 
@@ -167,13 +188,13 @@ struct ACOImportService: RouteImporting {
             if coords.count >= 3 {
                 var ring = coords.map { [$0.latitude, $0.longitude] }
                 if ring.first! != ring.last! { ring.append(ring[0]) }
-                return VectorShape(name: displayName, geometry: .polygon(coordinates: ring), style: style)
+                return VectorShape(name: displayName, notes: notes, geometry: .polygon(coordinates: ring), style: style)
             } else if coords.count == 2 {
-                return VectorShape(name: displayName,
+                return VectorShape(name: displayName, notes: notes,
                     geometry: .polyline(coordinates: coords.map { [$0.latitude, $0.longitude] }),
                     style: style)
             } else if let c = coords.first ?? center {
-                return VectorShape(name: displayName,
+                return VectorShape(name: displayName, notes: notes,
                     geometry: .point(lat: c.latitude, lon: c.longitude), style: style)
             }
             return nil
@@ -299,20 +320,24 @@ struct ACOImportService: RouteImporting {
             guard !cls.isEmpty else { return }
             let n = name.isEmpty ? cls : name
             let style = styleForClass(cls)
+            var noteParts: [String] = []
+            noteParts.append("Class: \(cls)")
+            if !name.isEmpty && name != cls { noteParts.append("Name: \(name)") }
+            let notes = noteParts.joined(separator: "\n")
             if let r = circleNM, let c = center {
-                shapes.append(VectorShape(name: n,
+                shapes.append(VectorShape(name: n, notes: notes,
                     geometry: .circle(lat: c.latitude, lon: c.longitude, radiusMeters: r * 1_852),
                     style: style))
             } else if points.count >= 3 {
                 var ring = points.map { [$0.latitude, $0.longitude] }
                 if ring.first! != ring.last! { ring.append(ring[0]) }
-                shapes.append(VectorShape(name: n, geometry: .polygon(coordinates: ring), style: style))
+                shapes.append(VectorShape(name: n, notes: notes, geometry: .polygon(coordinates: ring), style: style))
             } else if points.count == 2 {
-                shapes.append(VectorShape(name: n,
+                shapes.append(VectorShape(name: n, notes: notes,
                     geometry: .polyline(coordinates: points.map { [$0.latitude, $0.longitude] }),
                     style: style))
             } else if let p = points.first {
-                shapes.append(VectorShape(name: n,
+                shapes.append(VectorShape(name: n, notes: notes,
                     geometry: .point(lat: p.latitude, lon: p.longitude), style: style))
             }
         }

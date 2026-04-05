@@ -1,6 +1,14 @@
 import SwiftUI
 import zlib
 
+// MARK: - Export format
+
+enum VectorExportFormat: String, CaseIterable, Identifiable {
+    case kmz  = "KMZ"
+    case atak = "ATAK (.zip)"
+    var id: String { rawValue }
+}
+
 // MARK: - VectorToolbar
 
 struct VectorToolbar: View {
@@ -13,6 +21,7 @@ struct VectorToolbar: View {
     @State private var showShapeEditor = false
     @State private var showRenameFolderAlert = false
     @State private var renameFolderText = ""
+    @State private var exportFormat: VectorExportFormat = .kmz
 
     var body: some View {
         VStack(spacing: 0) {
@@ -25,6 +34,7 @@ struct VectorToolbar: View {
                     Button("Cancel") { vectorStore.cancelShapeEdit() }
                         .buttonStyle(RutSecondaryButtonStyle())
                     Spacer()
+                    formatPicker
                     exportButton
                 } else if vectorStore.activeShapeId != nil && vectorStore.activeTool == .none {
                     // ── Shape selected ────────────────────────────────────────
@@ -58,6 +68,7 @@ struct VectorToolbar: View {
 
                     Spacer()
 
+                    formatPicker
                     exportButton
 
                     Button {
@@ -118,6 +129,7 @@ struct VectorToolbar: View {
                         .buttonStyle(RutPrimaryButtonStyle())
                     }
 
+                    formatPicker
                     exportButton
                 }
             }
@@ -156,6 +168,19 @@ struct VectorToolbar: View {
         }
     }
 
+    // MARK: - Format picker
+
+    private var formatPicker: some View {
+        Picker("Format", selection: $exportFormat) {
+            ForEach(VectorExportFormat.allCases) { fmt in
+                Text(fmt.rawValue).tag(fmt)
+            }
+        }
+        .pickerStyle(.segmented)
+        .frame(width: 160)
+        .tint(RutTheme.amber)
+    }
+
     // MARK: - Export button
 
     @ViewBuilder
@@ -184,7 +209,6 @@ struct VectorToolbar: View {
     // MARK: - Export logic
 
     private func exportSelection() {
-        let kmlService = KMLVectorExportService()
         do {
             // Determine what to export
             let layersToExport: [VectorLayer]
@@ -193,7 +217,6 @@ struct VectorToolbar: View {
             if let shapeId = vectorStore.activeShapeId,
                let found = vectorStore.findShape(id: shapeId),
                let parentLayer = vectorStore.findLayer(id: found.layerId) {
-                // Export single shape wrapped in a copy of its parent layer
                 var singleLayer = parentLayer
                 singleLayer.shapes = [found.shape]
                 singleLayer.children = []
@@ -213,102 +236,299 @@ struct VectorToolbar: View {
                 return
             }
 
-            // Build KML
-            var doc = NavigationDocument()
-            doc.vectorLayers = layersToExport
-            let files = try kmlService.export(document: doc, selectedRoutes: [])
-            guard let kmlFile = files.first else {
-                toastManager.show(message: "Export failed.", kind: .info)
-                return
+            let outputData: Data
+            let filename: String
+            switch exportFormat {
+            case .kmz:
+                let kmlService = KMLVectorExportService()
+                var doc = NavigationDocument()
+                doc.vectorLayers = layersToExport
+                let files = try kmlService.export(document: doc, selectedRoutes: [])
+                guard let kmlFile = files.first else {
+                    toastManager.show(message: "Export failed.", kind: .info)
+                    return
+                }
+                outputData = buildZIP(entries: [("doc.kml", kmlFile.data)])
+                filename = outputName + ".kmz"
+            case .atak:
+                outputData = buildATAKPackage(layers: layersToExport, name: outputName)
+                filename = outputName + ".zip"
             }
-
-            // Package as KMZ (minimal ZIP, stored mode)
-            let kmzData = buildKMZ(kmlData: kmlFile.data)
 
             let tempDir = FileManager.default.temporaryDirectory
                 .appendingPathComponent(UUID().uuidString)
             try FileManager.default.createDirectory(at: tempDir, withIntermediateDirectories: true)
 
-            let kmzURL = tempDir.appendingPathComponent(outputName + ".kmz")
-            try kmzData.write(to: kmzURL, options: .atomic)
+            let outURL = tempDir.appendingPathComponent(filename)
+            try outputData.write(to: outURL, options: .atomic)
 
             DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
-                self.exportContainer = ExportContainer(urls: [kmzURL])
+                self.exportContainer = ExportContainer(urls: [outURL])
             }
         } catch {
             toastManager.show(message: error.localizedDescription)
         }
     }
 
-    // MARK: - Minimal ZIP / KMZ builder (stored, no compression)
+    // MARK: - ATAK Data Package builder
+    // Generates native CoT (Cursor on Target) XML so shapes are fully editable in ATAK.
+    // Structure:
+    //   MANIFEST/manifest.xml
+    //   <uid>/<uid>.cot  (one file per shape)
 
-    private func buildKMZ(kmlData: Data) -> Data {
-        let filename = "doc.kml"
-        let filenameBytes = Array(filename.utf8)
-        let fileSize = UInt32(kmlData.count)
+    private func buildATAKPackage(layers: [VectorLayer], name: String) -> Data {
+        let packageUID = UUID().uuidString
+        var entries: [(path: String, data: Data)] = []
+        var contentEntries: [String] = []   // zipEntry paths for manifest
 
-        // CRC-32 via zlib
-        let crc: UInt32 = kmlData.withUnsafeBytes { ptr -> UInt32 in
-            guard let base = ptr.baseAddress else { return 0 }
-            let result = zlib.crc32(0, base.assumingMemoryBound(to: Bytef.self), uInt(kmlData.count))
-            return UInt32(result & 0xFFFFFFFF)
+        // Collect all visible non-system shapes
+        var shapes: [(shape: VectorShape, layerName: String)] = []
+        for layer in layers {
+            collectShapesFlat(from: layer, layerName: layer.name, into: &shapes)
         }
 
-        var data = Data()
+        let now   = ISO8601DateFormatter().string(from: Date())
+        let stale = ISO8601DateFormatter().string(from: Date(timeIntervalSinceNow: 86400 * 365))
 
-        // ── Local file header ──────────────────────────────────────────────
-        let localHeaderOffset = UInt32(0)
-        data.append(contentsOf: [0x50, 0x4B, 0x03, 0x04])   // signature
-        data.append(uint16LE: 0x0014)   // version needed
-        data.append(uint16LE: 0x0000)   // flags
-        data.append(uint16LE: 0x0000)   // compression: stored
-        data.append(uint16LE: 0x0000)   // mod time
-        data.append(uint16LE: 0x0000)   // mod date
-        data.append(uint32LE: crc)
-        data.append(uint32LE: fileSize) // compressed size
-        data.append(uint32LE: fileSize) // uncompressed size
-        data.append(uint16LE: UInt16(filenameBytes.count))
-        data.append(uint16LE: 0x0000)   // extra field length
-        data.append(contentsOf: filenameBytes)
-        data.append(kmlData)
+        for (shape, _) in shapes {
+            let uid  = shape.id.uuidString
+            let path = "\(uid)/\(uid).cot"
+            let cot  = buildCoTEvent(shape: shape, uid: uid, now: now, stale: stale)
+            if let data = cot.data(using: .utf8) {
+                entries.append((path: path, data: data))
+                contentEntries.append(path)
+            }
+        }
 
-        // ── Central directory header ───────────────────────────────────────
-        let centralDirOffset = UInt32(data.count)
-        data.append(contentsOf: [0x50, 0x4B, 0x01, 0x02])   // signature
-        data.append(uint16LE: 0x0014)   // version made by
-        data.append(uint16LE: 0x0014)   // version needed
-        data.append(uint16LE: 0x0000)   // flags
-        data.append(uint16LE: 0x0000)   // compression: stored
-        data.append(uint16LE: 0x0000)   // mod time
-        data.append(uint16LE: 0x0000)   // mod date
-        data.append(uint32LE: crc)
-        data.append(uint32LE: fileSize) // compressed size
-        data.append(uint32LE: fileSize) // uncompressed size
-        data.append(uint16LE: UInt16(filenameBytes.count))
-        data.append(uint16LE: 0x0000)   // extra field length
-        data.append(uint16LE: 0x0000)   // comment length
-        data.append(uint16LE: 0x0000)   // disk start
-        data.append(uint16LE: 0x0000)   // internal attrs
-        data.append(uint32LE: 0x00000000) // external attrs
-        data.append(uint32LE: localHeaderOffset)
-        data.append(contentsOf: filenameBytes)
+        // Manifest
+        var contents = ""
+        for path in contentEntries {
+            let uid = path.components(separatedBy: "/").last?.replacingOccurrences(of: ".cot", with: "") ?? UUID().uuidString
+            contents += "    <Content ignore=\"false\" zipEntry=\"\(path)\">\n"
+            contents += "      <Parameter name=\"uid\" value=\"\(uid)\"/>\n"
+            contents += "    </Content>\n"
+        }
 
-        let centralDirSize = UInt32(data.count) - centralDirOffset
+        let manifest = """
+        <?xml version="1.0" encoding="UTF-8"?>
+        <MissionPackageManifest version="2">
+          <Configuration>
+            <Parameter name="uid" value="\(packageUID)"/>
+            <Parameter name="name" value="\(xmlEscape(name))"/>
+            <Parameter name="onReceiveImport" value="true"/>
+            <Parameter name="onReceiveDelete" value="false"/>
+          </Configuration>
+          <Contents>
+        \(contents)  </Contents>
+        </MissionPackageManifest>
+        """
+        if let manifestData = manifest.data(using: .utf8) {
+            entries.insert(("MANIFEST/manifest.xml", manifestData), at: 0)
+        }
 
-        // ── End of central directory ───────────────────────────────────────
-        data.append(contentsOf: [0x50, 0x4B, 0x05, 0x06])   // signature
-        data.append(uint16LE: 0x0000)   // disk number
-        data.append(uint16LE: 0x0000)   // start disk
-        data.append(uint16LE: 0x0001)   // entries on this disk
-        data.append(uint16LE: 0x0001)   // total entries
-        data.append(uint32LE: centralDirSize)
-        data.append(uint32LE: centralDirOffset)
-        data.append(uint16LE: 0x0000)   // comment length
+        return buildZIP(entries: entries)
+    }
 
-        return data
+    private func collectShapesFlat(from layer: VectorLayer, layerName: String,
+                                   into result: inout [(shape: VectorShape, layerName: String)]) {
+        if layer.isVisible {
+            for shape in layer.shapes where shape.isVisible {
+                result.append((shape: shape, layerName: layerName))
+            }
+            for child in layer.children {
+                collectShapesFlat(from: child, layerName: child.name, into: &result)
+            }
+        }
+    }
+
+    // MARK: - CoT event builder
+
+    private func buildCoTEvent(shape: VectorShape, uid: String, now: String, stale: String) -> String {
+        let strokeARGB = hexToARGB(shape.style.strokeColor, alpha: shape.style.opacity)
+        let fillARGB   = hexToARGB(shape.style.fillColor,   alpha: shape.style.opacity * 0.4)
+        let strokeW    = String(format: "%.1f", shape.style.strokeWidth)
+        let remarks    = shape.notes.isEmpty ? "" : "\n    <remarks>\(xmlEscape(shape.notes))</remarks>"
+
+        switch shape.geometry {
+        case .point(let lat, let lon):
+            return """
+            <?xml version="1.0" encoding="UTF-8"?>
+            <event version="2.0" uid="\(uid)" type="a-f-G-U-C" how="h-e"
+                   time="\(now)" start="\(now)" stale="\(stale)">
+              <point lat="\(lat)" lon="\(lon)" hae="0" ce="9999999" le="9999999"/>
+              <detail>
+                <contact callsign="\(xmlEscape(shape.name))"/>
+                <color value="\(strokeARGB)"/>\(remarks)
+              </detail>
+            </event>
+            """
+
+        case .polyline(let coords):
+            let links  = coords.map { "    <link point='\($0[0]),\($0[1])'/>" }.joined(separator: "\n")
+            let center = coordCenter(coords)
+            return """
+            <?xml version='1.0' encoding='UTF-8' standalone='yes'?>
+            <event version='2.0' uid='\(uid)' type='u-d-f' how='h-e'
+                   time='\(now)' start='\(now)' stale='\(stale)'>
+              <point lat='\(center.lat)' lon='\(center.lon)' hae='9999999.0' ce='9999999.0' le='9999999.0'/>
+              <detail>
+            \(links)
+                <strokeColor value='\(strokeARGB)'/>
+                <strokeWeight value='\(strokeW)'/>
+                <contact callsign='\(xmlEscape(shape.name))'/>\(remarks)
+                <tog enabled='0'/>
+                <labels_on value='false'/>
+                <archive/>
+              </detail>
+            </event>
+            """
+
+        case .polygon(let coords):
+            let links  = coords.map { "    <link point='\($0[0]),\($0[1])'/>" }.joined(separator: "\n")
+            let center = coordCenter(coords)
+            return """
+            <?xml version='1.0' encoding='UTF-8' standalone='yes'?>
+            <event version='2.0' uid='\(uid)' type='u-d-f' how='h-e'
+                   time='\(now)' start='\(now)' stale='\(stale)'>
+              <point lat='\(center.lat)' lon='\(center.lon)' hae='9999999.0' ce='9999999.0' le='9999999.0'/>
+              <detail>
+            \(links)
+                <strokeColor value='\(strokeARGB)'/>
+                <strokeWeight value='\(strokeW)'/>
+                <fillColor value='\(fillARGB)'/>
+                <contact callsign='\(xmlEscape(shape.name))'/>\(remarks)
+                <tog enabled='0'/>
+                <labels_on value='false'/>
+                <archive/>
+              </detail>
+            </event>
+            """
+
+        case .circle(let lat, let lon, let radiusMeters):
+            let r = String(format: "%.1f", radiusMeters)
+            return """
+            <?xml version="1.0" encoding="UTF-8"?>
+            <event version="2.0" uid="\(uid)" type="u-d-c-c" how="h-e"
+                   time="\(now)" start="\(now)" stale="\(stale)">
+              <point lat="\(lat)" lon="\(lon)" hae="0" ce="9999999" le="9999999"/>
+              <detail>
+                <contact callsign="\(xmlEscape(shape.name))"/>
+                <shape>
+                  <ellipse major="\(r)" minor="\(r)" angle="0.0"/>
+                </shape>
+                <strokeColor value="\(strokeARGB)"/>
+                <fillColor value="\(fillARGB)"/>
+                <strokeWeight value="\(strokeW)"/>
+                <strokeStyle value="solid"/>\(remarks)
+              </detail>
+            </event>
+            """
+        }
+    }
+
+    /// Converts "#RRGGBB" or "#RRGGBBAA" hex + opacity to ARGB signed int32 string (ATAK format).
+    private func hexToARGB(_ hex: String, alpha: Double) -> String {
+        let s = hex.trimmingCharacters(in: CharacterSet(charactersIn: "#"))
+        var r: UInt32 = 0, g: UInt32 = 0, b: UInt32 = 0, a: UInt32
+        if s.count == 6, let v = UInt32(s, radix: 16) {
+            r = (v >> 16) & 0xFF; g = (v >> 8) & 0xFF; b = v & 0xFF
+        } else if s.count == 8, let v = UInt32(s, radix: 16) {
+            r = (v >> 24) & 0xFF; g = (v >> 16) & 0xFF; b = (v >> 8) & 0xFF
+            let storedA = Double(v & 0xFF) / 255.0
+            a = UInt32(min(max(storedA * alpha, 0), 1) * 255)
+            let argb = UInt32(a) << 24 | r << 16 | g << 8 | b
+            return String(Int32(bitPattern: argb))
+        }
+        a = UInt32(min(max(alpha, 0), 1) * 255)
+        let argb = a << 24 | r << 16 | g << 8 | b
+        return String(Int32(bitPattern: argb))
+    }
+
+    private func coordCenter(_ coords: [[Double]]) -> (lat: Double, lon: Double) {
+        guard !coords.isEmpty else { return (0, 0) }
+        let lat = coords.map { $0[0] }.reduce(0, +) / Double(coords.count)
+        let lon = coords.map { $0[1] }.reduce(0, +) / Double(coords.count)
+        return (lat, lon)
+    }
+
+    // MARK: - ZIP builder (stored, no compression)
+
+    private func buildZIP(entries: [(path: String, data: Data)]) -> Data {
+        var archive = Data()
+        var centralHeaders: [(offset: UInt32, path: [UInt8], crc: UInt32, size: UInt32)] = []
+
+        for (path, entryData) in entries {
+            let pathBytes = Array(path.utf8)
+            let size = UInt32(entryData.count)
+            let crc: UInt32 = entryData.withUnsafeBytes { ptr -> UInt32 in
+                guard let base = ptr.baseAddress else { return 0 }
+                return UInt32(zlib.crc32(0, base.assumingMemoryBound(to: Bytef.self), uInt(entryData.count)) & 0xFFFFFFFF)
+            }
+            let localOffset = UInt32(archive.count)
+            centralHeaders.append((offset: localOffset, path: pathBytes, crc: crc, size: size))
+
+            // Local file header
+            archive.append(contentsOf: [0x50, 0x4B, 0x03, 0x04])
+            archive.append(uint16LE: 0x0014)
+            archive.append(uint16LE: 0x0000)
+            archive.append(uint16LE: 0x0000) // stored
+            archive.append(uint16LE: 0x0000)
+            archive.append(uint16LE: 0x0000)
+            archive.append(uint32LE: crc)
+            archive.append(uint32LE: size)
+            archive.append(uint32LE: size)
+            archive.append(uint16LE: UInt16(pathBytes.count))
+            archive.append(uint16LE: 0x0000)
+            archive.append(contentsOf: pathBytes)
+            archive.append(entryData)
+        }
+
+        let centralDirOffset = UInt32(archive.count)
+
+        for entry in centralHeaders {
+            archive.append(contentsOf: [0x50, 0x4B, 0x01, 0x02])
+            archive.append(uint16LE: 0x0014)
+            archive.append(uint16LE: 0x0014)
+            archive.append(uint16LE: 0x0000)
+            archive.append(uint16LE: 0x0000)
+            archive.append(uint16LE: 0x0000)
+            archive.append(uint16LE: 0x0000)
+            archive.append(uint32LE: entry.crc)
+            archive.append(uint32LE: entry.size)
+            archive.append(uint32LE: entry.size)
+            archive.append(uint16LE: UInt16(entry.path.count))
+            archive.append(uint16LE: 0x0000)
+            archive.append(uint16LE: 0x0000)
+            archive.append(uint16LE: 0x0000)
+            archive.append(uint16LE: 0x0000)
+            archive.append(uint32LE: 0x00000000)
+            archive.append(uint32LE: entry.offset)
+            archive.append(contentsOf: entry.path)
+        }
+
+        let centralDirSize = UInt32(archive.count) - centralDirOffset
+        let entryCount     = UInt16(entries.count)
+
+        archive.append(contentsOf: [0x50, 0x4B, 0x05, 0x06])
+        archive.append(uint16LE: 0x0000)
+        archive.append(uint16LE: 0x0000)
+        archive.append(uint16LE: entryCount)
+        archive.append(uint16LE: entryCount)
+        archive.append(uint32LE: centralDirSize)
+        archive.append(uint32LE: centralDirOffset)
+        archive.append(uint16LE: 0x0000)
+
+        return archive
     }
 
     // MARK: - Helpers
+
+    private func xmlEscape(_ s: String) -> String {
+        s.replacingOccurrences(of: "&", with: "&amp;")
+         .replacingOccurrences(of: "\"", with: "&quot;")
+         .replacingOccurrences(of: "<", with: "&lt;")
+         .replacingOccurrences(of: ">", with: "&gt;")
+    }
 
     private func sanitizeFilename(_ name: String) -> String {
         let allowed = CharacterSet.alphanumerics.union(CharacterSet(charactersIn: "-_ "))

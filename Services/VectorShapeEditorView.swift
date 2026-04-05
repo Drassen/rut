@@ -8,6 +8,7 @@ struct VectorShapeEditorView: View {
     let layerId: UUID
 
     @State private var name: String
+    @State private var notes: String
     @State private var strokeColorUI: Color
     @State private var fillColorUI: Color
     @State private var strokeWidth: Double
@@ -17,6 +18,7 @@ struct VectorShapeEditorView: View {
         self.shape   = shape
         self.layerId = layerId
         _name          = State(initialValue: shape.name)
+        _notes         = State(initialValue: shape.notes)
         _strokeColorUI = State(initialValue: Color(hex: shape.style.strokeColor))
         _fillColorUI   = State(initialValue: Color(hex: shape.style.fillColor.isEmpty ? "#00000000" : shape.style.fillColor))
         _strokeWidth   = State(initialValue: shape.style.strokeWidth)
@@ -28,6 +30,8 @@ struct VectorShapeEditorView: View {
             Form {
                 Section("General") {
                     TextField("Name", text: $name)
+                    TextField("Notes", text: $notes, axis: .vertical)
+                        .lineLimit(4...8)
                 }
 
                 Section("Style") {
@@ -69,6 +73,7 @@ struct VectorShapeEditorView: View {
     private func save() {
         var updated = shape
         updated.name = name
+        updated.notes = notes
         updated.style.strokeColor = strokeColorUI.toHexString()
         updated.style.fillColor   = fillColorUI.toHexString(includeAlpha: true)
         updated.style.strokeWidth = strokeWidth

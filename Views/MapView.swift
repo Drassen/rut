@@ -78,7 +78,7 @@ struct RutMapView: View {
     @State private var showRoutePointMoveConfirm = false
 
     // --- Vector vertex editing drag state ---
-    @State private var draggingEditVertexIndex: Int? = nil
+    // draggingEditVertexIndex moved to VectorEditingHandles struct below
 
     // --- Line-segment insertion state ---
     @State private var insertGhostCoord: CLLocationCoordinate2D? = nil
@@ -271,9 +271,10 @@ struct RutMapView: View {
                             .allowsHitTesting(false)
                     }
 
-                    // Editing vertex handles — hit-testable so direct drag works
+                    // Editing vertex handles — isolated view so 60fps vertex drag
+                    // doesn't re-render RutMapView (and airspace MapPolygons).
                     if core.appMode == .vector && vectorStore.isEditingShape {
-                        editingHandlesOverlay(proxy: proxy)
+                        VectorEditingHandles(proxy: proxy)
                     }
                 }
             }
@@ -1100,74 +1101,6 @@ struct RutMapView: View {
         }
     }
 
-    /// Canvas + drag catcher for vertex editing.
-    /// Blocks single-finger pan during editing so vertices can be dragged directly.
-    @ViewBuilder
-    private func editingHandlesOverlay(proxy: MapProxy) -> some View {
-        let verts = vectorStore.editingVertices
-        ZStack {
-            // Invisible full-screen drag catcher
-            Color.clear
-                .contentShape(Rectangle())
-                .gesture(
-                    DragGesture(minimumDistance: 0, coordinateSpace: .global)
-                        .onChanged { value in
-                            if draggingEditVertexIndex == nil {
-                                draggingEditVertexIndex = nearestEditVertex(to: value.startLocation, proxy: proxy)
-                            }
-                            if let idx = draggingEditVertexIndex,
-                               let coord = proxy.convert(value.location, from: .global) {
-                                vectorStore.moveEditVertex(at: idx, to: coord)
-                            }
-                        }
-                        .onEnded { _ in
-                            draggingEditVertexIndex = nil
-                        }
-                )
-
-            // Visual handles (non-interactive)
-            if !verts.isEmpty {
-                Canvas { ctx, _ in
-                    if verts.count > 1 {
-                        var path = Path()
-                        if let first = proxy.convert(verts[0], to: .local) {
-                            path.move(to: first)
-                            for v in verts.dropFirst() {
-                                if let pt = proxy.convert(v, to: .local) { path.addLine(to: pt) }
-                            }
-                            if let found = vectorStore.activeShapeId.flatMap({ vectorStore.findShape(id: $0) }),
-                               case .polygon = found.shape.geometry,
-                               let closePt = proxy.convert(verts[0], to: .local) {
-                                path.addLine(to: closePt)
-                            }
-                        }
-                        ctx.stroke(path, with: .color(.white), style: StrokeStyle(lineWidth: 2, dash: [6, 4]))
-                    }
-                    for v in verts {
-                        if let pt = proxy.convert(v, to: .local) {
-                            let handle = Path(ellipseIn: CGRect(x: pt.x - 8, y: pt.y - 8, width: 16, height: 16))
-                            ctx.fill(handle, with: .color(.white))
-                            ctx.stroke(handle, with: .color(Color.white.opacity(0.5)), lineWidth: 2)
-                        }
-                    }
-                }
-                .allowsHitTesting(false)
-            }
-        }
-    }
-
-    private func nearestEditVertex(to point: CGPoint, proxy: MapProxy) -> Int? {
-        let threshold: CGFloat = 44
-        var best: (dist: CGFloat, index: Int)? = nil
-        for (i, vertex) in vectorStore.editingVertices.enumerated() {
-            if let pt = proxy.convert(vertex, to: .global) {
-                let d = hypot(pt.x - point.x, pt.y - point.y)
-                if d < threshold && (best == nil || d < best!.dist) { best = (d, i) }
-            }
-        }
-        return best?.index
-    }
-
     /// Returns shapeId + layerId of the closest non-system user shape near a screen point.
     private func findNearestUserShape(at point: CGPoint, proxy: MapProxy) -> (shapeId: UUID, layerId: UUID)? {
         let lineThr: CGFloat = 22
@@ -1393,5 +1326,81 @@ struct GhostInsertMarkerView: View {
             }
         }
         .allowsHitTesting(false)
+    }
+}
+
+// MARK: - VectorEditingHandles
+// Isolated struct so that 60fps vertex-drag updates (via vectorStore.editingVertices)
+// don't cause RutMapView to re-evaluate its body and recreate 236 airspace MapPolygons.
+
+struct VectorEditingHandles: View {
+    @EnvironmentObject var vectorStore: VectorStore
+    let proxy: MapProxy
+
+    @State private var draggingEditVertexIndex: Int? = nil
+
+    var body: some View {
+        let verts = vectorStore.editingVertices
+        ZStack {
+            // Invisible full-screen drag catcher
+            Color.clear
+                .contentShape(Rectangle())
+                .gesture(
+                    DragGesture(minimumDistance: 0, coordinateSpace: .global)
+                        .onChanged { value in
+                            if draggingEditVertexIndex == nil {
+                                draggingEditVertexIndex = nearestEditVertex(to: value.startLocation)
+                            }
+                            if let idx = draggingEditVertexIndex,
+                               let coord = proxy.convert(value.location, from: .global) {
+                                vectorStore.moveEditVertex(at: idx, to: coord)
+                            }
+                        }
+                        .onEnded { _ in
+                            draggingEditVertexIndex = nil
+                        }
+                )
+
+            // Visual handles (non-interactive)
+            if !verts.isEmpty {
+                Canvas { ctx, _ in
+                    if verts.count > 1 {
+                        var path = Path()
+                        if let first = proxy.convert(verts[0], to: .local) {
+                            path.move(to: first)
+                            for v in verts.dropFirst() {
+                                if let pt = proxy.convert(v, to: .local) { path.addLine(to: pt) }
+                            }
+                            if let found = vectorStore.activeShapeId.flatMap({ vectorStore.findShape(id: $0) }),
+                               case .polygon = found.shape.geometry,
+                               let closePt = proxy.convert(verts[0], to: .local) {
+                                path.addLine(to: closePt)
+                            }
+                        }
+                        ctx.stroke(path, with: .color(.white), style: StrokeStyle(lineWidth: 2, dash: [6, 4]))
+                    }
+                    for v in verts {
+                        if let pt = proxy.convert(v, to: .local) {
+                            let handle = Path(ellipseIn: CGRect(x: pt.x - 8, y: pt.y - 8, width: 16, height: 16))
+                            ctx.fill(handle, with: .color(.white))
+                            ctx.stroke(handle, with: .color(Color.white.opacity(0.5)), lineWidth: 2)
+                        }
+                    }
+                }
+                .allowsHitTesting(false)
+            }
+        }
+    }
+
+    private func nearestEditVertex(to point: CGPoint) -> Int? {
+        let threshold: CGFloat = 44
+        var best: (dist: CGFloat, index: Int)? = nil
+        for (i, vertex) in vectorStore.editingVertices.enumerated() {
+            if let pt = proxy.convert(vertex, to: .global) {
+                let d = hypot(pt.x - point.x, pt.y - point.y)
+                if d < threshold && (best == nil || d < best!.dist) { best = (d, i) }
+            }
+        }
+        return best?.index
     }
 }

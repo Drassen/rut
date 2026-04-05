@@ -93,6 +93,7 @@ struct VectorStyle: Codable, Equatable {
 struct VectorShape: Identifiable, Codable {
     var id: UUID = UUID()
     var name: String
+    var notes: String = ""
     var geometry: VectorGeometry
     var style: VectorStyle = VectorStyle()
     var isVisible: Bool = true

@@ -157,8 +157,15 @@ final class VectorStore: ObservableObject {
     let drawing = DrawingStateMachine()
 
     private static let airspaceSystemLayerId = UUID(uuidString: "AAAAAAAA-AAAA-AAAA-AAAA-AAAAAAAAAAAA")!
+    private var cancellables = Set<AnyCancellable>()
 
-    init() { }
+    init() {
+        // Forward drawing state changes through VectorStore so that
+        // VectorToolbar and drawingPreviewOverlay re-render when vertices change.
+        drawing.objectWillChange
+            .sink { [weak self] _ in self?.objectWillChange.send() }
+            .store(in: &cancellables)
+    }
 
     // MARK: - Layer CRUD
 
