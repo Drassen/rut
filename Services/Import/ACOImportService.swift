@@ -85,6 +85,8 @@ struct ACOImportService: RouteImporting {
         var shapes: [VectorShape] = []
         var warnings: [String] = []
         for record in records {
+            // Skip file-level header blocks (no ACMID/ line = not a shape record)
+            guard record.contains("ACMID/") else { continue }
             if let shape = parseUsmtfRecord(record) {
                 shapes.append(shape)
             } else {
