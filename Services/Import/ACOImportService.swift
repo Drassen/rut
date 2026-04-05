@@ -93,7 +93,11 @@ struct ACOImportService: RouteImporting {
                 if let w = result.extraWarning { warnings.append(w) }
             } else {
                 let trimmed = record.trimmingCharacters(in: .whitespacesAndNewlines)
-                warnings.append(trimmed)
+                if let reason = result.extraWarning {
+                    warnings.append("\(reason)\n\n\(trimmed)")
+                } else {
+                    warnings.append(trimmed)
+                }
             }
         }
         return (shapes, warnings)
@@ -216,14 +220,23 @@ struct ACOImportService: RouteImporting {
         if radiusNM > 0                   { noteParts.append("Radius: \(radiusNM) NM") }
         let notes = noteParts.joined(separator: "\n")
 
-        let knownShapes = ["CIRCLE", "POINT", "POLYGON", "CORRIDOR", "LINE", ""]
-        let unknownShapeWarning: String? = (!shape.isEmpty && !knownShapes.contains(shape))
-            ? "Unrecognized SHAPE value '\(shape)' in record '\(displayName)' — geometry inferred from coordinates"
+        func fail(_ reason: String) -> (VectorShape?, String?) {
+            (nil, "[\(displayName)] \(reason)")
+        }
+
+        let knownShapes: Set<String> = ["CIRCLE", "POINT", "POLYGON", "CORRIDOR", "LINE", ""]
+        let unknownShapeNote: String? = (!shape.isEmpty && !knownShapes.contains(shape))
+            ? "Unrecognized SHAPE value '\(shape)' — geometry inferred from coordinates"
             : nil
 
         switch shape {
         case "CIRCLE":
-            guard let c = center else { return (nil, nil) }
+            guard let c = center else {
+                return fail("SHAPE CIRCLE — missing center point (no POINT/ record)")
+            }
+            guard radiusNM > 0 else {
+                return fail("SHAPE CIRCLE — missing or zero radius (no POINT/RADIUS:)")
+            }
             return (VectorShape(
                 name: displayName, notes: notes,
                 geometry: .circle(lat: c.latitude, lon: c.longitude,
@@ -231,20 +244,26 @@ struct ACOImportService: RouteImporting {
                 style: style), nil)
 
         case "POINT":
-            guard let c = center ?? coords.first else { return (nil, nil) }
+            guard let c = center ?? coords.first else {
+                return fail("SHAPE POINT — no coordinates found")
+            }
             return (VectorShape(
                 name: displayName, notes: notes,
                 geometry: .point(lat: c.latitude, lon: c.longitude),
                 style: style), nil)
 
         case "POLYGON":
-            guard coords.count >= 3 else { return (nil, nil) }
+            guard coords.count >= 3 else {
+                return fail("SHAPE POLYGON — only \(coords.count) coordinate(s), need ≥ 3")
+            }
             var ring = coords.map { [$0.latitude, $0.longitude] }
             if ring.first! != ring.last! { ring.append(ring[0]) }
             return (VectorShape(name: displayName, notes: notes, geometry: .polygon(coordinates: ring), style: style), nil)
 
         case "CORRIDOR", "LINE":
-            guard coords.count >= 2 else { return (nil, nil) }
+            guard coords.count >= 2 else {
+                return fail("SHAPE \(shape) — only \(coords.count) coordinate(s), need ≥ 2")
+            }
             if widthNM > 0 {
                 let poly = corridorPolygon(points: coords, halfWidthM: widthNM * 926)
                 return (VectorShape(name: displayName, notes: notes, geometry: .polygon(coordinates: poly), style: style), nil)
@@ -259,16 +278,19 @@ struct ACOImportService: RouteImporting {
             if coords.count >= 3 {
                 var ring = coords.map { [$0.latitude, $0.longitude] }
                 if ring.first! != ring.last! { ring.append(ring[0]) }
-                return (VectorShape(name: displayName, notes: notes, geometry: .polygon(coordinates: ring), style: style), unknownShapeWarning)
+                return (VectorShape(name: displayName, notes: notes, geometry: .polygon(coordinates: ring), style: style), unknownShapeNote)
             } else if coords.count == 2 {
                 return (VectorShape(name: displayName, notes: notes,
                     geometry: .polyline(coordinates: coords.map { [$0.latitude, $0.longitude] }),
-                    style: style), unknownShapeWarning)
+                    style: style), unknownShapeNote)
             } else if let c = coords.first ?? center {
                 return (VectorShape(name: displayName, notes: notes,
-                    geometry: .point(lat: c.latitude, lon: c.longitude), style: style), unknownShapeWarning)
+                    geometry: .point(lat: c.latitude, lon: c.longitude), style: style), unknownShapeNote)
             }
-            return (nil, nil)
+            if shape.isEmpty {
+                return fail("No SHAPE/ field and no coordinates found")
+            }
+            return fail("SHAPE '\(shape)' — no coordinates found")
         }
     }
 
