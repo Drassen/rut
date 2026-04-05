@@ -107,8 +107,7 @@ struct VectorToolbar: View {
                             .padding(.trailing, 8)
                         }
 
-                        formatPicker
-                        exportButton
+                        exportMenu
 
                     } else {
                         // ── Create mode ───────────────────────────────────────
