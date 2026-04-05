@@ -21,7 +21,8 @@ struct VectorToolbar: View {
     @State private var showShapeEditor = false
     @State private var showRenameFolderAlert = false
     @State private var renameFolderText = ""
-    @State private var exportFormat: VectorExportFormat = .kmz  // kept for exportSelection()
+    @State private var exportFormat: VectorExportFormat = .kmz
+    @State private var showExportDialog = false
 
     var body: some View {
         VStack(spacing: 0) {
@@ -191,19 +192,21 @@ struct VectorToolbar: View {
 
     @ViewBuilder
     private var exportMenu: some View {
-        Menu {
-            ForEach(VectorExportFormat.allCases) { fmt in
-                Button {
-                    exportFormat = fmt
-                    exportSelection()
-                } label: {
-                    Label(fmt.rawValue, systemImage: fmt == .kmz ? "map" : "antenna.radiowaves.left.and.right")
-                }
-            }
+        Button {
+            showExportDialog = true
         } label: {
             Label("Export", systemImage: "square.and.arrow.up")
         }
         .buttonStyle(RutSecondaryButtonStyle())
+        .confirmationDialog("Export format", isPresented: $showExportDialog) {
+            ForEach(VectorExportFormat.allCases) { fmt in
+                Button(fmt.rawValue) {
+                    exportFormat = fmt
+                    exportSelection()
+                }
+            }
+            Button("Cancel", role: .cancel) { }
+        }
         .sheet(item: $exportContainer) { container in
             MultiFileExportController(fileURLs: container.urls) { _ in }
         }
