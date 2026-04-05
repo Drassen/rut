@@ -87,8 +87,10 @@ struct ACOImportService: RouteImporting {
         for record in records {
             // Skip file-level header blocks (no ACMID/ line = not a shape record)
             guard record.contains("ACMID/") else { continue }
-            if let shape = parseUsmtfRecord(record) {
+            let result = parseUsmtfRecordFull(record)
+            if let shape = result.shape {
                 shapes.append(shape)
+                if let w = result.extraWarning { warnings.append(w) }
             } else {
                 let trimmed = record.trimmingCharacters(in: .whitespacesAndNewlines)
                 warnings.append(trimmed)
@@ -123,6 +125,12 @@ struct ACOImportService: RouteImporting {
     }
 
     private func parseUsmtfRecord(_ block: String) -> VectorShape? {
+        parseUsmtfRecordFull(block).shape
+    }
+
+    /// Returns (shape, extraWarning) — shape may succeed even with an unrecognized SHAPE value
+    /// (inferred from coord count). extraWarning is set if SHAPE value was not a known keyword.
+    private func parseUsmtfRecordFull(_ block: String) -> (shape: VectorShape?, extraWarning: String?) {
         var name     = ""
         var type     = ""
         var shape    = ""
@@ -193,7 +201,7 @@ struct ACOImportService: RouteImporting {
         }
 
         let displayName = name.isEmpty ? type : name
-        guard !displayName.isEmpty else { return nil }
+        guard !displayName.isEmpty else { return (nil, nil) }
         let style = styleForType(type)
 
         var noteParts: [String] = []
@@ -208,53 +216,59 @@ struct ACOImportService: RouteImporting {
         if radiusNM > 0                   { noteParts.append("Radius: \(radiusNM) NM") }
         let notes = noteParts.joined(separator: "\n")
 
+        let knownShapes = ["CIRCLE", "POINT", "POLYGON", "CORRIDOR", "LINE", ""]
+        let unknownShapeWarning: String? = (!shape.isEmpty && !knownShapes.contains(shape))
+            ? "Unrecognized SHAPE value '\(shape)' in record '\(displayName)' — geometry inferred from coordinates"
+            : nil
+
         switch shape {
         case "CIRCLE":
-            guard let c = center else { return nil }
-            return VectorShape(
+            guard let c = center else { return (nil, nil) }
+            return (VectorShape(
                 name: displayName, notes: notes,
                 geometry: .circle(lat: c.latitude, lon: c.longitude,
                                   radiusMeters: radiusNM * 1_852),
-                style: style)
+                style: style), nil)
 
         case "POINT":
-            guard let c = center ?? coords.first else { return nil }
-            return VectorShape(
+            guard let c = center ?? coords.first else { return (nil, nil) }
+            return (VectorShape(
                 name: displayName, notes: notes,
                 geometry: .point(lat: c.latitude, lon: c.longitude),
-                style: style)
+                style: style), nil)
 
         case "POLYGON":
-            guard coords.count >= 3 else { return nil }
+            guard coords.count >= 3 else { return (nil, nil) }
             var ring = coords.map { [$0.latitude, $0.longitude] }
             if ring.first! != ring.last! { ring.append(ring[0]) }
-            return VectorShape(name: displayName, notes: notes, geometry: .polygon(coordinates: ring), style: style)
+            return (VectorShape(name: displayName, notes: notes, geometry: .polygon(coordinates: ring), style: style), nil)
 
         case "CORRIDOR", "LINE":
-            guard coords.count >= 2 else { return nil }
+            guard coords.count >= 2 else { return (nil, nil) }
             if widthNM > 0 {
                 let poly = corridorPolygon(points: coords, halfWidthM: widthNM * 926)
-                return VectorShape(name: displayName, notes: notes, geometry: .polygon(coordinates: poly), style: style)
+                return (VectorShape(name: displayName, notes: notes, geometry: .polygon(coordinates: poly), style: style), nil)
             }
-            return VectorShape(
+            return (VectorShape(
                 name: displayName, notes: notes,
                 geometry: .polyline(coordinates: coords.map { [$0.latitude, $0.longitude] }),
-                style: style)
+                style: style), nil)
 
         default:
+            // Unknown or empty SHAPE — infer from coordinate count
             if coords.count >= 3 {
                 var ring = coords.map { [$0.latitude, $0.longitude] }
                 if ring.first! != ring.last! { ring.append(ring[0]) }
-                return VectorShape(name: displayName, notes: notes, geometry: .polygon(coordinates: ring), style: style)
+                return (VectorShape(name: displayName, notes: notes, geometry: .polygon(coordinates: ring), style: style), unknownShapeWarning)
             } else if coords.count == 2 {
-                return VectorShape(name: displayName, notes: notes,
+                return (VectorShape(name: displayName, notes: notes,
                     geometry: .polyline(coordinates: coords.map { [$0.latitude, $0.longitude] }),
-                    style: style)
+                    style: style), unknownShapeWarning)
             } else if let c = coords.first ?? center {
-                return VectorShape(name: displayName, notes: notes,
-                    geometry: .point(lat: c.latitude, lon: c.longitude), style: style)
+                return (VectorShape(name: displayName, notes: notes,
+                    geometry: .point(lat: c.latitude, lon: c.longitude), style: style), unknownShapeWarning)
             }
-            return nil
+            return (nil, nil)
         }
     }
 
