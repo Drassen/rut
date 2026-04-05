@@ -626,17 +626,17 @@ struct VectorToolbar: View {
             Canvas { ctx, size in
                 let w = size.width, h = size.height
                 let pts: [CGPoint] = [
-                    CGPoint(x: w * 0.05, y: h * 0.75),
-                    CGPoint(x: w * 0.30, y: h * 0.25),
-                    CGPoint(x: w * 0.55, y: h * 0.75),
-                    CGPoint(x: w * 0.80, y: h * 0.25),
-                    CGPoint(x: w * 0.95, y: h * 0.50),
+                    CGPoint(x: w * 0.15, y: h * 0.70),
+                    CGPoint(x: w * 0.35, y: h * 0.30),
+                    CGPoint(x: w * 0.55, y: h * 0.70),
+                    CGPoint(x: w * 0.75, y: h * 0.30),
+                    CGPoint(x: w * 0.85, y: h * 0.50),
                 ]
                 var path = Path()
                 path.move(to: pts[0])
                 pts.dropFirst().forEach { path.addLine(to: $0) }
                 ctx.stroke(path, with: .color(isActive ? .black : RutTheme.text),
-                           style: StrokeStyle(lineWidth: 2, lineCap: .round, lineJoin: .round))
+                           style: StrokeStyle(lineWidth: 1.6, lineCap: .round, lineJoin: .round))
             }
             .frame(width: 32, height: 28)
             .background(isActive ? RutTheme.amber : RutTheme.surface2)
