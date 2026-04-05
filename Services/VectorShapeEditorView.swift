@@ -36,7 +36,9 @@ struct VectorShapeEditorView: View {
 
                 Section("Style") {
                     ColorPicker("Stroke color", selection: $strokeColorUI, supportsOpacity: false)
-                    ColorPicker("Fill color",   selection: $fillColorUI,   supportsOpacity: true)
+                    if !isPolyline {
+                        ColorPicker("Fill color", selection: $fillColorUI, supportsOpacity: true)
+                    }
                     LabeledContent("Stroke width") {
                         HStack {
                             Slider(value: $strokeWidth, in: 0.5...8, step: 0.5)
@@ -68,6 +70,11 @@ struct VectorShapeEditorView: View {
             }
         }
         .tint(RutTheme.amber)
+    }
+
+    private var isPolyline: Bool {
+        if case .polyline = shape.geometry { return true }
+        return false
     }
 
     private func save() {
