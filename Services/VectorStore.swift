@@ -725,8 +725,20 @@ final class VectorStore: ObservableObject {
     // MARK: - Drawing commit
 
     func commitDrawing(name: String) {
+        let effectiveStyle: VectorStyle
+        if activeTool == .zigzag {
+            var s = newShapeStyle
+            switch zigzagWidth {
+            case 50: s.strokeColor = "#FF0000"; s.strokeWidth = 4
+            case 25: s.strokeColor = "#00AA00"; s.strokeWidth = 4
+            default: s.strokeColor = "#000000"; s.strokeWidth = 3
+            }
+            effectiveStyle = s
+        } else {
+            effectiveStyle = newShapeStyle
+        }
         guard activeTool != .none,
-              let shape = drawing.commitAndReset(tool: activeTool, name: name, style: newShapeStyle, widthMeters: zigzagWidth)
+              let shape = drawing.commitAndReset(tool: activeTool, name: name, style: effectiveStyle, widthMeters: zigzagWidth)
         else { return }
 
         let targetLayerId: UUID
