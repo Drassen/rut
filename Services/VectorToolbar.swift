@@ -87,7 +87,7 @@ struct VectorToolbar: View {
                         .foregroundColor(RutTheme.textMuted)
                         .padding(.leading, 6)
 
-                    toolButton(tool: .point,    icon: "mappin.circle.fill", label: "Point")
+                    pointToolButton
                     toolButton(tool: .polyline, icon: "line.diagonal",      label: "Line")
                     toolButton(tool: .zigzag,   icon: "waveform.path",      label: "Zigzag")
                     toolButton(tool: .polygon,  icon: "triangle",           label: "Polygon")
@@ -558,6 +558,25 @@ struct VectorToolbar: View {
     private var selectedShapeIsSystem: Bool {
         guard let layerId = vectorStore.activeShapeLayerId else { return false }
         return vectorStore.layerIsSystem(id: layerId)
+    }
+
+    private var pointToolButton: some View {
+        let isActive = vectorStore.activeTool == .point
+        return Button {
+            vectorStore.activeTool = .point
+        } label: {
+            VectorPointIconView(
+                icon: .circle,
+                color: isActive ? .black : RutTheme.text,
+                size: 16
+            )
+            .frame(width: 32, height: 28)
+            .background(isActive ? RutTheme.amber : RutTheme.surface2)
+            .clipShape(RoundedRectangle(cornerRadius: 6))
+            .overlay(RoundedRectangle(cornerRadius: 6).stroke(
+                isActive ? RutTheme.amber : RutTheme.border, lineWidth: 1))
+        }
+        .buttonStyle(.plain)
     }
 
     @ViewBuilder

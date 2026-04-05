@@ -115,9 +115,13 @@ struct VectorShapeRowView: View {
             }
             .buttonStyle(.plain)
 
-            Image(systemName: shapeIcon(shape.geometry))
-                .font(.system(size: 11))
-                .foregroundColor(dimColor)
+            if case .point = shape.geometry {
+                VectorPointIconView(icon: shape.style.pointIcon, color: dimColor, size: 13)
+            } else {
+                Image(systemName: shapeIcon(shape.geometry))
+                    .font(.system(size: 11))
+                    .foregroundColor(dimColor)
+            }
 
             Text(shape.name)
                 .font(.system(size: 12))
