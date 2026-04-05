@@ -580,7 +580,7 @@ struct VectorToolbar: View {
             switch vectorStore.activeTool {
             case .point:    return "Point"
             case .polyline: return "Line"
-            case .zigzag:   return "Zigzag"
+            case .zigzag:   return "Powerline"
             case .polygon:  return "Polygon"
             case .circle:   return "Circle"
             case .none:     return ""
