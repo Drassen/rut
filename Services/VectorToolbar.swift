@@ -89,7 +89,7 @@ struct VectorToolbar: View {
 
                         pointToolButton
                         toolButton(tool: .polyline, icon: "line.diagonal", label: "Line")
-                        toolButton(tool: .zigzag,   icon: "waveform.path", label: "Zigzag")
+                        zigzagToolButton
                         toolButton(tool: .polygon,  icon: "triangle",      label: "Polygon")
                         toolButton(tool: .circle,   icon: "circle",        label: "Circle")
 
@@ -616,6 +616,35 @@ struct VectorToolbar: View {
                 .buttonStyle(.plain)
             }
         }
+    }
+
+    private var zigzagToolButton: some View {
+        let isActive = vectorStore.activeTool == .zigzag
+        return Button {
+            vectorStore.activeTool = .zigzag
+        } label: {
+            Canvas { ctx, size in
+                let w = size.width, h = size.height
+                let pts: [CGPoint] = [
+                    CGPoint(x: w * 0.05, y: h * 0.75),
+                    CGPoint(x: w * 0.30, y: h * 0.25),
+                    CGPoint(x: w * 0.55, y: h * 0.75),
+                    CGPoint(x: w * 0.80, y: h * 0.25),
+                    CGPoint(x: w * 0.95, y: h * 0.50),
+                ]
+                var path = Path()
+                path.move(to: pts[0])
+                pts.dropFirst().forEach { path.addLine(to: $0) }
+                ctx.stroke(path, with: .color(isActive ? .black : RutTheme.text),
+                           style: StrokeStyle(lineWidth: 2, lineCap: .round, lineJoin: .round))
+            }
+            .frame(width: 32, height: 28)
+            .background(isActive ? RutTheme.amber : RutTheme.surface2)
+            .clipShape(RoundedRectangle(cornerRadius: 6))
+            .overlay(RoundedRectangle(cornerRadius: 6).stroke(
+                isActive ? RutTheme.amber : RutTheme.border, lineWidth: 1))
+        }
+        .buttonStyle(.plain)
     }
 
     private var pointToolButton: some View {
