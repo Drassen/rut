@@ -639,20 +639,21 @@ final class VectorStore: ObservableObject {
               let shape = drawing.commitAndReset(tool: activeTool, name: name, style: newShapeStyle)
         else { return }
 
-        let targetLayerId: UUID?
+        let targetLayerId: UUID
         if let layerId = activeLayerId {
-            addShape(shape, to: layerId)
             targetLayerId = layerId
         } else if let firstUser = layers.first(where: { !$0.isSystem }) {
-            addShape(shape, to: firstUser.id)
             targetLayerId = firstUser.id
+            activeLayerId = targetLayerId
         } else {
-            targetLayerId = nil
+            // No layer exists — auto-create one so the shape isn't lost
+            let newLayer = VectorLayer(name: "Layer 1")
+            layers.append(newLayer)
+            activeLayerId = newLayer.id
+            targetLayerId = newLayer.id
         }
-
-        if let layerId = targetLayerId {
-            selectShape(id: shape.id, layerId: layerId)
-        }
+        addShape(shape, to: targetLayerId)
+        selectShape(id: shape.id, layerId: targetLayerId)
     }
 
     // MARK: - Private helpers

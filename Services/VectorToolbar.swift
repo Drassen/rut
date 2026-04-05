@@ -119,7 +119,9 @@ struct VectorToolbar: View {
 
                         Button("Done") {
                             if vectorStore.activeLayerId == nil {
-                                if vectorStore.layers.first(where: { !$0.isSystem }) == nil {
+                                if let existing = vectorStore.layers.first(where: { !$0.isSystem }) {
+                                    vectorStore.activeLayerId = existing.id
+                                } else {
                                     vectorStore.addLayer(name: "Layer 1")
                                 }
                             }
