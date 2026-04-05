@@ -1,4 +1,5 @@
 import SwiftUI
+import CoreLocation
 
 struct WaypointTypePickerSheet: View {
     @EnvironmentObject var navStore: NavigationStore
@@ -14,6 +15,8 @@ struct WaypointTypePickerSheet: View {
     @State private var editedLat: String = ""
     @State private var editedLon: String = ""
     @State private var editedElev: String = ""
+    @State private var mgrsText: String = ""
+    @State private var mgrsValid: Bool? = nil
     
     var body: some View {
         NavigationStack { // Använd NavigationStack istället för NavigationView (modernare)
@@ -49,12 +52,39 @@ struct WaypointTypePickerSheet: View {
                     
                     // SEKTION 2: Redigering av Position
                     Section(header: Text("Position")) {
+                        HStack {
+                            TextField("MGRS (e.g. 33VXF1234567890)", text: $mgrsText)
+                                .textInputAutocapitalization(.characters)
+                                .autocorrectionDisabled()
+                                .keyboardType(.asciiCapable)
+                                .onChange(of: mgrsText) { _, new in
+                                    let trimmed = new.trimmingCharacters(in: .whitespaces)
+                                    guard !trimmed.isEmpty else { mgrsValid = nil; return }
+                                    if CoordinateParser.looksLikeMGRS(trimmed) {
+                                        if let coord = CoordinateParser.parseMGRS(trimmed) {
+                                            editedLat = String(format: "%.6f", coord.latitude)
+                                            editedLon = String(format: "%.6f", coord.longitude)
+                                            mgrsValid = true
+                                        } else {
+                                            mgrsValid = false
+                                        }
+                                    } else {
+                                        mgrsValid = nil
+                                    }
+                                }
+                            if let valid = mgrsValid {
+                                Image(systemName: valid ? "checkmark.circle.fill" : "xmark.circle.fill")
+                                    .foregroundColor(valid ? .green : .red)
+                                    .font(.system(size: 14))
+                            }
+                        }
+
                         TextField("Latitude", text: $editedLat)
                             .keyboardType(.decimalPad)
-                        
+
                         TextField("Longitude", text: $editedLon)
                             .keyboardType(.decimalPad)
-                        
+
                         TextField("Elevation (m)", text: $editedElev)
                             .keyboardType(.decimalPad)
                     }

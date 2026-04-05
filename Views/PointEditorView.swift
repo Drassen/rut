@@ -122,6 +122,9 @@ struct PointEditorView: View {
             
             // --- SEKTION 3: POSITION ---
             Section("Position") {
+                if !isReadOnly {
+                    MGRSCoordinateField(label: "MGRS", lat: $lat, lon: $lon, disabled: isReadOnly)
+                }
                 Grid(alignment: .leading, verticalSpacing: 10) {
                     GridRow {
                         Text("Lat:")
