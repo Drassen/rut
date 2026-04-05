@@ -364,7 +364,7 @@ struct RutMapView: View {
     private func vectorLayersContent() -> some MapContent {
         let selectedId = vectorStore.activeShapeId
         let editingId  = vectorStore.isEditingShape ? selectedId : nil
-        // Polygons (includes airspace from VectorStore system layer)
+        // Polygons
         ForEach(vectorStore.visiblePolygons().filter { $0.id != editingId }) { item in
             let sel = item.id == selectedId
             MapPolygon(coordinates: item.coordinates)
@@ -416,7 +416,6 @@ struct RutMapView: View {
     }
 
     // MARK: - 0a. Airspace content
-
     @MapContentBuilder
     private func airspaceContent() -> some MapContent {
         ForEach(airspaceService.zones) { zone in
