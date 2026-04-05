@@ -79,86 +79,79 @@ struct VectorToolbar: View {
                     }
                     .buttonStyle(RutSecondaryButtonStyle())
                 } else {
-                    // ── Default: tool pills ───────────────────────────────────
-                    toolButton(tool: .none, icon: "cursorarrow", label: "Select")
+                    if vectorStore.activeTool == .none {
+                        // ── Default: all tool pills ───────────────────────────
+                        toolButton(tool: .none, icon: "cursorarrow", label: "Select")
 
-                    Text("Create shape:")
-                        .font(.system(size: 11))
-                        .foregroundColor(RutTheme.textMuted)
-                        .padding(.leading, 6)
+                        Text("Create shape:")
+                            .font(.system(size: 11))
+                            .foregroundColor(RutTheme.textMuted)
+                            .padding(.leading, 6)
 
-                    pointToolButton
-                    toolButton(tool: .polyline, icon: "line.diagonal",      label: "Line")
-                    toolButton(tool: .zigzag,   icon: "waveform.path",      label: "Zigzag")
-                    toolButton(tool: .polygon,  icon: "triangle",           label: "Polygon")
-                    toolButton(tool: .circle,   icon: "circle",             label: "Circle")
+                        pointToolButton
+                        toolButton(tool: .polyline, icon: "line.diagonal", label: "Line")
+                        toolButton(tool: .zigzag,   icon: "waveform.path", label: "Zigzag")
+                        toolButton(tool: .polygon,  icon: "triangle",      label: "Polygon")
+                        toolButton(tool: .circle,   icon: "circle",        label: "Circle")
 
-                    Spacer()
+                        Spacer()
 
-                    // Edit Group Name — shown when a non-system folder is selected
-                    if let folderId = vectorStore.activeLayerId,
-                       vectorStore.activeShapeId == nil,
-                       !vectorStore.layerIsSystem(id: folderId) {
-                        Button("Edit group name") {
-                            if let name = vectorStore.layerName(id: folderId) {
-                                renameFolderText = name
-                            }
-                            showRenameFolderAlert = true
-                        }
-                        .buttonStyle(RutSecondaryButtonStyle())
-                        .padding(.trailing, 8)
-                    }
-
-                    // Zigzag width picker
-                    if vectorStore.activeTool == .zigzag && vectorStore.drawing.isActive {
-                        HStack(spacing: 4) {
-                            Text("Width:")
-                                .font(.system(size: 11))
-                                .foregroundColor(RutTheme.textMuted)
-                            ForEach([15.0, 25.0, 50.0], id: \.self) { w in
-                                let sel = vectorStore.zigzagWidth == w
-                                Button("\(Int(w))m") {
-                                    vectorStore.zigzagWidth = w
+                        if let folderId = vectorStore.activeLayerId,
+                           vectorStore.activeShapeId == nil,
+                           !vectorStore.layerIsSystem(id: folderId) {
+                            Button("Edit group name") {
+                                if let name = vectorStore.layerName(id: folderId) {
+                                    renameFolderText = name
                                 }
-                                .font(.system(size: 12, weight: sel ? .bold : .regular))
-                                .foregroundColor(sel ? .black : RutTheme.text)
-                                .padding(.horizontal, 8)
-                                .padding(.vertical, 4)
-                                .background(sel ? RutTheme.amber : RutTheme.surface2)
-                                .clipShape(RoundedRectangle(cornerRadius: 6))
-                                .overlay(RoundedRectangle(cornerRadius: 6).stroke(
-                                    sel ? RutTheme.amber : RutTheme.border, lineWidth: 1))
-                                .buttonStyle(.plain)
+                                showRenameFolderAlert = true
                             }
+                            .buttonStyle(RutSecondaryButtonStyle())
+                            .padding(.trailing, 8)
                         }
-                    }
 
-                    // Done / Undo — only when actively drawing
-                    if vectorStore.activeTool != .none && vectorStore.drawing.isActive {
-                        Button {
-                            vectorStore.drawing.undoLastVertex()
-                        } label: {
-                            Image(systemName: "arrow.uturn.backward")
-                        }
-                        .buttonStyle(RutSecondaryButtonStyle())
-
-                        Button("Done") {
-                            if vectorStore.activeLayerId == nil {
-                                if let existing = vectorStore.layers.first(where: { !$0.isSystem }) {
-                                    vectorStore.activeLayerId = existing.id
-                                } else {
-                                    vectorStore.addLayer(name: "Layer 1")
-                                }
-                            }
-                            pendingShapeName = defaultName()
-                            showNewShapeNameAlert = true
-                        }
-                        .buttonStyle(RutPrimaryButtonStyle())
-                    }
-
-                    if !(vectorStore.activeTool != .none && vectorStore.drawing.isActive) {
                         formatPicker
                         exportButton
+
+                    } else {
+                        // ── Create mode ───────────────────────────────────────
+                        Button {
+                            vectorStore.activeTool = .none
+                            vectorStore.drawing.cancel()
+                        } label: {
+                            Image(systemName: "chevron.left")
+                                .font(.system(size: 14, weight: .semibold))
+                        }
+                        .buttonStyle(RutSecondaryButtonStyle())
+
+                        activeToolBadge
+
+                        if vectorStore.activeTool == .zigzag {
+                            zigzagWidthPicker
+                        }
+
+                        Spacer()
+
+                        if vectorStore.drawing.isActive {
+                            Button {
+                                vectorStore.drawing.undoLastVertex()
+                            } label: {
+                                Image(systemName: "arrow.uturn.backward")
+                            }
+                            .buttonStyle(RutSecondaryButtonStyle())
+
+                            Button("Done") {
+                                if vectorStore.activeLayerId == nil {
+                                    if let existing = vectorStore.layers.first(where: { !$0.isSystem }) {
+                                        vectorStore.activeLayerId = existing.id
+                                    } else {
+                                        vectorStore.addLayer(name: "Layer 1")
+                                    }
+                                }
+                                pendingShapeName = defaultName()
+                                showNewShapeNameAlert = true
+                            }
+                            .buttonStyle(RutPrimaryButtonStyle())
+                        }
                     }
                 }
             }
@@ -584,6 +577,51 @@ struct VectorToolbar: View {
     private var selectedShapeIsSystem: Bool {
         guard let layerId = vectorStore.activeShapeLayerId else { return false }
         return vectorStore.layerIsSystem(id: layerId)
+    }
+
+    // Active tool label shown in create mode
+    @ViewBuilder
+    private var activeToolBadge: some View {
+        let label: String = {
+            switch vectorStore.activeTool {
+            case .point:    return "Point"
+            case .polyline: return "Line"
+            case .zigzag:   return "Zigzag"
+            case .polygon:  return "Polygon"
+            case .circle:   return "Circle"
+            case .none:     return ""
+            }
+        }()
+        Text(label)
+            .font(.system(size: 12, weight: .semibold))
+            .foregroundColor(.black)
+            .padding(.horizontal, 10)
+            .padding(.vertical, 5)
+            .background(RutTheme.amber)
+            .clipShape(RoundedRectangle(cornerRadius: 6))
+    }
+
+    private var zigzagWidthPicker: some View {
+        HStack(spacing: 4) {
+            Text("Width:")
+                .font(.system(size: 11))
+                .foregroundColor(RutTheme.textMuted)
+            ForEach([15.0, 25.0, 50.0], id: \.self) { w in
+                let sel = vectorStore.zigzagWidth == w
+                Button("\(Int(w))m") {
+                    vectorStore.zigzagWidth = w
+                }
+                .font(.system(size: 12, weight: sel ? .bold : .regular))
+                .foregroundColor(sel ? .black : RutTheme.text)
+                .padding(.horizontal, 8)
+                .padding(.vertical, 4)
+                .background(sel ? RutTheme.amber : RutTheme.surface2)
+                .clipShape(RoundedRectangle(cornerRadius: 6))
+                .overlay(RoundedRectangle(cornerRadius: 6).stroke(
+                    sel ? RutTheme.amber : RutTheme.border, lineWidth: 1))
+                .buttonStyle(.plain)
+            }
+        }
     }
 
     private var pointToolButton: some View {
