@@ -1,4 +1,5 @@
 import SwiftUI
+import zlib
 
 // MARK: - VectorToolbar
 
@@ -24,6 +25,7 @@ struct VectorToolbar: View {
                     Button("Cancel") { vectorStore.cancelShapeEdit() }
                         .buttonStyle(RutSecondaryButtonStyle())
                     Spacer()
+                    exportButton
                 } else if vectorStore.activeShapeId != nil && vectorStore.activeTool == .none {
                     // ── Shape selected ────────────────────────────────────────
                     let isSystem = selectedShapeIsSystem
@@ -56,6 +58,8 @@ struct VectorToolbar: View {
 
                     Spacer()
 
+                    exportButton
+
                     Button {
                         vectorStore.deselectShape()
                     } label: {
@@ -72,7 +76,7 @@ struct VectorToolbar: View {
                         .foregroundColor(RutTheme.textMuted)
                         .padding(.leading, 6)
 
-                    toolButton(tool: .point,    icon: "mappin",        label: "Point")
+                    toolButton(tool: .point,    icon: "mappin.circle.fill", label: "Point")
                     toolButton(tool: .polyline, icon: "line.diagonal", label: "Line")
                     toolButton(tool: .polygon,  icon: "triangle",      label: "Polygon")
                     toolButton(tool: .circle,   icon: "circle",        label: "Circle")
@@ -114,16 +118,7 @@ struct VectorToolbar: View {
                         .buttonStyle(RutPrimaryButtonStyle())
                     }
 
-                    // KML export
-                    Button {
-                        exportVector()
-                    } label: {
-                        Label("Export", systemImage: "square.and.arrow.up")
-                    }
-                    .buttonStyle(RutSecondaryButtonStyle())
-                    .sheet(item: $exportContainer) { container in
-                        MultiFileExportController(fileURLs: container.urls) { _ in }
-                    }
+                    exportButton
                 }
             }
             .padding(.horizontal, 14)
@@ -159,6 +154,172 @@ struct VectorToolbar: View {
                     .environmentObject(vectorStore)
             }
         }
+    }
+
+    // MARK: - Export button
+
+    @ViewBuilder
+    private var exportButton: some View {
+        Button {
+            exportSelection()
+        } label: {
+            Label(exportButtonLabel, systemImage: "square.and.arrow.up")
+        }
+        .buttonStyle(RutSecondaryButtonStyle())
+        .sheet(item: $exportContainer) { container in
+            MultiFileExportController(fileURLs: container.urls) { _ in }
+        }
+    }
+
+    private var exportButtonLabel: String {
+        if vectorStore.activeShapeId != nil {
+            return "Export Shape"
+        } else if vectorStore.activeLayerId != nil && vectorStore.activeShapeId == nil {
+            return "Export Group"
+        } else {
+            return "Export"
+        }
+    }
+
+    // MARK: - Export logic
+
+    private func exportSelection() {
+        let kmlService = KMLVectorExportService()
+        do {
+            // Determine what to export
+            let layersToExport: [VectorLayer]
+            let outputName: String
+
+            if let shapeId = vectorStore.activeShapeId,
+               let found = vectorStore.findShape(id: shapeId),
+               let parentLayer = vectorStore.findLayer(id: found.layerId) {
+                // Export single shape wrapped in a copy of its parent layer
+                var singleLayer = parentLayer
+                singleLayer.shapes = [found.shape]
+                singleLayer.children = []
+                layersToExport = [singleLayer]
+                outputName = sanitizeFilename(found.shape.name)
+            } else if let layerId = vectorStore.activeLayerId,
+                      let layer = vectorStore.findLayer(id: layerId) {
+                layersToExport = [layer]
+                outputName = sanitizeFilename(layer.name)
+            } else {
+                layersToExport = vectorStore.layers.filter { !$0.isSystem }
+                outputName = "VectorLayers"
+            }
+
+            guard !layersToExport.isEmpty else {
+                toastManager.show(message: "Nothing to export.", kind: .info)
+                return
+            }
+
+            // Build KML
+            var doc = NavigationDocument()
+            doc.vectorLayers = layersToExport
+            let files = try kmlService.export(document: doc, selectedRoutes: [])
+            guard let kmlFile = files.first else {
+                toastManager.show(message: "Export failed.", kind: .info)
+                return
+            }
+
+            // Package as KMZ (minimal ZIP, stored mode)
+            let kmzData = buildKMZ(kmlData: kmlFile.data)
+
+            let tempDir = FileManager.default.temporaryDirectory
+                .appendingPathComponent(UUID().uuidString)
+            try FileManager.default.createDirectory(at: tempDir, withIntermediateDirectories: true)
+
+            let kmzURL = tempDir.appendingPathComponent(outputName + ".kmz")
+            try kmzData.write(to: kmzURL, options: .atomic)
+
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
+                self.exportContainer = ExportContainer(urls: [kmzURL])
+            }
+        } catch {
+            toastManager.show(message: error.localizedDescription)
+        }
+    }
+
+    // MARK: - Minimal ZIP / KMZ builder (stored, no compression)
+
+    private func buildKMZ(kmlData: Data) -> Data {
+        let filename = "doc.kml"
+        let filenameBytes = Array(filename.utf8)
+        let fileSize = UInt32(kmlData.count)
+
+        // CRC-32 via zlib
+        let crc: UInt32 = kmlData.withUnsafeBytes { ptr -> UInt32 in
+            guard let base = ptr.baseAddress else { return 0 }
+            let result = zlib.crc32(0, base.assumingMemoryBound(to: Bytef.self), uInt(kmlData.count))
+            return UInt32(result & 0xFFFFFFFF)
+        }
+
+        var data = Data()
+
+        // ── Local file header ──────────────────────────────────────────────
+        let localHeaderOffset = UInt32(0)
+        data.append(contentsOf: [0x50, 0x4B, 0x03, 0x04])   // signature
+        data.append(uint16LE: 0x0014)   // version needed
+        data.append(uint16LE: 0x0000)   // flags
+        data.append(uint16LE: 0x0000)   // compression: stored
+        data.append(uint16LE: 0x0000)   // mod time
+        data.append(uint16LE: 0x0000)   // mod date
+        data.append(uint32LE: crc)
+        data.append(uint32LE: fileSize) // compressed size
+        data.append(uint32LE: fileSize) // uncompressed size
+        data.append(uint16LE: UInt16(filenameBytes.count))
+        data.append(uint16LE: 0x0000)   // extra field length
+        data.append(contentsOf: filenameBytes)
+        data.append(kmlData)
+
+        // ── Central directory header ───────────────────────────────────────
+        let centralDirOffset = UInt32(data.count)
+        data.append(contentsOf: [0x50, 0x4B, 0x01, 0x02])   // signature
+        data.append(uint16LE: 0x0014)   // version made by
+        data.append(uint16LE: 0x0014)   // version needed
+        data.append(uint16LE: 0x0000)   // flags
+        data.append(uint16LE: 0x0000)   // compression: stored
+        data.append(uint16LE: 0x0000)   // mod time
+        data.append(uint16LE: 0x0000)   // mod date
+        data.append(uint32LE: crc)
+        data.append(uint32LE: fileSize) // compressed size
+        data.append(uint32LE: fileSize) // uncompressed size
+        data.append(uint16LE: UInt16(filenameBytes.count))
+        data.append(uint16LE: 0x0000)   // extra field length
+        data.append(uint16LE: 0x0000)   // comment length
+        data.append(uint16LE: 0x0000)   // disk start
+        data.append(uint16LE: 0x0000)   // internal attrs
+        data.append(uint32LE: 0x00000000) // external attrs
+        data.append(uint32LE: localHeaderOffset)
+        data.append(contentsOf: filenameBytes)
+
+        let centralDirSize = UInt32(data.count) - centralDirOffset
+
+        // ── End of central directory ───────────────────────────────────────
+        data.append(contentsOf: [0x50, 0x4B, 0x05, 0x06])   // signature
+        data.append(uint16LE: 0x0000)   // disk number
+        data.append(uint16LE: 0x0000)   // start disk
+        data.append(uint16LE: 0x0001)   // entries on this disk
+        data.append(uint16LE: 0x0001)   // total entries
+        data.append(uint32LE: centralDirSize)
+        data.append(uint32LE: centralDirOffset)
+        data.append(uint16LE: 0x0000)   // comment length
+
+        return data
+    }
+
+    // MARK: - Helpers
+
+    private func sanitizeFilename(_ name: String) -> String {
+        let allowed = CharacterSet.alphanumerics.union(CharacterSet(charactersIn: "-_ "))
+        let cleaned = name.unicodeScalars
+            .filter { allowed.contains($0) }
+            .map { String($0) }
+            .joined()
+            .trimmingCharacters(in: .whitespaces)
+            .replacingOccurrences(of: " ", with: "_")
+        let trimmed = String(cleaned.prefix(60))
+        return trimmed.isEmpty ? "export" : trimmed
     }
 
     private var selectedShapeIsPoint: Bool {
@@ -203,30 +364,17 @@ struct VectorToolbar: View {
         }
         return base
     }
+}
 
-    private func exportVector() {
-        let exporter = KMLVectorExportService()
-        do {
-            var doc = NavigationDocument()
-            doc.vectorLayers = CoreServices.shared.vectorStore.documentLayers()
-            let files = try exporter.export(document: doc, selectedRoutes: [])
-            guard !files.isEmpty else {
-                toastManager.show(message: "No vector layers to export.", kind: .info); return
-            }
-            let tempDir = FileManager.default.temporaryDirectory
-                .appendingPathComponent(UUID().uuidString)
-            try FileManager.default.createDirectory(at: tempDir, withIntermediateDirectories: true)
-            var urls: [URL] = []
-            for file in files {
-                let url = tempDir.appendingPathComponent(file.filename)
-                try file.data.write(to: url, options: .atomic)
-                urls.append(url)
-            }
-            DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
-                self.exportContainer = ExportContainer(urls: urls)
-            }
-        } catch {
-            toastManager.show(message: error.localizedDescription)
-        }
+// MARK: - Data ZIP helpers
+
+private extension Data {
+    mutating func append(uint16LE value: UInt16) {
+        var v = value.littleEndian
+        append(Data(bytes: &v, count: 2))
+    }
+    mutating func append(uint32LE value: UInt32) {
+        var v = value.littleEndian
+        append(Data(bytes: &v, count: 4))
     }
 }

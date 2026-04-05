@@ -66,6 +66,7 @@ final class CoreServices: ObservableObject {
             FPLImportService(),
             GPXImportService(),
             KMLImportService(),
+            KMZImportService(),
             RTEImportService(),
             RUTImportService(),
             APTImportService(),
@@ -149,10 +150,11 @@ final class CoreServices: ObservableObject {
     // MARK: - Import
 
     @MainActor
-    func importDocuments(from urls: [URL]) async {
+    func importDocuments(from urls: [URL], kmlAsVector: Bool = false) async {
         var newDoc = NavigationDocument()
         var importedVectorLayers: [VectorLayer] = []
 
+        var importedVectorShapes = 0
         var importedRoutePoints = 0
         var importedAirports = 0
         var importedNavaids = 0
@@ -171,6 +173,7 @@ final class CoreServices: ObservableObject {
                 continue
             }
 
+            // KMZ counted as zip by some systems — use extension-based lookup
             guard let baseImporter = importer(for: url) else {
                 let err = RutError.invalidFormat("Unsupported file: \(originalName)")
                 ErrorLogger.shared.log(err)
@@ -190,14 +193,19 @@ final class CoreServices: ObservableObject {
                 try FileManager.default.copyItem(at: url, to: localURL)
                 defer { try? FileManager.default.removeItem(at: localURL) }
 
-                // Inject context for A109
+                // Inject context for A109; remap KML/KMZ to vector importers if requested
                 let finalImporter: RouteImporting
+                let ext = localURL.pathExtension.lowercased()
                 if baseImporter is A109ImportService {
                     finalImporter = A109ImportService(
                         existingAirports: navStore.document.userAirports,
                         existingNavaids: navStore.document.userNavaids,
                         existingWaypoints: navStore.document.userWaypoints
                     )
+                } else if kmlAsVector && ext == "kml" {
+                    finalImporter = KMLVectorImportService()
+                } else if kmlAsVector && ext == "kmz" {
+                    finalImporter = KMZImportService()
                 } else {
                     finalImporter = baseImporter
                 }
@@ -215,6 +223,7 @@ final class CoreServices: ObservableObject {
                 for layer in doc.vectorLayers where !layer.isSystem {
                     if !importedVectorLayers.contains(where: { $0.name == layer.name }) {
                         importedVectorLayers.append(layer)
+                        importedVectorShapes += layer.shapes.count
                     }
                 }
 
@@ -244,15 +253,16 @@ final class CoreServices: ObservableObject {
         
         navStore.deriveUserAirportsIfNeeded()
 
-        let totalItems = importedRoutePoints + importedAirports + importedNavaids + importedWaypoints + importedRoutesCount
-        
+        let totalItems = importedRoutePoints + importedAirports + importedNavaids + importedWaypoints + importedRoutesCount + importedVectorShapes
+
         if totalItems > 0 {
             var parts: [String] = []
             if importedRoutesCount > 0 { parts.append("\(importedRoutesCount) routes") }
             if importedAirports > 0 { parts.append("\(importedAirports) airports") }
             if importedNavaids > 0 { parts.append("\(importedNavaids) navaids") }
             if importedWaypoints > 0 { parts.append("\(importedWaypoints) waypoints") }
-            
+            if importedVectorShapes > 0 { parts.append("\(importedVectorShapes) shapes") }
+
             let message = "Imported: " + parts.joined(separator: ", ")
             toastManager.show(message: message, kind: .info)
         } else {

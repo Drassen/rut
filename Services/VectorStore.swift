@@ -1,6 +1,6 @@
 import Foundation
-import MapKit
 import Combine
+import MapKit
 
 // MARK: - Flat renderable types (for MapKit ForEach)
 
@@ -140,24 +140,25 @@ final class VectorStore: ObservableObject {
     @Published var activeShapeLayerId: UUID? = nil
     @Published var isEditingShape: Bool = false
     @Published var editingVertices: [CLLocationCoordinate2D] = []
-    @Published var draggingLayerId: UUID? = nil
-    @Published var dragTargetIndex: Int? = nil
-    @Published var draggingLayerParentId: UUID? = nil  // nil = top-level
-    @Published var dragIntoTarget: Bool = false
-    @Published var draggingShapeId: UUID? = nil
-    @Published var draggingShapeLayerId: UUID? = nil
-    @Published var dragShapeTargetIndex: Int? = nil
+    /// Mirrors the LFV airspace system layer's isVisible flag.
+    /// Separate @Published so the map can gate airspace rendering without
+    /// going through layers (which re-renders user shapes too).
+    @Published var airspaceVisible: Bool = true
+
+    // Drag state is panel-local — NOT @Published to avoid triggering map re-renders on every finger move
+    var draggingLayerId: UUID? = nil
+    var dragTargetIndex: Int? = nil
+    var draggingLayerParentId: UUID? = nil
+    var dragIntoTarget: Bool = false
+    var draggingShapeId: UUID? = nil
+    var draggingShapeLayerId: UUID? = nil
+    var dragShapeTargetIndex: Int? = nil
 
     let drawing = DrawingStateMachine()
-    private var drawingSink: AnyCancellable?
 
     private static let airspaceSystemLayerId = UUID(uuidString: "AAAAAAAA-AAAA-AAAA-AAAA-AAAAAAAAAAAA")!
 
-    init() {
-        // Forward DrawingStateMachine changes so observers of VectorStore re-render
-        drawingSink = drawing.objectWillChange
-            .sink { [weak self] _ in self?.objectWillChange.send() }
-    }
+    init() { }
 
     // MARK: - Layer CRUD
 
@@ -179,6 +180,9 @@ final class VectorStore: ObservableObject {
 
     func toggleLayerVisibility(id: UUID) {
         mutateLayer(id: id, in: &layers) { $0.isVisible.toggle() }
+        if id == Self.airspaceSystemLayerId {
+            airspaceVisible = findLayer(id: id)?.isVisible ?? airspaceVisible
+        }
     }
 
     func toggleLayerExpanded(id: UUID) {
@@ -535,59 +539,49 @@ final class VectorStore: ObservableObject {
 
     func syncAirspaceSystemLayer(zones: [AirspaceZone]) {
         let systemId = VectorStore.airspaceSystemLayerId
-        let wasVisible = layers.first(where: { $0.id == systemId })?.isVisible ?? true
+        let existing = layers.first(where: { $0.id == systemId })
+        let wasVisible  = existing?.isVisible  ?? true
+        let wasExpanded = existing?.isExpanded ?? false
 
-        let typeOrder: [AirspaceZone.ZoneType] = [.ctr, .atz, .rsta, .dnga]
+        // System layer is metadata-only (shapes not stored — airspace is rendered
+        // directly from AirspaceService.zones to avoid polluting the layers array
+        // with hundreds of complex polygon shapes).
         let typeNames: [AirspaceZone.ZoneType: String] = [
             .ctr: "CTR", .atz: "ATZ", .rsta: "RSTA", .dnga: "DNGA"
         ]
-        let typeColors: [AirspaceZone.ZoneType: (stroke: String, fill: String)] = [
-            .ctr:  ("#3366FF", "#3366FF14"),
-            .atz:  ("#00CCCC", "#00CCCC14"),
-            .rsta: ("#FF3322", "#FF33221E"),
-            .dnga: ("#FF8800", "#FF88001E"),
-        ]
-
-        var children: [VectorLayer] = []
-        for zoneType in typeOrder {
-            let matching = zones.filter { $0.type == zoneType }
-            guard !matching.isEmpty else { continue }
-            let colors = typeColors[zoneType]!
-            let shapes = matching.map { zone in
-                VectorShape(
-                    name: zone.name,
-                    geometry: .polygon(coordinates: zone.coordinates.map { [$0.latitude, $0.longitude] }),
-                    style: VectorStyle(strokeColor: colors.stroke, fillColor: colors.fill,
-                                      strokeWidth: 1.0, opacity: 1.0)
-                )
-            }
-            var child = VectorLayer(name: typeNames[zoneType]!, isSystem: true, isExpanded: false)
-            child.shapes = shapes
-            children.append(child)
+        let typeOrder: [AirspaceZone.ZoneType] = [.ctr, .atz, .rsta, .dnga]
+        let children: [VectorLayer] = typeOrder.compactMap { zoneType in
+            let count = zones.filter { $0.type == zoneType }.count
+            guard count > 0 else { return nil }
+            return VectorLayer(name: "\(typeNames[zoneType]!) (\(count))", isSystem: true, isExpanded: false)
         }
 
-        let wasExpanded = layers.first(where: { $0.id == systemId })?.isExpanded ?? false
         var systemLayer = VectorLayer(id: systemId, name: "LFV Luftrum", isSystem: true)
-        systemLayer.isVisible = wasVisible
+        systemLayer.isVisible  = wasVisible
         systemLayer.isExpanded = wasExpanded
-        systemLayer.children = children
+        systemLayer.children   = children
 
         if let idx = layers.firstIndex(where: { $0.id == systemId }) {
             layers[idx] = systemLayer
         } else {
             layers.insert(systemLayer, at: 0)
         }
+        airspaceVisible = wasVisible
     }
 
     // MARK: - Map rendering helpers
 
+    // These functions only return USER (non-system) shapes.
+    // Airspace (system layer) is rendered separately from AirspaceService.zones
+    // so it doesn't re-render on every VectorStore state change.
+
     func visiblePolygons() -> [FlatVectorPolygon] {
         var result: [FlatVectorPolygon] = []
-        collectByType(from: layers, parentVisible: true, isSystem: false) { shape, layerId, sys in
+        collectByType(from: layers.filter { !$0.isSystem }, parentVisible: true, isSystem: false) { shape, layerId, _ in
             if case .polygon(let coords) = shape.geometry {
                 let cl = coords.map { CLLocationCoordinate2D(latitude: $0[0], longitude: $0[1]) }
                 result.append(FlatVectorPolygon(id: shape.id, layerId: layerId, name: shape.name,
-                                               coordinates: cl, style: shape.style, isSystem: sys))
+                                               coordinates: cl, style: shape.style, isSystem: false))
             }
         }
         return result
@@ -595,11 +589,11 @@ final class VectorStore: ObservableObject {
 
     func visiblePolylines() -> [FlatVectorPolyline] {
         var result: [FlatVectorPolyline] = []
-        collectByType(from: layers, parentVisible: true, isSystem: false) { shape, layerId, sys in
+        collectByType(from: layers.filter { !$0.isSystem }, parentVisible: true, isSystem: false) { shape, layerId, _ in
             if case .polyline(let coords) = shape.geometry {
                 let cl = coords.map { CLLocationCoordinate2D(latitude: $0[0], longitude: $0[1]) }
                 result.append(FlatVectorPolyline(id: shape.id, layerId: layerId, name: shape.name,
-                                                coordinates: cl, style: shape.style, isSystem: sys))
+                                                coordinates: cl, style: shape.style, isSystem: false))
             }
         }
         return result
@@ -607,12 +601,12 @@ final class VectorStore: ObservableObject {
 
     func visibleCircles() -> [FlatVectorCircle] {
         var result: [FlatVectorCircle] = []
-        collectByType(from: layers, parentVisible: true, isSystem: false) { shape, layerId, sys in
+        collectByType(from: layers.filter { !$0.isSystem }, parentVisible: true, isSystem: false) { shape, layerId, _ in
             if case .circle(let lat, let lon, let r) = shape.geometry {
                 result.append(FlatVectorCircle(
                     id: shape.id, layerId: layerId, name: shape.name,
                     center: CLLocationCoordinate2D(latitude: lat, longitude: lon),
-                    radiusMeters: r, style: shape.style, isSystem: sys))
+                    radiusMeters: r, style: shape.style, isSystem: false))
             }
         }
         return result
@@ -620,12 +614,12 @@ final class VectorStore: ObservableObject {
 
     func visiblePoints() -> [FlatVectorPoint] {
         var result: [FlatVectorPoint] = []
-        collectByType(from: layers, parentVisible: true, isSystem: false) { shape, layerId, sys in
+        collectByType(from: layers.filter { !$0.isSystem }, parentVisible: true, isSystem: false) { shape, layerId, _ in
             if case .point(let lat, let lon) = shape.geometry {
                 result.append(FlatVectorPoint(
                     id: shape.id, layerId: layerId, name: shape.name,
                     coordinate: CLLocationCoordinate2D(latitude: lat, longitude: lon),
-                    style: shape.style, isSystem: sys))
+                    style: shape.style, isSystem: false))
             }
         }
         return result

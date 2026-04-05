@@ -4,6 +4,17 @@ import SwiftUI
 
 struct VectorLayerPanel: View {
     @EnvironmentObject var vectorStore: VectorStore
+
+    // Drag state is local to the panel — keeps it out of VectorStore/@Published
+    // so the map doesn't re-render on every finger move.
+    @State private var draggingLayerId: UUID? = nil
+    @State private var dragTargetIndex: Int? = nil
+    @State private var draggingLayerParentId: UUID? = nil
+    @State private var dragIntoTarget: Bool = false
+    @State private var draggingShapeId: UUID? = nil
+    @State private var draggingShapeLayerId: UUID? = nil
+    @State private var dragShapeTargetIndex: Int? = nil
+
     @State private var showAddLayerAlert = false
     @State private var newLayerName = ""
 
@@ -56,13 +67,13 @@ struct VectorLayerPanel: View {
                                  layerFlatIndex: Int,
                                  layerCount: Int,
                                  panelEntries: [VectorStore.FlatPanelEntry]) -> some View {
-        let isLayerDropTarget = vectorStore.draggingLayerId != nil && vectorStore.dragTargetIndex == layerFlatIndex
-        let dropInto          = isLayerDropTarget && vectorStore.dragIntoTarget
+        let isLayerDropTarget = draggingLayerId != nil && dragTargetIndex == layerFlatIndex
+        let dropInto          = isLayerDropTarget && dragIntoTarget
 
         // Shape drag indicator on layer header rows
         let layerPanelIdx     = panelEntries.firstIndex(where: { $0.id == entry.layer.id }) ?? -1
-        let isShapeDropTarget = vectorStore.draggingShapeId != nil
-                                && vectorStore.dragShapeTargetIndex == layerPanelIdx
+        let isShapeDropTarget = draggingShapeId != nil
+                                && dragShapeTargetIndex == layerPanelIdx
 
         VStack(spacing: 0) {
             if isLayerDropTarget && !dropInto {
@@ -70,7 +81,7 @@ struct VectorLayerPanel: View {
             }
             VectorLayerRowView(layer: entry.layer, depth: entry.depth)
                 .environmentObject(vectorStore)
-                .opacity(vectorStore.draggingLayerId == entry.layer.id ? 0.4 : 1.0)
+                .opacity(draggingLayerId == entry.layer.id ? 0.4 : 1.0)
                 .overlay(dropInto ? RoundedRectangle(cornerRadius: 4)
                     .stroke(RutTheme.amber, lineWidth: 2) : nil)
                 .simultaneousGesture(entry.layer.isSystem ? nil : reorderGesture(
@@ -87,14 +98,14 @@ struct VectorLayerPanel: View {
                     // Find this shape's index in the panel flat list
                     let panelIdx = panelEntries.firstIndex(where: { $0.id == shape.id }) ?? 0
                     VStack(spacing: 0) {
-                        if vectorStore.draggingShapeId != nil,
-                           vectorStore.draggingShapeId != shape.id,
-                           vectorStore.dragShapeTargetIndex == panelIdx {
+                        if draggingShapeId != nil,
+                           draggingShapeId != shape.id,
+                           dragShapeTargetIndex == panelIdx {
                             Rectangle().fill(RutTheme.amber).frame(height: 2)
                         }
                         VectorShapeRowView(shape: shape, layerId: layerId, depth: entry.depth)
                             .environmentObject(vectorStore)
-                            .opacity(vectorStore.draggingShapeId == shape.id ? 0.4 : 1.0)
+                            .opacity(draggingShapeId == shape.id ? 0.4 : 1.0)
                             .simultaneousGesture(shapeReorderGesture(
                                 shapeId: shape.id, layerId: layerId,
                                 panelIndex: panelIdx, totalCount: panelEntries.count))
@@ -115,8 +126,8 @@ struct VectorLayerPanel: View {
                 guard case .second(true, let drag?) = value else { return }
                 guard vectorStore.activeLayerId == layerId,
                       vectorStore.activeShapeId == nil else { return }
-                if vectorStore.draggingLayerId == nil {
-                    vectorStore.draggingLayerId = layerId
+                if draggingLayerId == nil {
+                    draggingLayerId = layerId
                 }
                 let exactDelta = drag.translation.height / rowHeight
                 let intDelta   = Int(exactDelta < 0 ? ceil(exactDelta) : floor(exactDelta))
@@ -128,17 +139,17 @@ struct VectorLayerPanel: View {
                 let targetEntry = entries[targetIdx]
                 let canDropInto = !targetEntry.layer.isSystem && targetEntry.layer.id != layerId
 
-                vectorStore.dragTargetIndex = targetIdx
-                vectorStore.dragIntoTarget  = canDropInto && posInRow > 0.55
+                dragTargetIndex = targetIdx
+                dragIntoTarget  = canDropInto && posInRow > 0.55
             }
             .onEnded { value in
-                let into = vectorStore.dragIntoTarget
-                let dest = vectorStore.dragTargetIndex ?? flatIndex
+                let into = dragIntoTarget
+                let dest = dragTargetIndex ?? flatIndex
                 defer {
-                    vectorStore.draggingLayerId       = nil
-                    vectorStore.draggingLayerParentId = nil
-                    vectorStore.dragTargetIndex       = nil
-                    vectorStore.dragIntoTarget        = false
+                    draggingLayerId       = nil
+                    draggingLayerParentId = nil
+                    dragTargetIndex       = nil
+                    dragIntoTarget        = false
                 }
                 guard case .second(true, _) = value else { return }
                 vectorStore.moveLayerToFlatIndex(layerId, flatIndex: dest, asChild: into)
@@ -155,9 +166,9 @@ struct VectorLayerPanel: View {
             .onChanged { value in
                 guard case .second(true, let drag?) = value else { return }
                 guard vectorStore.activeShapeId == shapeId else { return }
-                if vectorStore.draggingShapeId == nil {
-                    vectorStore.draggingShapeId = shapeId
-                    vectorStore.draggingShapeLayerId = layerId
+                if draggingShapeId == nil {
+                    draggingShapeId = shapeId
+                    draggingShapeLayerId = layerId
                 }
                 let delta = Int(round(drag.translation.height / rowHeight))
                 let candidate = max(0, min(totalCount - 1, panelIndex + delta))
@@ -170,15 +181,15 @@ struct VectorLayerPanel: View {
                     }
                 }()
                 if !targetIsLocked {
-                    vectorStore.dragShapeTargetIndex = candidate
+                    dragShapeTargetIndex = candidate
                 }
             }
             .onEnded { value in
-                let dest = vectorStore.dragShapeTargetIndex ?? panelIndex
+                let dest = dragShapeTargetIndex ?? panelIndex
                 defer {
-                    vectorStore.draggingShapeId      = nil
-                    vectorStore.draggingShapeLayerId = nil
-                    vectorStore.dragShapeTargetIndex = nil
+                    draggingShapeId      = nil
+                    draggingShapeLayerId = nil
+                    dragShapeTargetIndex = nil
                 }
                 guard case .second(true, _) = value else { return }
                 if dest != panelIndex {

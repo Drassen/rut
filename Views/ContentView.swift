@@ -83,6 +83,8 @@ struct ContentView: View {
     @State private var longPressLat: Double = 0
     @State private var longPressLon: Double = 0
     @State private var showAddPointTypeMenu = false
+    @State private var pendingKMLURLs: [URL] = []
+    @State private var showKMLImportModeDialog = false
 
     private var appVersion: String {
         Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "—"
@@ -94,7 +96,8 @@ struct ContentView: View {
         !navStore.document.userNavaids.isEmpty ||
         !navStore.document.userWaypoints.isEmpty ||
         !navStore.document.systemAirports.isEmpty ||
-        !navStore.document.systemNavaids.isEmpty
+        !navStore.document.systemNavaids.isEmpty ||
+        core.vectorStore.layers.contains(where: { !$0.isSystem && !$0.shapes.isEmpty })
     }
 
     var body: some View {
@@ -155,6 +158,23 @@ struct ContentView: View {
         ) { result in
             handleDefaultFileSelection(result: result)
         }
+        .fileImporter(
+            isPresented: $isImporting,
+            allowedContentTypes: [.item],
+            allowsMultipleSelection: true,
+            onCompletion: handleImport(result:)
+        )
+        .confirmationDialog("Import KML/KMZ as…", isPresented: $showKMLImportModeDialog, titleVisibility: .visible) {
+            Button("Vector Layers") {
+                Task { await CoreServices.shared.importDocuments(from: pendingKMLURLs, kmlAsVector: true) }
+                pendingKMLURLs = []
+            }
+            Button("Navigation Data") {
+                Task { await CoreServices.shared.importDocuments(from: pendingKMLURLs, kmlAsVector: false) }
+                pendingKMLURLs = []
+            }
+            Button("Cancel", role: .cancel) { pendingKMLURLs = [] }
+        }
     }
 
     // MARK: - Empty State
@@ -186,12 +206,6 @@ struct ContentView: View {
                     }
                     .buttonStyle(RutPrimaryButtonStyle())
                     .padding(.horizontal, 32)
-                    .fileImporter(
-                        isPresented: $isImporting,
-                        allowedContentTypes: [.item],
-                        allowsMultipleSelection: true,
-                        onCompletion: handleImport(result:)
-                    )
 
                     // Supported formats
                     Text(".GPX  .KML  .RUT  .FPL  .RTE  .P01  .APT  .NAV")
@@ -219,6 +233,7 @@ struct ContentView: View {
                     VectorModeView()
                         .environmentObject(navStore)
                         .environmentObject(core.vectorStore)
+                        .environmentObject(core.vectorStore.drawing)
                         .environmentObject(toastManager)
                         .environmentObject(core)
                     ToastOverlay().environmentObject(toastManager)
@@ -239,10 +254,12 @@ struct ContentView: View {
                     let uAp = navStore.document.userAirports.count
                     let uNv = navStore.document.userNavaids.count
                     let uWp = navStore.document.userWaypoints.count
+                    let uSh = core.vectorStore.layers.filter { !$0.isSystem }.reduce(0) { $0 + $1.shapes.count }
 
                     if uAp > 0 { StatBadge(icon: "airplane", count: uAp, label: "Apt") }
                     if uNv > 0 { StatBadge(icon: "antenna.radiowaves.left.and.right", count: uNv, label: "Nav") }
                     if uWp > 0 { StatBadge(icon: "mappin.and.ellipse", count: uWp, label: "Wpt") }
+                    if uSh > 0 { StatBadge(icon: "triangle", count: uSh, label: "Shapes") }
 
                     Spacer()
 
@@ -252,12 +269,6 @@ struct ContentView: View {
                         Label("Import", systemImage: "square.and.arrow.down")
                     }
                     .buttonStyle(RutSecondaryButtonStyle())
-                    .fileImporter(
-                        isPresented: $isImporting,
-                        allowedContentTypes: [.item],
-                        allowsMultipleSelection: true,
-                        onCompletion: handleImport(result:)
-                    )
 
                     Button {
                         showDatabase = true
@@ -267,21 +278,22 @@ struct ContentView: View {
                     .buttonStyle(RutSecondaryButtonStyle())
 
                     Button {
-                        showSettingsSheet = true
-                    } label: {
-                        Label("Settings", systemImage: "gearshape")
-                    }
-                    .buttonStyle(RutSecondaryButtonStyle())
-
-                    Button {
                         core.appMode = .vector
                     } label: {
                         Label("Vector Mode", systemImage: "triangle")
                     }
                     .buttonStyle(RutSecondaryButtonStyle())
+
+                    Button {
+                        showSettingsSheet = true
+                    } label: {
+                        Image(systemName: "gearshape")
+                    }
+                    .buttonStyle(RutSecondaryButtonStyle())
                 }
                 .padding(.horizontal, 14)
-                .padding(.vertical, 10)
+                .padding(.top, 10)
+                .padding(.bottom, 4)
                 .background(RutTheme.surface)
 
                 // ── Route tiles ──
@@ -298,7 +310,7 @@ struct ContentView: View {
                             }
                         }
                         .padding(.horizontal, 14)
-                        .padding(.vertical, 10)
+                        .padding(.bottom, 10)
                     }
                     .background(RutTheme.surface)
                 }
@@ -339,6 +351,7 @@ struct ContentView: View {
                 )
                 .environmentObject(navStore)
                 .environmentObject(core.vectorStore)
+                .environmentObject(core.vectorStore.drawing)
                 .environmentObject(core)
                 .frame(minHeight: 200)
 
@@ -373,11 +386,11 @@ struct ContentView: View {
                     .alert("Incomplete Data", isPresented: $showA109MissingDataAlert) {
                         Button("Cancel", role: .cancel) { }
                         if DefaultPresetService.shared.hasDefault {
-                            Button("Use my default") { loadDefaultAndExport() }
+                            Button("Use default APT/NAVAID") { loadDefaultAndExport() }
                         } else {
-                            Button("Set default file…") { isSelectingDefaultFile = true }
+                            Button("Set default APT/NAVAID file…") { isSelectingDefaultFile = true }
                         }
-                        Button("Continue") { isSelectingExportFolder = true }
+                        Button("Continue without APT/NAVAID") { isSelectingExportFolder = true }
                     } message: {
                         if let name = DefaultPresetService.shared.defaultFileName {
                             Text("Missing airports or navaids. Default: \(name)")
@@ -415,7 +428,33 @@ struct ContentView: View {
     }
 
     private func importURLs(_ urls: [URL]) {
-        Task { await CoreServices.shared.importDocuments(from: urls) }
+        let kmlExtensions: Set<String> = ["kml", "kmz"]
+        let kmlURLs   = urls.filter { kmlExtensions.contains($0.pathExtension.lowercased()) }
+        let otherURLs = urls.filter { !kmlExtensions.contains($0.pathExtension.lowercased()) }
+
+        // Non-KML/KMZ files import immediately
+        if !otherURLs.isEmpty {
+            Task { await CoreServices.shared.importDocuments(from: otherURLs) }
+        }
+
+        guard !kmlURLs.isEmpty else { return }
+
+        // Check if any file contains non-nav data (polygons etc.)
+        let hasNonNav = kmlURLs.contains { url in
+            let secured = url.startAccessingSecurityScopedResource()
+            defer { if secured { url.stopAccessingSecurityScopedResource() } }
+            return KMZImportService.containsNonNavData(url: url)
+        }
+
+        if hasNonNav {
+            // Force vector, no dialog
+            toastManager.show(message: "File contains non-navigation data (polygons etc.) — importing as vector layers.", kind: .info)
+            Task { await CoreServices.shared.importDocuments(from: kmlURLs, kmlAsVector: true) }
+        } else {
+            // Only points/lines — let the user choose
+            pendingKMLURLs = kmlURLs
+            showKMLImportModeDialog = true
+        }
     }
 
     private func handleRouteTap(_ route: Route) {

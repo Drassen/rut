@@ -19,13 +19,37 @@ struct ACOImportService: RouteImporting {
 
     func importLayer(from url: URL) throws -> VectorLayer {
         let raw = try String(contentsOf: url, encoding: .utf8)
-        let name = url.deletingPathExtension().lastPathComponent
-        let shapes = raw.contains("ACMID/") || raw.contains("SHAPE/") || raw.contains("LATLONG/")
-            ? parseUsmtf(raw)
-            : parseOpenAir(raw)
+        let isUsmtf = raw.contains("ACMID/") || raw.contains("SHAPE/") || raw.contains("LATLONG/")
+        let name = isUsmtf ? (extractMsgid(from: raw) ?? url.deletingPathExtension().lastPathComponent)
+                           : url.deletingPathExtension().lastPathComponent
+        let shapes = isUsmtf ? parseUsmtf(raw) : parseOpenAir(raw)
         var layer = VectorLayer(name: name)
         layer.shapes = shapes
         return layer
+    }
+
+    // -------------------------------------------------------------------------
+    // MARK: - MSGID extraction
+    // -------------------------------------------------------------------------
+
+    /// Extracts the exercise/operation name from MSGID/ACO/<originator>/<serial>//
+    /// Returns the first token after "MSGID/" that isn't "ACO" or a serial number.
+    private func extractMsgid(from text: String) -> String? {
+        for line in text.components(separatedBy: .newlines) {
+            let t = line.trimmingCharacters(in: .whitespaces)
+            guard t.hasPrefix("MSGID/") else { continue }
+            let parts = t
+                .replacingOccurrences(of: "//", with: "")
+                .components(separatedBy: "/")
+                .map { $0.trimmingCharacters(in: .whitespaces) }
+                .filter { !$0.isEmpty }
+            // parts[0] = "MSGID", keep everything except "ACO" and "MSGID"
+            let candidates = parts.dropFirst().filter {
+                $0.uppercased() != "ACO" && $0.uppercased() != "MSGID"
+            }
+            if !candidates.isEmpty { return candidates.joined(separator: "/") }
+        }
+        return nil
     }
 
     // -------------------------------------------------------------------------

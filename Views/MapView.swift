@@ -148,7 +148,12 @@ struct RutMapView: View {
                 ZStack {
                     Map(position: $camera) {
 
-                        // 0. Vector layers (airspace + user-drawn, always behind nav data)
+                        // 0a. Airspace (from AirspaceService, toggled via vectorStore.airspaceVisible)
+                        if vectorStore.airspaceVisible {
+                            airspaceContent()
+                        }
+
+                        // 0b. User vector layers
                         vectorLayersContent()
 
                         // 1. Inaktiva rutter (dimmed in vector mode)
@@ -410,9 +415,8 @@ struct RutMapView: View {
         }
     }
 
-    // MARK: - 0b. Legacy airspace fallback (kept for nav mode until VectorStore is populated)
-    // This function is unused — vectorLayersContent() handles airspace via VectorStore.
-    // Kept here to preserve the original function signature for reference.
+    // MARK: - 0a. Airspace content
+
     @MapContentBuilder
     private func airspaceContent() -> some MapContent {
         ForEach(airspaceService.zones) { zone in

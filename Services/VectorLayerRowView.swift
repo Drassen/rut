@@ -141,7 +141,7 @@ struct VectorShapeRowView: View {
 
     private func shapeIcon(_ geo: VectorGeometry) -> String {
         switch geo {
-        case .point:    return "mappin"
+        case .point:    return "mappin.circle.fill"
         case .polyline: return "line.diagonal"
         case .polygon:  return "triangle"
         case .circle:   return "circle"
