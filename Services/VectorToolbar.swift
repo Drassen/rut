@@ -21,7 +21,7 @@ struct VectorToolbar: View {
     @State private var showShapeEditor = false
     @State private var showRenameFolderAlert = false
     @State private var renameFolderText = ""
-    @State private var exportFormat: VectorExportFormat = .kmz
+    @State private var exportFormat: VectorExportFormat = .kmz  // kept for exportSelection()
 
     var body: some View {
         VStack(spacing: 0) {
@@ -34,8 +34,7 @@ struct VectorToolbar: View {
                     Button("Cancel") { vectorStore.cancelShapeEdit() }
                         .buttonStyle(RutSecondaryButtonStyle())
                     Spacer()
-                    formatPicker
-                    exportButton
+                    exportMenu
                 } else if vectorStore.activeShapeId != nil && vectorStore.activeTool == .none {
                     // ── Shape selected ────────────────────────────────────────
                     let isSystem = selectedShapeIsSystem
@@ -68,8 +67,7 @@ struct VectorToolbar: View {
 
                     Spacer()
 
-                    formatPicker
-                    exportButton
+                    exportMenu
 
                     Button {
                         vectorStore.deselectShape()
@@ -190,41 +188,25 @@ struct VectorToolbar: View {
         }
     }
 
-    // MARK: - Format picker
-
-    private var formatPicker: some View {
-        Picker("Format", selection: $exportFormat) {
-            ForEach(VectorExportFormat.allCases) { fmt in
-                Text(fmt.rawValue).tag(fmt)
-            }
-        }
-        .pickerStyle(.segmented)
-        .frame(width: 160)
-        .tint(RutTheme.amber)
-    }
-
-    // MARK: - Export button
+    // MARK: - Export menu
 
     @ViewBuilder
-    private var exportButton: some View {
-        Button {
-            exportSelection()
+    private var exportMenu: some View {
+        Menu {
+            ForEach(VectorExportFormat.allCases) { fmt in
+                Button {
+                    exportFormat = fmt
+                    exportSelection()
+                } label: {
+                    Label(fmt.rawValue, systemImage: fmt == .kmz ? "map" : "antenna.radiowaves.left.and.right")
+                }
+            }
         } label: {
-            Label(exportButtonLabel, systemImage: "square.and.arrow.up")
+            Label("Export", systemImage: "square.and.arrow.up")
         }
         .buttonStyle(RutSecondaryButtonStyle())
         .sheet(item: $exportContainer) { container in
             MultiFileExportController(fileURLs: container.urls) { _ in }
-        }
-    }
-
-    private var exportButtonLabel: String {
-        if vectorStore.activeShapeId != nil {
-            return "Export Shape"
-        } else if vectorStore.activeLayerId != nil && vectorStore.activeShapeId == nil {
-            return "Export Group"
-        } else {
-            return "Export"
         }
     }
 
