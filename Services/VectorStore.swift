@@ -130,7 +130,7 @@ final class DrawingStateMachine: ObservableObject {
                                style: style)
         case .corridor:
             guard vertices.count >= 2 else { return nil }
-            let ring = Self.makeCorridorPolygon(from: vertices, radiusMeters: 500)
+            let ring = Self.makeCorridorPolygon(from: vertices, radiusMeters: widthMeters / 2)
             return VectorShape(name: name,
                                geometry: .polygon(coordinates: ring.map { [$0.latitude, $0.longitude] }),
                                style: style)
@@ -366,6 +366,7 @@ final class VectorStore: ObservableObject {
     /// going through layers (which re-renders user shapes too).
     @Published var airspaceVisible: Bool = true
     @Published var zigzagWidth: Double = 50
+    @Published var corridorWidth: Double = 1000
 
     // Drag state is panel-local — NOT @Published to avoid triggering map re-renders on every finger move
     var draggingLayerId: UUID? = nil
@@ -877,8 +878,9 @@ final class VectorStore: ObservableObject {
         } else {
             effectiveStyle = newShapeStyle
         }
+        let toolWidth = activeTool == .corridor ? corridorWidth : zigzagWidth
         guard activeTool != .none,
-              let shape = drawing.commitAndReset(tool: activeTool, name: name, style: effectiveStyle, widthMeters: zigzagWidth)
+              let shape = drawing.commitAndReset(tool: activeTool, name: name, style: effectiveStyle, widthMeters: toolWidth)
         else { return }
 
         let targetLayerId: UUID

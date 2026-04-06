@@ -23,6 +23,7 @@ struct VectorToolbar: View {
     @State private var renameFolderText = ""
     @State private var exportFormat: VectorExportFormat = .kmz
     @State private var showExportDialog = false
+    @State private var corridorWidthText = "1000"
 
     var body: some View {
         VStack(spacing: 0) {
@@ -126,6 +127,9 @@ struct VectorToolbar: View {
 
                         if vectorStore.activeTool == .zigzag {
                             zigzagWidthPicker
+                        }
+                        if vectorStore.activeTool == .corridor {
+                            corridorWidthField
                         }
 
                         Spacer()
@@ -597,6 +601,33 @@ struct VectorToolbar: View {
             .clipShape(RoundedRectangle(cornerRadius: 6))
     }
 
+    private var corridorWidthField: some View {
+        HStack(spacing: 4) {
+            Text("Width:")
+                .font(.system(size: 11))
+                .foregroundColor(RutTheme.textMuted)
+            TextField("m", text: $corridorWidthText)
+                .keyboardType(.numberPad)
+                .font(.system(size: 12, weight: .semibold))
+                .foregroundColor(RutTheme.text)
+                .multilineTextAlignment(.center)
+                .frame(width: 56)
+                .padding(.horizontal, 6)
+                .padding(.vertical, 4)
+                .background(RutTheme.surface2)
+                .clipShape(RoundedRectangle(cornerRadius: 6))
+                .overlay(RoundedRectangle(cornerRadius: 6).stroke(RutTheme.border, lineWidth: 1))
+                .onChange(of: corridorWidthText) { _, val in
+                    if let m = Double(val), m > 0 {
+                        vectorStore.corridorWidth = m
+                    }
+                }
+            Text("m")
+                .font(.system(size: 11))
+                .foregroundColor(RutTheme.textMuted)
+        }
+    }
+
     private var zigzagWidthPicker: some View {
         HStack(spacing: 4) {
             Text("Width:")
@@ -627,17 +658,22 @@ struct VectorToolbar: View {
         } label: {
             Canvas { ctx, size in
                 let w = size.width, h = size.height
-                let color: GraphicsContext.Shading = .color(isActive ? .black : RutTheme.text)
-                // Outer rectangle (the corridor)
-                let inset: CGFloat = 4
-                let rect = CGRect(x: inset, y: h * 0.25, width: w - inset * 2, height: h * 0.5)
-                ctx.stroke(Path(roundedRect: rect, cornerRadius: 2), with: color,
-                           style: StrokeStyle(lineWidth: 1.5))
-                // Center axis line
-                var line = Path()
-                line.move(to: CGPoint(x: inset + 2, y: h * 0.5))
-                line.addLine(to: CGPoint(x: w - inset - 2, y: h * 0.5))
-                ctx.stroke(line, with: color, style: StrokeStyle(lineWidth: 1.5, lineCap: .round))
+                let pts: [CGPoint] = [
+                    CGPoint(x: w * 0.15, y: h * 0.40),
+                    CGPoint(x: w * 0.50, y: h * 0.30),
+                    CGPoint(x: w * 0.85, y: h * 0.40),
+
+                    CGPoint(x: w * 0.85, y: h * 0.70),
+                    CGPoint(x: w * 0.50, y: h * 0.60),
+                    CGPoint(x: w * 0.15, y: h * 0.70),
+
+                    CGPoint(x: w * 0.15, y: h * 0.40),
+                ]
+                var path = Path()
+                path.move(to: pts[0])
+                pts.dropFirst().forEach { path.addLine(to: $0) }
+                ctx.stroke(path, with: .color(isActive ? .black : RutTheme.text),
+                           style: StrokeStyle(lineWidth: 1.6, lineCap: .round, lineJoin: .round))
             }
             .frame(width: 32, height: 28)
             .background(isActive ? RutTheme.amber : RutTheme.surface2)
@@ -661,6 +697,7 @@ struct VectorToolbar: View {
                     CGPoint(x: w * 0.45, y: h * 0.60),
                     CGPoint(x: w * 0.60, y: h * 0.40),
                     CGPoint(x: w * 0.75, y: h * 0.60),
+                    CGPoint(x: w * 0.90, y: h * 0.40),
                 ]
                 var path = Path()
                 path.move(to: pts[0])
