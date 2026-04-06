@@ -51,7 +51,8 @@ struct RutMapView: View {
     var onPointTap: ((RouteMapPoint) -> Void)? = nil
     var onMapLongPress: ((CLLocationCoordinate2D) -> Void)? = nil
 
-    @State private var camera: MapCameraPosition = .automatic
+    // Camera is stored in CoreServices so both nav and vector modes share position/zoom.
+    private var camera: Binding<MapCameraPosition> { $core.mapCamera }
     @State private var mapStyle: RutMapStyle = .hybrid
     @State private var showMapLabels: Bool = true
 
@@ -146,7 +147,7 @@ struct RutMapView: View {
         ZStack(alignment: .topTrailing) {
             MapReader { proxy in
                 ZStack {
-                    Map(position: $camera) {
+                    Map(position: camera) {
 
                         // 0a. Airspace (from AirspaceService, toggled via vectorStore.airspaceVisible)
                         if vectorStore.airspaceVisible {
@@ -911,7 +912,7 @@ struct RutMapView: View {
     }
 
     private func setRegion(center: CLLocationCoordinate2D) {
-        camera = .region(MKCoordinateRegion(center: center, span: MKCoordinateSpan(latitudeDelta: 0.5, longitudeDelta: 0.5)))
+        camera.wrappedValue = .region(MKCoordinateRegion(center: center, span: MKCoordinateSpan(latitudeDelta: 0.5, longitudeDelta: 0.5)))
     }
 
     private func waypointType(for point: RouteMapPoint) -> WaypointType? {

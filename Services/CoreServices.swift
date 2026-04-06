@@ -6,6 +6,7 @@
 import Foundation
 import Combine
 import SwiftUI
+import MapKit
 
 // MARK: - Protocols used by import/export services
 
@@ -46,6 +47,7 @@ final class CoreServices: ObservableObject {
     @Published var toastManager: ToastManager
     @Published var vectorStore: VectorStore
     @Published var appMode: AppMode = .navigation
+    @Published var mapCamera: MapCameraPosition = .automatic
 
     let importServices: [RouteImporting]
     let exportServices: [any RouteExporting]
