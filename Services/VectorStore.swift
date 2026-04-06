@@ -246,14 +246,28 @@ final class DrawingStateMachine: ObservableObject {
         left.append( geoOffset(from: axis[0], bearingDeg: bearings[0] - 90, meters: radiusMeters))
 
         for i in 1..<axis.count - 1 {
-            right.append(contentsOf: arcShortest(center: axis[i],
-                                                  from: bearings[i-1] + 90,
-                                                  to:   bearings[i]   + 90,
-                                                  r: radiusMeters, steps: cornerSteps))
-            left.append(contentsOf:  arcShortest(center: axis[i],
-                                                  from: bearings[i-1] - 90,
-                                                  to:   bearings[i]   - 90,
-                                                  r: radiusMeters, steps: cornerSteps))
+            let b1 = bearings[i - 1], b2 = bearings[i]
+            let v  = axis[i]
+
+            // Determine turn direction: positive delta = right turn
+            var delta = (b2 - b1).truncatingRemainder(dividingBy: 360)
+            if delta > 180  { delta -= 360 }
+            if delta < -180 { delta += 360 }
+            let turningRight = delta > 0
+
+            if turningRight {
+                // Right side is outside → arc; left side is inside → intersection
+                right.append(contentsOf: arcShortest(center: v,
+                    from: b1 + 90, to: b2 + 90, r: radiusMeters, steps: cornerSteps))
+                left.append(offsetIntersection(vertex: v, b1: b1, b2: b2,
+                    sideMult: -1, radius: radiusMeters))
+            } else {
+                // Left side is outside → arc; right side is inside → intersection
+                left.append(contentsOf: arcShortest(center: v,
+                    from: b1 - 90, to: b2 - 90, r: radiusMeters, steps: cornerSteps))
+                right.append(offsetIntersection(vertex: v, b1: b1, b2: b2,
+                    sideMult: +1, radius: radiusMeters))
+            }
         }
 
         right.append(geoOffset(from: axis.last!, bearingDeg: bearings.last! + 90, meters: radiusMeters))
@@ -279,6 +293,46 @@ final class DrawingStateMachine: ObservableObject {
         ring.append(contentsOf: startCap.dropFirst())
         ring.append(ring[0]) // close
         return ring
+    }
+
+    /// Returns the intersection point of the two offset lines at an interior vertex.
+    /// sideMult: +1 = right offset, -1 = left offset.
+    /// Falls back to the bisector point if lines are nearly parallel.
+    private static func offsetIntersection(vertex: CLLocationCoordinate2D,
+                                            b1: Double, b2: Double,
+                                            sideMult: Double,
+                                            radius: Double) -> CLLocationCoordinate2D {
+        let p1 = geoOffset(from: vertex, bearingDeg: b1 + sideMult * 90, meters: radius)
+        let p2 = geoOffset(from: vertex, bearingDeg: b2 + sideMult * 90, meters: radius)
+
+        // Flat-earth local coords (meters from vertex)
+        let mLat = 111_320.0
+        let mLon = mLat * cos(vertex.latitude * .pi / 180)
+        let p1x = (p1.longitude - vertex.longitude) * mLon
+        let p1y = (p1.latitude  - vertex.latitude)  * mLat
+        let p2x = (p2.longitude - vertex.longitude) * mLon
+        let p2y = (p2.latitude  - vertex.latitude)  * mLat
+
+        // Direction vectors from bearings
+        let b1r = b1 * .pi / 180, b2r = b2 * .pi / 180
+        let d1x = sin(b1r), d1y = cos(b1r)
+        let d2x = sin(b2r), d2y = cos(b2r)
+
+        // Solve p1 + t*d1 = p2 + s*d2
+        let denom = d1x * (-d2y) - d1y * (-d2x)
+        guard abs(denom) > 1e-10 else {
+            // Parallel — use midpoint of the two offset points
+            return CLLocationCoordinate2D(
+                latitude:  (p1.latitude  + p2.latitude)  / 2,
+                longitude: (p1.longitude + p2.longitude) / 2)
+        }
+        let dx = p2x - p1x, dy = p2y - p1y
+        let t  = (dx * (-d2y) - dy * (-d2x)) / denom
+        let ix = p1x + t * d1x
+        let iy = p1y + t * d1y
+        return CLLocationCoordinate2D(
+            latitude:  vertex.latitude  + iy / mLat,
+            longitude: vertex.longitude + ix / mLon)
     }
 
     /// Sweeps an arc from `from` to `to` bearing via the shortest angular path, skipping the first point.
