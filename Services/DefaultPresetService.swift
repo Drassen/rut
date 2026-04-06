@@ -44,7 +44,7 @@ final class DefaultPresetService {
         var stale = false
         guard let url = try? URL(resolvingBookmarkData: data,
                                  bookmarkDataIsStale: &stale) else { return nil }
-        url.startAccessingSecurityScopedResource()
+        _ = url.startAccessingSecurityScopedResource()
         return url
     }
 }

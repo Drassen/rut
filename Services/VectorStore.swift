@@ -338,7 +338,7 @@ final class DrawingStateMachine: ObservableObject {
         let f = n(from), t = n(to), mid = n(throughBearing)
 
         // Try clockwise delta (positive)
-        var cwDelta = n(t - f)  // 0...360
+        let cwDelta = n(t - f)  // 0...360
         // Does mid lie within f..f+cwDelta clockwise?
         let midCW = n(mid - f)
         let useClockwise = midCW <= cwDelta

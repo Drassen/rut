@@ -16,7 +16,7 @@ enum MGRSConverter {
 
         // UTM zone
         let zoneNum = Int((lon + 180) / 6) + 1
-        let isNorth = lat >= 0
+        _ = lat >= 0 // isNorth unused
 
         guard let (easting, northing) = latLonToUTM(lat: lat, lon: lon, zone: zoneNum) else { return nil }
 
@@ -112,7 +112,7 @@ enum MGRSConverter {
         idx = zoneEnd
 
         // Band letter
-        guard idx < s.endIndex, let band = s[idx].asciiValue else { return nil }
+        guard idx < s.endIndex, let _ = s[idx].asciiValue else { return nil }
         let bandChar = s[idx]
         idx = s.index(after: idx)
 
@@ -239,7 +239,7 @@ enum MGRSConverter {
         let f  = 1.0 / 298.257_223_563
         let b  = a * (1 - f)
         let e2 = 1 - (b * b) / (a * a)
-        let e  = sqrt(e2)
+        _ = sqrt(e2) // e unused
         let k0 = 0.9996
 
         let x = easting - 500_000.0
