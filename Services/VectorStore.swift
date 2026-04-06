@@ -398,9 +398,7 @@ final class VectorStore: ObservableObject {
         if let effectiveParent {
             mutateLayer(id: effectiveParent, in: &layers) { $0.children.append(newLayer) }
         } else {
-            // Insert before any system layers so they stay pinned at the top.
-            let insertIdx = layers.firstIndex(where: { $0.isSystem }) ?? layers.endIndex
-            layers.insert(newLayer, at: insertIdx)
+            layers.append(newLayer)
         }
         activeLayerId = newLayer.id
     }
@@ -657,9 +655,10 @@ final class VectorStore: ObservableObject {
         var flat = flatLayerEntries()
         guard let sourceIdx = flat.firstIndex(where: { $0.layer.id == id }) else { return }
         guard let movedLayer = findLayerRecursive(id: id, in: layers) else { return }
-        // Count root-level system layers so user layers can't be dragged above them.
-        let rootSystemCount = layers.prefix(while: { $0.isSystem }).count
-        let minDest = (flat[sourceIdx].parentId == nil && !flat[sourceIdx].layer.isSystem) ? rootSystemCount : 0
+        // Prevent user layers from being dragged above root-level system layers.
+        let firstUserFlatIdx = flat.firstIndex(where: { $0.parentId == nil && !$0.layer.isSystem }) ?? 0
+        let isDraggingRootUser = flat[sourceIdx].parentId == nil && !flat[sourceIdx].layer.isSystem
+        let minDest = isDraggingRootUser ? firstUserFlatIdx : 0
         let clampedDest = max(minDest, min(flat.count - 1, dest))
         guard !(clampedDest == sourceIdx && !asChild) else { return }
 
@@ -897,8 +896,7 @@ final class VectorStore: ObservableObject {
         } else {
             // No layer exists — auto-create one so the shape isn't lost
             let newLayer = VectorLayer(name: "Layer 1")
-            let insertIdx = layers.firstIndex(where: { $0.isSystem }) ?? layers.endIndex
-            layers.insert(newLayer, at: insertIdx)
+            layers.append(newLayer)
             activeLayerId = newLayer.id
             targetLayerId = newLayer.id
         }
