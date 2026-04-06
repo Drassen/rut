@@ -321,8 +321,8 @@ struct ContentView: View {
                     .buttonStyle(RutSecondaryButtonStyle())
                 }
                 .padding(.horizontal, 14)
-                .padding(.top, 10)
-                .padding(.bottom, 4)
+                .padding(.top, 4)
+                .padding(.bottom, 8)
                 .background(RutTheme.surface)
 
                 // ── Route tiles ──
@@ -339,6 +339,7 @@ struct ContentView: View {
                             }
                         }
                         .padding(.horizontal, 14)
+                        .padding(.top, 0)
                         .padding(.bottom, 10)
                     }
                     .background(RutTheme.surface)
@@ -427,6 +428,11 @@ struct ContentView: View {
                             Text("Do you want to continue the export without user airports or user navaids?")
                         }
                     }
+                    
+                    Text("v\(appVersion)")
+                        .font(.system(size: 18, weight: .medium, design: .monospaced))
+                        .foregroundColor(RutTheme.textMuted)
+                        .padding(.bottom, 0)
                 }
                 .padding(.horizontal, 14)
                 .padding(.vertical, 12)
