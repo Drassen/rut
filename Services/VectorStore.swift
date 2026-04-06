@@ -235,7 +235,7 @@ final class DrawingStateMachine: ObservableObject {
         guard axis.count >= 2 else { return [] }
 
         let bearings = (0..<axis.count - 1).map { geoBearing(axis[$0], axis[$0 + 1]) }
-        let capSteps = 8
+        let capSteps = 4
 
         // Build right side (forward) and left side (forward)
         var right: [CLLocationCoordinate2D] = []
