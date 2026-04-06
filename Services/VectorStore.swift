@@ -235,8 +235,7 @@ final class DrawingStateMachine: ObservableObject {
         guard axis.count >= 2 else { return [] }
 
         let bearings = (0..<axis.count - 1).map { geoBearing(axis[$0], axis[$0 + 1]) }
-        let capSteps    = 8
-        let cornerSteps = 4
+        let capSteps = 8
 
         // Build right side (forward) and left side (forward)
         var right: [CLLocationCoordinate2D] = []
@@ -248,26 +247,8 @@ final class DrawingStateMachine: ObservableObject {
         for i in 1..<axis.count - 1 {
             let b1 = bearings[i - 1], b2 = bearings[i]
             let v  = axis[i]
-
-            // Determine turn direction: positive delta = right turn
-            var delta = (b2 - b1).truncatingRemainder(dividingBy: 360)
-            if delta > 180  { delta -= 360 }
-            if delta < -180 { delta += 360 }
-            let turningRight = delta > 0
-
-            if turningRight {
-                // Right side is outside → arc; left side is inside → intersection
-                right.append(contentsOf: arcShortest(center: v,
-                    from: b1 + 90, to: b2 + 90, r: radiusMeters, steps: cornerSteps))
-                left.append(offsetIntersection(vertex: v, b1: b1, b2: b2,
-                    sideMult: -1, radius: radiusMeters))
-            } else {
-                // Left side is outside → arc; right side is inside → intersection
-                left.append(contentsOf: arcShortest(center: v,
-                    from: b1 - 90, to: b2 - 90, r: radiusMeters, steps: cornerSteps))
-                right.append(offsetIntersection(vertex: v, b1: b1, b2: b2,
-                    sideMult: +1, radius: radiusMeters))
-            }
+            right.append(offsetIntersection(vertex: v, b1: b1, b2: b2, sideMult: +1, radius: radiusMeters))
+            left.append( offsetIntersection(vertex: v, b1: b1, b2: b2, sideMult: -1, radius: radiusMeters))
         }
 
         right.append(geoOffset(from: axis.last!, bearingDeg: bearings.last! + 90, meters: radiusMeters))
