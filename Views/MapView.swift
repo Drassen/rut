@@ -1053,7 +1053,7 @@ struct RutMapView: View {
         if !vertices.isEmpty {
             Canvas { ctx, _ in
                 switch tool {
-                case .polyline, .polygon, .zigzag:
+                case .polyline, .polygon, .zigzag, .corridor:
                     var path = Path()
                     var points = vertices
                     if let g = ghost { points.append(g) }
