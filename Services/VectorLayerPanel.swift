@@ -4,6 +4,7 @@ import SwiftUI
 
 struct VectorLayerPanel: View {
     @EnvironmentObject var vectorStore: VectorStore
+    @EnvironmentObject var toastManager: ToastManager
 
     // Drag state is local to the panel — keeps it out of VectorStore/@Published
     // so the map doesn't re-render on every finger move.
@@ -49,6 +50,14 @@ struct VectorLayerPanel: View {
             }
         }
         .background(RutTheme.surface)
+        .safeAreaInset(edge: .bottom, spacing: 0) {
+            VStack(spacing: 0) {
+                VectorExportButton()
+                    .environmentObject(vectorStore)
+                    .environmentObject(toastManager)
+            }
+            .background(RutTheme.surface)
+        }
         .alert("New Layer", isPresented: $showAddLayerAlert) {
             TextField("Layer name", text: $newLayerName)
             Button("Add") {

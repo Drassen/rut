@@ -338,7 +338,7 @@ final class DrawingStateMachine: ObservableObject {
         let f = n(from), t = n(to), mid = n(throughBearing)
 
         // Try clockwise delta (positive)
-        var cwDelta = n(t - f)  // 0...360
+        let cwDelta = n(t - f)  // 0...360
         // Does mid lie within f..f+cwDelta clockwise?
         let midCW = n(mid - f)
         let useClockwise = midCW <= cwDelta
@@ -655,7 +655,11 @@ final class VectorStore: ObservableObject {
         var flat = flatLayerEntries()
         guard let sourceIdx = flat.firstIndex(where: { $0.layer.id == id }) else { return }
         guard let movedLayer = findLayerRecursive(id: id, in: layers) else { return }
-        let clampedDest = max(0, min(flat.count - 1, dest))
+        // Prevent user layers from being dragged above root-level system layers.
+        let firstUserFlatIdx = flat.firstIndex(where: { $0.parentId == nil && !$0.layer.isSystem }) ?? 0
+        let isDraggingRootUser = flat[sourceIdx].parentId == nil && !flat[sourceIdx].layer.isSystem
+        let minDest = isDraggingRootUser ? firstUserFlatIdx : 0
+        let clampedDest = max(minDest, min(flat.count - 1, dest))
         guard !(clampedDest == sourceIdx && !asChild) else { return }
 
         // Guard against dropping into own subtree
@@ -759,10 +763,17 @@ final class VectorStore: ObservableObject {
         layers.filter { !$0.isSystem }
     }
 
-    /// Replaces user (non-system) layers with those from an imported document.
+    /// Merges user layers from an imported document into the existing layer list.
+    /// Existing layers are preserved; incoming layers are appended if no layer
+    /// with the same name already exists. System layers are kept at the top.
     func syncFromDocument(_ doc: NavigationDocument) {
         let systemLayers = layers.filter { $0.isSystem }
-        layers = doc.vectorLayers.filter { !$0.isSystem } + systemLayers
+        let existingUserLayers = layers.filter { !$0.isSystem }
+        let incoming = doc.vectorLayers.filter { !$0.isSystem }
+        let newLayers = incoming.filter { inLayer in
+            !existingUserLayers.contains(where: { $0.name == inLayer.name })
+        }
+        layers = systemLayers + existingUserLayers + newLayers
     }
 
     // MARK: - Airspace system layer

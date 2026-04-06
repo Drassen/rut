@@ -26,7 +26,7 @@ final class KMZImportService: NSObject, RouteImporting, XMLParserDelegate {
         let ext = url.pathExtension.lowercased()
         let text: String
         if ext == "kml" {
-            text = (try? String(contentsOf: url)) ?? ""
+            text = (try? String(contentsOf: url, encoding: .utf8)) ?? ""
         } else {
             // KMZ: extract KML first, then scan
             guard let zipData = try? Data(contentsOf: url),
@@ -199,7 +199,7 @@ final class KMLVectorParser: NSObject, XMLParserDelegate {
     func result() -> [VectorLayer] {
         var layers = topLayers
         if !rootShapes.isEmpty {
-            var root = VectorLayer(name: defaultLayerName, shapes: rootShapes)
+            let root = VectorLayer(name: defaultLayerName, shapes: rootShapes)
             layers.insert(root, at: 0)
         }
         return layers

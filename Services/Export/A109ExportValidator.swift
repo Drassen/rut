@@ -158,7 +158,7 @@ struct A109ExportValidator {
         }
         var seenSanitized = Set<String>()
         var reportedSanitized = Set<String>()
-        for (i, route) in routes.enumerated() {
+        for (i, _) in routes.enumerated() {
             let key = sanitized[i]
             guard !key.isEmpty else { continue }
             if seenSanitized.contains(key), !reportedSanitized.contains(key) {
