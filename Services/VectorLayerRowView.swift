@@ -115,22 +115,20 @@ struct VectorShapeRowView: View {
             }
             .buttonStyle(.plain)
 
+            let iconColor = Color(hex: shape.style.strokeColor)
+
             if case .point = shape.geometry {
-                VectorPointIconView(icon: shape.style.pointIcon, color: dimColor, size: 13)
+                VectorPointIconView(icon: shape.style.pointIcon, color: iconColor, size: 13)
             } else {
                 Image(systemName: shapeIcon(shape.geometry))
                     .font(.system(size: 11))
-                    .foregroundColor(dimColor)
+                    .foregroundColor(iconColor)
             }
 
             Text(shape.name)
                 .font(.system(size: 12))
                 .foregroundColor(nameColor)
                 .lineLimit(1)
-
-            Circle()
-                .fill(Color(hex: shape.style.strokeColor))
-                .frame(width: 10, height: 10)
 
             Spacer(minLength: 4)
         }

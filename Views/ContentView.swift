@@ -69,6 +69,8 @@ struct ContentView: View {
     @EnvironmentObject var toastManager: ToastManager
     @EnvironmentObject var core: CoreServices
 
+    @Environment(\.horizontalSizeClass) private var sizeClass
+
     @State private var isImporting = false
     @State private var isSelectingExportFolder = false
     @State private var isSelectingDefaultFile = false
@@ -85,19 +87,10 @@ struct ContentView: View {
     @State private var showAddPointTypeMenu = false
     @State private var pendingKMLURLs: [URL] = []
     @State private var showKMLImportModeDialog = false
+    @State private var showLayerPanel = false
 
     private var appVersion: String {
         Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "—"
-    }
-
-    private var hasAnyData: Bool {
-        !navStore.routes.isEmpty ||
-        !navStore.document.userAirports.isEmpty ||
-        !navStore.document.userNavaids.isEmpty ||
-        !navStore.document.userWaypoints.isEmpty ||
-        !navStore.document.systemAirports.isEmpty ||
-        !navStore.document.systemNavaids.isEmpty ||
-        core.vectorStore.layers.contains(where: { !$0.isSystem && !$0.shapes.isEmpty })
     }
 
     var body: some View {
@@ -204,250 +197,271 @@ struct ContentView: View {
             }
             Button("Cancel", role: .cancel) { pendingKMLURLs = [] }
         }
-    }
-
-    // MARK: - Empty State
-
-    private var emptyStateView: some View {
-        ZStack {
-            Image("bgimage")
-                .resizable()
-                .aspectRatio(contentMode: .fill)
-                .ignoresSafeArea()
-                .overlay(Color.black.opacity(0.58))
-
-            VStack(spacing: 0) {
-                Spacer()
-
-                // ── Center card ──
-                VStack(spacing: 28) {
-                    // Logo
-                    Image("logo")
-                        .resizable()
-                        .scaledToFit()
-                        .frame(maxWidth: 220)
-
-                    // Import button
-                    Button {
-                        isImporting = true
-                    } label: {
-                        Label("Import", systemImage: "square.and.arrow.down")
-                    }
-                    .buttonStyle(RutPrimaryButtonStyle())
-                    .padding(.horizontal, 32)
-
-                    // Supported formats
-                    Text(".GPX  .KML  .RUT  .FPL  .RTE  .P01  .APT  .NAV")
-                        .font(.system(size: 10, weight: .medium, design: .monospaced))
-                        .foregroundColor(RutTheme.textMuted)
-                        .tracking(1)
-                }
-
-                Spacer()
-
-                Text("v\(appVersion)")
-                    .font(.system(size: 11, weight: .medium, design: .monospaced))
-                    .foregroundColor(RutTheme.textMuted)
-                    .padding(.bottom, 24)
+        .fileImporter(
+            isPresented: $isSelectingExportFolder,
+            allowedContentTypes: [.folder],
+            allowsMultipleSelection: false,
+            onCompletion: { result in handleA109ExportFolderSelection(result: result) }
+        )
+        .alert("Incomplete Data", isPresented: $showA109MissingDataAlert) {
+            Button("Cancel", role: .cancel) { }
+            if DefaultPresetService.shared.hasDefault {
+                Button("Use default APT/NAVAID") { loadDefaultAndExport() }
+            } else {
+                Button("Set default APT/NAVAID file…") { isSelectingDefaultFile = true }
+            }
+            Button("Continue without APT/NAVAID") { isSelectingExportFolder = true }
+        } message: {
+            if let name = DefaultPresetService.shared.defaultFileName {
+                Text("Missing airports or navaids. Default: \(name)")
+            } else {
+                Text("Do you want to continue the export without user airports or user navaids?")
             }
         }
     }
 
-    // MARK: - Main View (with data)
+    // MARK: - Main View (persistent single map)
 
     private var mainView: some View {
-        if core.appMode == .vector {
-            return AnyView(
-                ZStack {
-                    VectorModeView()
-                        .environmentObject(navStore)
-                        .environmentObject(core.vectorStore)
-                        .environmentObject(core.vectorStore.drawing)
-                        .environmentObject(toastManager)
-                        .environmentObject(core)
-                    ToastOverlay().environmentObject(toastManager)
-                }
-            )
-        }
-        return AnyView(navigationModeView)
-    }
-
-    private var navigationModeView: some View {
         ZStack {
             RutTheme.bg.ignoresSafeArea()
+            persistentMapWithBars
+            ToastOverlay().environmentObject(toastManager)
+        }
+    }
 
-            VStack(spacing: 0) {
+    private var persistentMapWithBars: some View {
+        RutMapView(
+            onPointTap: { point in
+                guard core.appMode == .navigation else { return }
+                handlePointTap(point)
+            },
+            onMapLongPress: { coord in
+                guard core.appMode == .navigation else { return }
+                longPressLat = coord.latitude
+                longPressLon = coord.longitude
+                showAddPointTypeMenu = true
+            }
+        )
+        .environmentObject(navStore)
+        .environmentObject(core.vectorStore)
+        .environmentObject(core.vectorStore.drawing)
+        .environmentObject(core)
+        .safeAreaInset(edge: .top, spacing: 0) { topBarForCurrentMode }
+        .safeAreaInset(edge: .bottom, spacing: 0) { bottomBarForCurrentMode }
+        .safeAreaInset(edge: .trailing, spacing: 0) { trailingSidePanelIfNeeded }
+        .overlay(alignment: .bottomTrailing) { phoneLayerButtonIfNeeded }
+        .sheet(isPresented: $showLayerPanel) { layerPanelSheet }
+    }
 
-                // ── Stats + toolbar ──
-                HStack(spacing: 8) {
-                    let uAp = navStore.document.userAirports.count
-                    let uNv = navStore.document.userNavaids.count
-                    let uWp = navStore.document.userWaypoints.count
-                    let uSh = core.vectorStore.layers.filter { !$0.isSystem }.reduce(0) { $0 + $1.shapes.count }
+    @ViewBuilder private var topBarForCurrentMode: some View {
+        if core.appMode == .vector { vectorTopBar } else { navTopBar }
+    }
 
-                    if uAp > 0 { StatBadge(icon: "airplane", count: uAp, label: "Apt") }
-                    if uNv > 0 { StatBadge(icon: "antenna.radiowaves.left.and.right", count: uNv, label: "Nav") }
-                    if uWp > 0 { StatBadge(icon: "mappin.and.ellipse", count: uWp, label: "Wpt") }
-                    if uSh > 0 { StatBadge(icon: "triangle", count: uSh, label: "Shapes") }
+    @ViewBuilder private var bottomBarForCurrentMode: some View {
+        if core.appMode == .vector { vectorBottomBar } else { navBottomBar }
+    }
 
-                    Spacer()
-
-                    Button {
-                        isImporting = true
-                    } label: {
-                        Label("Import", systemImage: "square.and.arrow.down")
-                    }
-                    .buttonStyle(RutSecondaryButtonStyle())
-
-                    Button {
-                        showDatabase = true
-                    } label: {
-                        Label("Database", systemImage: "list.bullet.rectangle")
-                    }
-                    .buttonStyle(RutSecondaryButtonStyle())
-
-                    Button {
-                        core.appMode = .vector
-                    } label: {
-                        Label("Vector Mode", systemImage: "triangle")
-                    }
-                    .buttonStyle(RutSecondaryButtonStyle())
-
-                    Button {
-                        showSettingsSheet = true
-                    } label: {
-                        Image(systemName: "gearshape")
-                    }
-                    .buttonStyle(RutSecondaryButtonStyle())
+    @ViewBuilder private var trailingSidePanelIfNeeded: some View {
+        if core.appMode == .vector && sizeClass != .compact {
+            HStack(spacing: 0) {
+                Rectangle().fill(RutTheme.border).frame(width: 1)
+                VStack(spacing: 0) {
+                    VectorLayerPanel()
+                        .environmentObject(core.vectorStore)
                 }
-                .padding(.horizontal, 14)
-                .padding(.top, 4)
-                .padding(.bottom, 8)
+                .frame(width: 280)
                 .background(RutTheme.surface)
+            }
+        }
+    }
 
-                // ── Route tiles ──
-                if !navStore.routes.isEmpty {
-                    ScrollView(.horizontal, showsIndicators: false) {
-                        HStack(spacing: 8) {
-                            ForEach(navStore.routes) { route in
-                                RouteTileView(
-                                    route: route,
-                                    isActive: route.id == navStore.activeRouteId,
-                                    onTap: { handleRouteTap(route) },
-                                    onClose: { navStore.deleteRoute(route) }
-                                )
-                            }
-                        }
-                        .padding(.horizontal, 14)
-                        .padding(.top, 0)
-                        .padding(.bottom, 10)
-                    }
+    @ViewBuilder private var phoneLayerButtonIfNeeded: some View {
+        if core.appMode == .vector && sizeClass == .compact {
+            Button { showLayerPanel = true } label: {
+                Image(systemName: "square.3.layers.3d")
+                    .font(.system(size: 18, weight: .semibold))
+                    .foregroundColor(RutTheme.text)
+                    .frame(width: 44, height: 44)
                     .background(RutTheme.surface)
-                }
+                    .clipShape(Circle())
+                    .overlay(Circle().stroke(RutTheme.border, lineWidth: 1))
+                    .shadow(color: .black.opacity(0.3), radius: 4, y: 2)
+            }
+            .padding([.trailing, .bottom], 80)
+        }
+    }
 
-                divider
-
-                // ── Map ──
-                RutMapView(
-                    onPointTap: { point in
-                        switch point.kind {
-                        case .userWaypoint:
-                            if let wp = navStore.document.userWaypoints.first(where: { $0.id == point.name }) {
-                                editorSheet = EditorWrapper(mode: .waypoint(wp))
-                            }
-                        case .userAirport:
-                            if let ap = navStore.document.userAirports.first(where: { $0.id == point.name }) {
-                                editorSheet = EditorWrapper(mode: .airport(ap))
-                            }
-                        case .userNavaid:
-                            if let nv = navStore.document.userNavaids.first(where: { $0.id == point.name }) {
-                                editorSheet = EditorWrapper(mode: .navaid(nv))
-                            }
-                        case .systemAirport:
-                            if let ap = navStore.document.systemAirports.first(where: { $0.id == point.name }) {
-                                editorSheet = EditorWrapper(mode: .systemAirport(ap))
-                            }
-                        case .systemNavaid:
-                            if let nv = navStore.document.systemNavaids.first(where: { $0.id == point.name }) {
-                                editorSheet = EditorWrapper(mode: .systemNavaid(nv))
-                            }
-                        }
-                    },
-                    onMapLongPress: { coord in
-                        longPressLat = coord.latitude
-                        longPressLon = coord.longitude
-                        showAddPointTypeMenu = true
-                    }
-                )
-                .environmentObject(navStore)
+    private var layerPanelSheet: some View {
+        NavigationStack {
+            VectorLayerPanel()
                 .environmentObject(core.vectorStore)
-                .environmentObject(core.vectorStore.drawing)
-                .environmentObject(core)
-                .frame(minHeight: 200)
-
-                divider
-
-                // ── Export bar ──
-                HStack(spacing: 10) {
-                    Picker("Format", selection: $exportFormat) {
-                        ForEach(ExportFormat.allCases) { format in
-                            Text(format.rawValue).tag(format)
-                        }
+                .navigationTitle("Layers")
+                .navigationBarTitleDisplayMode(.inline)
+                .toolbar {
+                    ToolbarItem(placement: .topBarTrailing) {
+                        Button("Done") { showLayerPanel = false }
                     }
-                    .pickerStyle(.menu)
-                    .foregroundColor(RutTheme.textDim)
-
-                    Button {
-                        handleExportButtonTap()
-                    } label: {
-                        if exportFormat.isPCMCIA {
-                            Label("Save to Drive", systemImage: "externaldrive.badge.plus")
-                        } else {
-                            Label("Export", systemImage: "square.and.arrow.up")
-                        }
-                    }
-                    .buttonStyle(RutPrimaryButtonStyle())
-                    .fileImporter(
-                        isPresented: $isSelectingExportFolder,
-                        allowedContentTypes: [.folder],
-                        allowsMultipleSelection: false,
-                        onCompletion: { result in handleA109ExportFolderSelection(result: result) }
-                    )
-                    .alert("Incomplete Data", isPresented: $showA109MissingDataAlert) {
-                        Button("Cancel", role: .cancel) { }
-                        if DefaultPresetService.shared.hasDefault {
-                            Button("Use default APT/NAVAID") { loadDefaultAndExport() }
-                        } else {
-                            Button("Set default APT/NAVAID file…") { isSelectingDefaultFile = true }
-                        }
-                        Button("Continue without APT/NAVAID") { isSelectingExportFolder = true }
-                    } message: {
-                        if let name = DefaultPresetService.shared.defaultFileName {
-                            Text("Missing airports or navaids. Default: \(name)")
-                        } else {
-                            Text("Do you want to continue the export without user airports or user navaids?")
-                        }
-                    }
-                    
-                    Text("v\(appVersion)")
-                        .font(.system(size: 18, weight: .medium, design: .monospaced))
-                        .foregroundColor(RutTheme.textMuted)
-                        .padding(.bottom, 0)
                 }
-                .padding(.horizontal, 14)
-                .padding(.vertical, 12)
+        }
+        .presentationDetents([.medium, .large])
+        .tint(RutTheme.amber)
+    }
+
+    // MARK: - Nav top bar
+
+    private var navTopBar: some View {
+        VStack(spacing: 0) {
+            HStack(spacing: 8) {
+                let uAp = navStore.document.userAirports.count
+                let uNv = navStore.document.userNavaids.count
+                let uWp = navStore.document.userWaypoints.count
+                let uSh = core.vectorStore.layers.filter { !$0.isSystem }.reduce(0) { $0 + $1.shapes.count }
+
+                if uAp > 0 { StatBadge(icon: "airplane", count: uAp, label: "Apt") }
+                if uNv > 0 { StatBadge(icon: "antenna.radiowaves.left.and.right", count: uNv, label: "Nav") }
+                if uWp > 0 { StatBadge(icon: "mappin.and.ellipse", count: uWp, label: "Wpt") }
+                if uSh > 0 { StatBadge(icon: "triangle", count: uSh, label: "Shapes") }
+
+                Spacer()
+
+                Button { isImporting = true } label: {
+                    Label("Import", systemImage: "square.and.arrow.down")
+                }
+                .buttonStyle(RutSecondaryButtonStyle())
+
+                Button { showDatabase = true } label: {
+                    Label("Database", systemImage: "list.bullet.rectangle")
+                }
+                .buttonStyle(RutSecondaryButtonStyle())
+
+                Button { core.appMode = .vector } label: {
+                    Label("Vector Mode", systemImage: "triangle")
+                }
+                .buttonStyle(RutSecondaryButtonStyle())
+
+                Button { showSettingsSheet = true } label: {
+                    Image(systemName: "gearshape")
+                }
+                .buttonStyle(RutSecondaryButtonStyle())
+            }
+            .padding(.horizontal, 14)
+            .padding(.top, 4)
+            .padding(.bottom, 8)
+            .background(RutTheme.surface)
+
+            if !navStore.routes.isEmpty {
+                ScrollView(.horizontal, showsIndicators: false) {
+                    HStack(spacing: 8) {
+                        ForEach(navStore.routes) { route in
+                            RouteTileView(
+                                route: route,
+                                isActive: route.id == navStore.activeRouteId,
+                                onTap: { handleRouteTap(route) },
+                                onClose: { navStore.deleteRoute(route) }
+                            )
+                        }
+                    }
+                    .padding(.horizontal, 14)
+                    .padding(.bottom, 10)
+                }
                 .background(RutTheme.surface)
             }
 
-            ToastOverlay()
-                .environmentObject(toastManager)
+            divider
         }
+    }
+
+    // MARK: - Nav bottom bar
+
+    private var navBottomBar: some View {
+        VStack(spacing: 0) {
+            divider
+            HStack(spacing: 10) {
+                Picker("Format", selection: $exportFormat) {
+                    ForEach(ExportFormat.allCases) { format in
+                        Text(format.rawValue).tag(format)
+                    }
+                }
+                .pickerStyle(.menu)
+                .foregroundColor(RutTheme.textDim)
+
+                Button { handleExportButtonTap() } label: {
+                    if exportFormat.isPCMCIA {
+                        Label("Save to Drive", systemImage: "externaldrive.badge.plus")
+                    } else {
+                        Label("Export", systemImage: "square.and.arrow.up")
+                    }
+                }
+                .buttonStyle(RutPrimaryButtonStyle())
+
+                Text("v\(appVersion)")
+                    .font(.system(size: 18, weight: .medium, design: .monospaced))
+                    .foregroundColor(RutTheme.textMuted)
+            }
+            .padding(.horizontal, 14)
+            .padding(.vertical, 12)
+            .background(RutTheme.surface)
+        }
+    }
+
+    // MARK: - Vector top bar
+
+    private var vectorTopBar: some View {
+        VStack(spacing: 0) {
+            HStack {
+                Button { core.appMode = .navigation } label: {
+                    Label("Back", systemImage: "chevron.left")
+                }
+                .buttonStyle(RutSecondaryButtonStyle())
+                Spacer()
+            }
+            .padding(.horizontal, 10)
+            .padding(.vertical, 8)
+            .background(RutTheme.surface)
+            Rectangle().fill(RutTheme.border).frame(height: 1)
+        }
+    }
+
+    // MARK: - Vector bottom bar
+
+    private var vectorBottomBar: some View {
+        VectorToolbar()
+            .environmentObject(core.vectorStore)
+            .environmentObject(toastManager)
     }
 
     private var divider: some View {
         Rectangle()
             .fill(RutTheme.border)
             .frame(height: 1)
+    }
+
+    // MARK: - Point tap handler
+
+    private func handlePointTap(_ point: RouteMapPoint) {
+        switch point.kind {
+        case .userWaypoint:
+            if let wp = navStore.document.userWaypoints.first(where: { $0.id == point.name }) {
+                editorSheet = EditorWrapper(mode: .waypoint(wp))
+            }
+        case .userAirport:
+            if let ap = navStore.document.userAirports.first(where: { $0.id == point.name }) {
+                editorSheet = EditorWrapper(mode: .airport(ap))
+            }
+        case .userNavaid:
+            if let nv = navStore.document.userNavaids.first(where: { $0.id == point.name }) {
+                editorSheet = EditorWrapper(mode: .navaid(nv))
+            }
+        case .systemAirport:
+            if let ap = navStore.document.systemAirports.first(where: { $0.id == point.name }) {
+                editorSheet = EditorWrapper(mode: .systemAirport(ap))
+            }
+        case .systemNavaid:
+            if let nv = navStore.document.systemNavaids.first(where: { $0.id == point.name }) {
+                editorSheet = EditorWrapper(mode: .systemNavaid(nv))
+            }
+        }
     }
 
     // MARK: - Logic
