@@ -52,7 +52,6 @@ struct VectorLayerPanel: View {
         .background(RutTheme.surface)
         .safeAreaInset(edge: .bottom, spacing: 0) {
             VStack(spacing: 0) {
-                Rectangle().fill(RutTheme.border).frame(height: 1)
                 VectorExportButton()
                     .environmentObject(vectorStore)
                     .environmentObject(toastManager)
