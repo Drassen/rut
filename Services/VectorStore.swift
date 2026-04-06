@@ -398,7 +398,9 @@ final class VectorStore: ObservableObject {
         if let effectiveParent {
             mutateLayer(id: effectiveParent, in: &layers) { $0.children.append(newLayer) }
         } else {
-            layers.append(newLayer)
+            // Insert before any system layers so they stay pinned at the top.
+            let insertIdx = layers.firstIndex(where: { $0.isSystem }) ?? layers.endIndex
+            layers.insert(newLayer, at: insertIdx)
         }
         activeLayerId = newLayer.id
     }
@@ -655,7 +657,10 @@ final class VectorStore: ObservableObject {
         var flat = flatLayerEntries()
         guard let sourceIdx = flat.firstIndex(where: { $0.layer.id == id }) else { return }
         guard let movedLayer = findLayerRecursive(id: id, in: layers) else { return }
-        let clampedDest = max(0, min(flat.count - 1, dest))
+        // Count root-level system layers so user layers can't be dragged above them.
+        let rootSystemCount = layers.prefix(while: { $0.isSystem }).count
+        let minDest = (flat[sourceIdx].parentId == nil && !flat[sourceIdx].layer.isSystem) ? rootSystemCount : 0
+        let clampedDest = max(minDest, min(flat.count - 1, dest))
         guard !(clampedDest == sourceIdx && !asChild) else { return }
 
         // Guard against dropping into own subtree
@@ -762,7 +767,7 @@ final class VectorStore: ObservableObject {
     /// Replaces user (non-system) layers with those from an imported document.
     func syncFromDocument(_ doc: NavigationDocument) {
         let systemLayers = layers.filter { $0.isSystem }
-        layers = doc.vectorLayers.filter { !$0.isSystem } + systemLayers
+        layers = systemLayers + doc.vectorLayers.filter { !$0.isSystem }
     }
 
     // MARK: - Airspace system layer
@@ -892,7 +897,8 @@ final class VectorStore: ObservableObject {
         } else {
             // No layer exists — auto-create one so the shape isn't lost
             let newLayer = VectorLayer(name: "Layer 1")
-            layers.append(newLayer)
+            let insertIdx = layers.firstIndex(where: { $0.isSystem }) ?? layers.endIndex
+            layers.insert(newLayer, at: insertIdx)
             activeLayerId = newLayer.id
             targetLayerId = newLayer.id
         }
