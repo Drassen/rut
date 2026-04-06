@@ -763,10 +763,17 @@ final class VectorStore: ObservableObject {
         layers.filter { !$0.isSystem }
     }
 
-    /// Replaces user (non-system) layers with those from an imported document.
+    /// Merges user layers from an imported document into the existing layer list.
+    /// Existing layers are preserved; incoming layers are appended if no layer
+    /// with the same name already exists. System layers are kept at the top.
     func syncFromDocument(_ doc: NavigationDocument) {
         let systemLayers = layers.filter { $0.isSystem }
-        layers = systemLayers + doc.vectorLayers.filter { !$0.isSystem }
+        let existingUserLayers = layers.filter { !$0.isSystem }
+        let incoming = doc.vectorLayers.filter { !$0.isSystem }
+        let newLayers = incoming.filter { inLayer in
+            !existingUserLayers.contains(where: { $0.name == inLayer.name })
+        }
+        layers = systemLayers + existingUserLayers + newLayers
     }
 
     // MARK: - Airspace system layer
