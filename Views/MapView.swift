@@ -55,7 +55,6 @@ struct RutMapView: View {
     private var camera: Binding<MapCameraPosition> { $core.mapCamera }
     @State private var mapStyle: RutMapStyle = .hybrid
     @State private var showMapLabels: Bool = true
-    @State private var cameraVersion: Int = 0  // incremented on every camera move; forces drawing canvas redraw
 
     // --- Drag state for database markers ---
     @State private var draggingAirportId: String?
@@ -168,9 +167,8 @@ struct RutMapView: View {
                         activeRouteContent(proxy: proxy)
                     }
                     .mapStyle(mapStyle.mapKitStyle)
-                    .onMapCameraChange(frequency: .continuous) { ctx in
+                    .onMapCameraChange(frequency: .onEnd) { ctx in
                         showMapLabels = ctx.region.span.latitudeDelta < 0.68
-                        cameraVersion &+= 1
                     }
                     .onAppear {
                         configureInitialCamera()
@@ -245,35 +243,19 @@ struct RutMapView: View {
                             mapDragTargetChecked = false
                         }
                     }
-                    // Shape selection tap + vector drawing taps — all via simultaneousGesture
-                    // so MapKit's pan/zoom gestures are never blocked.
+                    // Shape selection tap in vector cursor mode (doesn't block pan)
                     .simultaneousGesture(
                         DragGesture(minimumDistance: 0, coordinateSpace: .global)
-                            .onChanged { value in
-                                guard core.appMode == .vector,
-                                      vectorStore.activeTool != .none else { return }
-                                let d = hypot(value.translation.width, value.translation.height)
-                                if d < 12, let coord = proxy.convert(value.location, from: .global) {
-                                    vectorStore.drawing.handleGhostMove(to: coord)
-                                }
-                            }
                             .onEnded { value in
-                                guard core.appMode == .vector else { return }
+                                guard core.appMode == .vector,
+                                      vectorStore.activeTool == .none,
+                                      !vectorStore.isEditingShape else { return }
                                 let d = hypot(value.translation.width, value.translation.height)
                                 guard d < 8 else { return }
-                                if vectorStore.activeTool != .none {
-                                    if let coord = proxy.convert(value.startLocation, from: .global) {
-                                        vectorStore.drawing.handleTap(at: coord, tool: vectorStore.activeTool)
-                                        if vectorStore.activeTool == .point && vectorStore.drawing.isActive {
-                                            vectorStore.commitDrawing(name: "Point")
-                                        }
-                                    }
-                                } else if !vectorStore.isEditingShape {
-                                    if let hit = findNearestUserShape(at: value.startLocation, proxy: proxy) {
-                                        vectorStore.selectShape(id: hit.shapeId, layerId: hit.layerId)
-                                    } else {
-                                        vectorStore.deselectShape()
-                                    }
+                                if let hit = findNearestUserShape(at: value.startLocation, proxy: proxy) {
+                                    vectorStore.selectShape(id: hit.shapeId, layerId: hit.layerId)
+                                } else {
+                                    vectorStore.deselectShape()
                                 }
                             }
                     )
@@ -283,9 +265,10 @@ struct RutMapView: View {
                     routePolylineOverlay(proxy: proxy)
                         .allowsHitTesting(false)
 
-                    // Vector drawing preview (no hit testing — pan must pass through)
+                    // Vector drawing: transparent tap-catcher + preview overlay
                     if core.appMode == .vector && vectorStore.activeTool != .none {
-                        drawingPreviewOverlay(proxy: proxy, cameraVersion: cameraVersion)
+                        drawingTapOverlay(proxy: proxy)
+                        drawingPreviewOverlay(proxy: proxy)
                             .allowsHitTesting(false)
                     }
 
@@ -1035,15 +1018,38 @@ struct RutMapView: View {
 
     // MARK: - Vector drawing overlays
 
-    /// Canvas overlay that draws the in-progress vector shape preview.
-    /// `cameraVersion` is incremented on every camera move so the Canvas redraws
-    /// during pan/zoom even when vertices haven't changed.
+    /// Transparent overlay that captures taps/drags for vector shape drawing.
     @ViewBuilder
-    private func drawingPreviewOverlay(proxy: MapProxy, cameraVersion: Int) -> some View {
+    private func drawingTapOverlay(proxy: MapProxy) -> some View {
+        Color.clear
+            .contentShape(Rectangle())
+            .gesture(
+                DragGesture(minimumDistance: 0, coordinateSpace: .global)
+                    .onChanged { value in
+                        if let coord = proxy.convert(value.location, from: .global) {
+                            vectorStore.drawing.handleGhostMove(to: coord)
+                        }
+                    }
+                    .onEnded { value in
+                        // Treat as tap when movement is minimal
+                        let d = hypot(value.translation.width, value.translation.height)
+                        if d < 8, let coord = proxy.convert(value.startLocation, from: .global) {
+                            vectorStore.drawing.handleTap(at: coord, tool: vectorStore.activeTool)
+                            // Auto-commit point immediately
+                            if vectorStore.activeTool == .point && vectorStore.drawing.isActive {
+                                vectorStore.commitDrawing(name: "Point")
+                            }
+                        }
+                    }
+            )
+    }
+
+    /// Canvas overlay that draws the in-progress vector shape preview.
+    @ViewBuilder
+    private func drawingPreviewOverlay(proxy: MapProxy) -> some View {
         let vertices = vectorStore.drawing.vertices
         let ghost    = vectorStore.drawing.ghostCoord
         let tool     = vectorStore.activeTool
-        let _        = cameraVersion  // force dependency
 
         if !vertices.isEmpty {
             Canvas { ctx, _ in
