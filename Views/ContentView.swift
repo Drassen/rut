@@ -179,7 +179,7 @@ struct ContentView: View {
                 get: { activeImporter != nil },
                 set: { if !$0 { activeImporter = nil } }
             ),
-            allowedContentTypes: [.item],
+            allowedContentTypes: lastImporter == .exportFolder ? [.folder] : [.item],
             allowsMultipleSelection: lastImporter == .importing
         ) { result in
             // activeImporter is already nil when this fires (binding set cleared it)
@@ -321,7 +321,7 @@ struct ContentView: View {
                 if uAp > 0 { StatBadge(icon: "airplane", count: uAp, label: "Apt") }
                 if uNv > 0 { StatBadge(icon: "antenna.radiowaves.left.and.right", count: uNv, label: "Nav") }
                 if uWp > 0 { StatBadge(icon: "mappin.and.ellipse", count: uWp, label: "Wpt") }
-                if uSh > 0 { StatBadge(icon: "triangle", count: uSh, label: "Shapes") }
+                if uSh > 0 { StatBadge(icon: "triangle", count: uSh, label: "Shp") }
 
                 Spacer()
 
@@ -331,7 +331,7 @@ struct ContentView: View {
                 .buttonStyle(RutSecondaryButtonStyle())
 
                 Button { showDatabase = true } label: {
-                    Label("Database", systemImage: "list.bullet.rectangle")
+                    Image(systemName: "list.bullet.rectangle")
                 }
                 .buttonStyle(RutSecondaryButtonStyle())
 
