@@ -726,7 +726,7 @@ private struct SettingsView: View {
                         Text("No default set").foregroundStyle(.secondary)
                     }
                     Button("Set default file…") {
-                        activeImporter = .defaultFile
+                        isSelectingDefaultFile = true
                     }
                     if currentName != nil {
                         Button("Clear default", role: .destructive) {
