@@ -32,7 +32,7 @@ struct VectorModeView: View {
                 VectorLayerPanel()
                     .environmentObject(vectorStore)
             }
-            .frame(minWidth: 196, idealWidth: 196, maxWidth: 320)
+            .frame(width: 196)
         }
         .safeAreaInset(edge: .bottom, spacing: 0) {
             VectorToolbar()

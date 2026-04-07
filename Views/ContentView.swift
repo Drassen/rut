@@ -270,7 +270,7 @@ struct ContentView: View {
                     VectorLayerPanel()
                         .environmentObject(core.vectorStore)
                 }
-                .frame(minWidth: 196, idealWidth: 196, maxWidth: 320)
+                .frame(width: 196)
                 .background(RutTheme.surface)
             }
         }
