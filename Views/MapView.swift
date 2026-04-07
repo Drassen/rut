@@ -243,19 +243,35 @@ struct RutMapView: View {
                             mapDragTargetChecked = false
                         }
                     }
-                    // Shape selection tap in vector cursor mode (doesn't block pan)
+                    // Shape selection tap + vector drawing taps — all via simultaneousGesture
+                    // so MapKit's pan/zoom gestures are never blocked.
                     .simultaneousGesture(
                         DragGesture(minimumDistance: 0, coordinateSpace: .global)
-                            .onEnded { value in
+                            .onChanged { value in
                                 guard core.appMode == .vector,
-                                      vectorStore.activeTool == .none,
-                                      !vectorStore.isEditingShape else { return }
+                                      vectorStore.activeTool != .none else { return }
+                                let d = hypot(value.translation.width, value.translation.height)
+                                if d < 12, let coord = proxy.convert(value.location, from: .global) {
+                                    vectorStore.drawing.handleGhostMove(to: coord)
+                                }
+                            }
+                            .onEnded { value in
+                                guard core.appMode == .vector else { return }
                                 let d = hypot(value.translation.width, value.translation.height)
                                 guard d < 8 else { return }
-                                if let hit = findNearestUserShape(at: value.startLocation, proxy: proxy) {
-                                    vectorStore.selectShape(id: hit.shapeId, layerId: hit.layerId)
-                                } else {
-                                    vectorStore.deselectShape()
+                                if vectorStore.activeTool != .none {
+                                    if let coord = proxy.convert(value.startLocation, from: .global) {
+                                        vectorStore.drawing.handleTap(at: coord, tool: vectorStore.activeTool)
+                                        if vectorStore.activeTool == .point && vectorStore.drawing.isActive {
+                                            vectorStore.commitDrawing(name: "Point")
+                                        }
+                                    }
+                                } else if !vectorStore.isEditingShape {
+                                    if let hit = findNearestUserShape(at: value.startLocation, proxy: proxy) {
+                                        vectorStore.selectShape(id: hit.shapeId, layerId: hit.layerId)
+                                    } else {
+                                        vectorStore.deselectShape()
+                                    }
                                 }
                             }
                     )
@@ -265,9 +281,8 @@ struct RutMapView: View {
                     routePolylineOverlay(proxy: proxy)
                         .allowsHitTesting(false)
 
-                    // Vector drawing: transparent tap-catcher + preview overlay
+                    // Vector drawing preview (no hit testing — pan must pass through)
                     if core.appMode == .vector && vectorStore.activeTool != .none {
-                        drawingTapOverlay(proxy: proxy)
                         drawingPreviewOverlay(proxy: proxy)
                             .allowsHitTesting(false)
                     }
@@ -1017,35 +1032,6 @@ struct RutMapView: View {
     }
 
     // MARK: - Vector drawing overlays
-
-    /// Transparent overlay that captures taps/drags for vector shape drawing.
-    @ViewBuilder
-    private func drawingTapOverlay(proxy: MapProxy) -> some View {
-        Color.clear
-            .contentShape(Rectangle())
-            .simultaneousGesture(
-                DragGesture(minimumDistance: 0, coordinateSpace: .global)
-                    .onChanged { value in
-                        // Only update ghost when the finger is nearly stationary —
-                        // larger movements are panning and should not ghost.
-                        let d = hypot(value.translation.width, value.translation.height)
-                        if d < 12, let coord = proxy.convert(value.location, from: .global) {
-                            vectorStore.drawing.handleGhostMove(to: coord)
-                        }
-                    }
-                    .onEnded { value in
-                        // Treat as tap when movement is minimal
-                        let d = hypot(value.translation.width, value.translation.height)
-                        if d < 8, let coord = proxy.convert(value.startLocation, from: .global) {
-                            vectorStore.drawing.handleTap(at: coord, tool: vectorStore.activeTool)
-                            // Auto-commit point immediately
-                            if vectorStore.activeTool == .point && vectorStore.drawing.isActive {
-                                vectorStore.commitDrawing(name: "Point")
-                            }
-                        }
-                    }
-            )
-    }
 
     /// Canvas overlay that draws the in-progress vector shape preview.
     @ViewBuilder
