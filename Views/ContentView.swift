@@ -74,6 +74,7 @@ struct ContentView: View {
     // Single file-importer driven by an enum to avoid SwiftUI's "last one wins" bug
     private enum FileImporterKind { case importing, exportFolder, defaultFile }
     @State private var activeImporter: FileImporterKind? = nil
+    @State private var lastImporter: FileImporterKind? = nil  // retains kind through dismiss
     @State private var showSettingsSheet = false
     @State private var showA109ExportCompleteAlert = false
     @State private var exportContainer: ExportContainer?
@@ -179,15 +180,17 @@ struct ContentView: View {
                 set: { if !$0 { activeImporter = nil } }
             ),
             allowedContentTypes: [.item],
-            allowsMultipleSelection: activeImporter == .importing
+            allowsMultipleSelection: lastImporter == .importing
         ) { result in
-            switch activeImporter {
+            // activeImporter is already nil when this fires (binding set cleared it)
+            // so we use lastImporter which was captured when the sheet was presented.
+            switch lastImporter {
             case .importing:       handleImport(result: result)
             case .exportFolder:    handleA109ExportFolderSelection(result: result)
             case .defaultFile:     handleDefaultFileSelection(result: result)
             case .none:            break
             }
-            activeImporter = nil
+            lastImporter = nil
         }
         .confirmationDialog("Import KML/KMZ as…", isPresented: $showKMLImportModeDialog, titleVisibility: .visible) {
             Button("Vector Layers") {
@@ -205,9 +208,9 @@ struct ContentView: View {
             if DefaultPresetService.shared.hasDefault {
                 Button("Use default APT/NAVAID") { loadDefaultAndExport() }
             } else {
-                Button("Set default APT/NAVAID file…") { activeImporter = .defaultFile }
+                Button("Set default APT/NAVAID file…") { lastImporter = .defaultFile; activeImporter = .defaultFile }
             }
-            Button("Continue without APT/NAVAID") { activeImporter = .exportFolder }
+            Button("Continue without APT/NAVAID") { lastImporter = .exportFolder; activeImporter = .exportFolder }
         } message: {
             if let name = DefaultPresetService.shared.defaultFileName {
                 Text("Missing airports or navaids. Default: \(name)")
@@ -322,7 +325,7 @@ struct ContentView: View {
 
                 Spacer()
 
-                Button { activeImporter = .importing } label: {
+                Button { lastImporter = .importing; activeImporter = .importing } label: {
                     Label("Import", systemImage: "square.and.arrow.down")
                 }
                 .buttonStyle(RutSecondaryButtonStyle())
@@ -579,7 +582,7 @@ struct ContentView: View {
 
         if exportFormat == .a109 {
             let missing = navStore.document.userAirports.isEmpty || navStore.document.userNavaids.isEmpty
-            if missing { showA109MissingDataAlert = true } else { activeImporter = .exportFolder }
+            if missing { showA109MissingDataAlert = true } else { lastImporter = .exportFolder; activeImporter = .exportFolder }
         } else {
             prepareStandardExport()
         }
@@ -691,13 +694,13 @@ struct ContentView: View {
 
     private func loadDefaultAndExport() {
         guard let url = DefaultPresetService.shared.resolveDefault() else {
-            activeImporter = .exportFolder
+            lastImporter = .exportFolder; activeImporter = .exportFolder
             return
         }
         Task {
             await CoreServices.shared.importDocuments(from: [url])
             url.stopAccessingSecurityScopedResource()
-            await MainActor.run { activeImporter = .exportFolder }
+            await MainActor.run { lastImporter = .exportFolder; activeImporter = .exportFolder }
         }
     }
 
