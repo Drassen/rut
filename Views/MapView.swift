@@ -1025,11 +1025,6 @@ struct RutMapView: View {
             .contentShape(Rectangle())
             .gesture(
                 DragGesture(minimumDistance: 0, coordinateSpace: .global)
-                    .onChanged { value in
-                        if let coord = proxy.convert(value.location, from: .global) {
-                            vectorStore.drawing.handleGhostMove(to: coord)
-                        }
-                    }
                     .onEnded { value in
                         // Treat as tap when movement is minimal
                         let d = hypot(value.translation.width, value.translation.height)
