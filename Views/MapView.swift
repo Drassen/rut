@@ -1023,10 +1023,13 @@ struct RutMapView: View {
     private func drawingTapOverlay(proxy: MapProxy) -> some View {
         Color.clear
             .contentShape(Rectangle())
-            .gesture(
+            .simultaneousGesture(
                 DragGesture(minimumDistance: 0, coordinateSpace: .global)
                     .onChanged { value in
-                        if let coord = proxy.convert(value.location, from: .global) {
+                        // Only update ghost when the finger is nearly stationary —
+                        // larger movements are panning and should not ghost.
+                        let d = hypot(value.translation.width, value.translation.height)
+                        if d < 12, let coord = proxy.convert(value.location, from: .global) {
                             vectorStore.drawing.handleGhostMove(to: coord)
                         }
                     }
