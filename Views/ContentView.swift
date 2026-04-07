@@ -71,9 +71,9 @@ struct ContentView: View {
 
     @Environment(\.horizontalSizeClass) private var sizeClass
 
-    @State private var isImporting = false
-    @State private var isSelectingExportFolder = false
-    @State private var isSelectingDefaultFile = false
+    // Single file-importer driven by an enum to avoid SwiftUI's "last one wins" bug
+    private enum FileImporterKind { case importing, exportFolder, defaultFile }
+    @State private var activeImporter: FileImporterKind? = nil
     @State private var showSettingsSheet = false
     @State private var showA109ExportCompleteAlert = false
     @State private var exportContainer: ExportContainer?
@@ -174,18 +174,21 @@ struct ContentView: View {
             .tint(RutTheme.amber)
         }
         .fileImporter(
-            isPresented: $isSelectingDefaultFile,
-            allowedContentTypes: [.rut, .apt, .nav],
-            allowsMultipleSelection: false
-        ) { result in
-            handleDefaultFileSelection(result: result)
-        }
-        .fileImporter(
-            isPresented: $isImporting,
+            isPresented: Binding(
+                get: { activeImporter != nil },
+                set: { if !$0 { activeImporter = nil } }
+            ),
             allowedContentTypes: [.item],
-            allowsMultipleSelection: true,
-            onCompletion: handleImport(result:)
-        )
+            allowsMultipleSelection: activeImporter == .importing
+        ) { result in
+            switch activeImporter {
+            case .importing:       handleImport(result: result)
+            case .exportFolder:    handleA109ExportFolderSelection(result: result)
+            case .defaultFile:     handleDefaultFileSelection(result: result)
+            case .none:            break
+            }
+            activeImporter = nil
+        }
         .confirmationDialog("Import KML/KMZ as…", isPresented: $showKMLImportModeDialog, titleVisibility: .visible) {
             Button("Vector Layers") {
                 Task { await CoreServices.shared.importDocuments(from: pendingKMLURLs, kmlAsVector: true) }
@@ -197,20 +200,14 @@ struct ContentView: View {
             }
             Button("Cancel", role: .cancel) { pendingKMLURLs = [] }
         }
-        .fileImporter(
-            isPresented: $isSelectingExportFolder,
-            allowedContentTypes: [.folder],
-            allowsMultipleSelection: false,
-            onCompletion: { result in handleA109ExportFolderSelection(result: result) }
-        )
         .alert("Incomplete Data", isPresented: $showA109MissingDataAlert) {
             Button("Cancel", role: .cancel) { }
             if DefaultPresetService.shared.hasDefault {
                 Button("Use default APT/NAVAID") { loadDefaultAndExport() }
             } else {
-                Button("Set default APT/NAVAID file…") { isSelectingDefaultFile = true }
+                Button("Set default APT/NAVAID file…") { activeImporter = .defaultFile }
             }
-            Button("Continue without APT/NAVAID") { isSelectingExportFolder = true }
+            Button("Continue without APT/NAVAID") { activeImporter = .exportFolder }
         } message: {
             if let name = DefaultPresetService.shared.defaultFileName {
                 Text("Missing airports or navaids. Default: \(name)")
@@ -325,7 +322,7 @@ struct ContentView: View {
 
                 Spacer()
 
-                Button { isImporting = true } label: {
+                Button { activeImporter = .importing } label: {
                     Label("Import", systemImage: "square.and.arrow.down")
                 }
                 .buttonStyle(RutSecondaryButtonStyle())
@@ -582,7 +579,7 @@ struct ContentView: View {
 
         if exportFormat == .a109 {
             let missing = navStore.document.userAirports.isEmpty || navStore.document.userNavaids.isEmpty
-            if missing { showA109MissingDataAlert = true } else { isSelectingExportFolder = true }
+            if missing { showA109MissingDataAlert = true } else { activeImporter = .exportFolder }
         } else {
             prepareStandardExport()
         }
@@ -694,13 +691,13 @@ struct ContentView: View {
 
     private func loadDefaultAndExport() {
         guard let url = DefaultPresetService.shared.resolveDefault() else {
-            isSelectingExportFolder = true
+            activeImporter = .exportFolder
             return
         }
         Task {
             await CoreServices.shared.importDocuments(from: [url])
             url.stopAccessingSecurityScopedResource()
-            await MainActor.run { isSelectingExportFolder = true }
+            await MainActor.run { activeImporter = .exportFolder }
         }
     }
 
@@ -729,7 +726,7 @@ private struct SettingsView: View {
                         Text("No default set").foregroundStyle(.secondary)
                     }
                     Button("Set default file…") {
-                        isSelectingDefaultFile = true
+                        activeImporter = .defaultFile
                     }
                     if currentName != nil {
                         Button("Clear default", role: .destructive) {
