@@ -145,6 +145,37 @@ struct NavigationDocument: Codable {
     var systemNavaids: [JepNavaid] = []
 
     // Vector layers (user-drawn polygons, lines, etc.)
-    // System layers (airspace) are excluded from the document; default [] ensures backwards compat.
+    // System layers (airspace) are excluded from the document.
     var vectorLayers: [VectorLayer] = []
+
+    // Custom decoder so old .rut files (without vectorLayers) still load.
+    init(from decoder: Decoder) throws {
+        let c = try decoder.container(keyedBy: CodingKeys.self)
+        createdAt      = try c.decodeIfPresent(Date.self,           forKey: .createdAt)      ?? Date()
+        routes         = try c.decodeIfPresent([Route].self,        forKey: .routes)         ?? []
+        userAirports   = try c.decodeIfPresent([UserAirport].self,  forKey: .userAirports)   ?? []
+        userNavaids    = try c.decodeIfPresent([UserNavaid].self,   forKey: .userNavaids)    ?? []
+        userWaypoints  = try c.decodeIfPresent([UserWaypoint].self, forKey: .userWaypoints)  ?? []
+        systemAirports = try c.decodeIfPresent([JepAirport].self,   forKey: .systemAirports) ?? []
+        systemNavaids  = try c.decodeIfPresent([JepNavaid].self,    forKey: .systemNavaids)  ?? []
+        vectorLayers   = try c.decodeIfPresent([VectorLayer].self,  forKey: .vectorLayers)   ?? []
+    }
+
+    init(createdAt: Date = Date(),
+         routes: [Route] = [],
+         userAirports: [UserAirport] = [],
+         userNavaids: [UserNavaid] = [],
+         userWaypoints: [UserWaypoint] = [],
+         systemAirports: [JepAirport] = [],
+         systemNavaids: [JepNavaid] = [],
+         vectorLayers: [VectorLayer] = []) {
+        self.createdAt      = createdAt
+        self.routes         = routes
+        self.userAirports   = userAirports
+        self.userNavaids    = userNavaids
+        self.userWaypoints  = userWaypoints
+        self.systemAirports = systemAirports
+        self.systemNavaids  = systemNavaids
+        self.vectorLayers   = vectorLayers
+    }
 }
