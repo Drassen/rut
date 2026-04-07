@@ -55,6 +55,7 @@ struct RutMapView: View {
     private var camera: Binding<MapCameraPosition> { $core.mapCamera }
     @State private var mapStyle: RutMapStyle = .hybrid
     @State private var showMapLabels: Bool = true
+    @State private var cameraVersion: Int = 0  // incremented on every camera move; forces drawing canvas redraw
 
     // --- Drag state for database markers ---
     @State private var draggingAirportId: String?
@@ -167,8 +168,9 @@ struct RutMapView: View {
                         activeRouteContent(proxy: proxy)
                     }
                     .mapStyle(mapStyle.mapKitStyle)
-                    .onMapCameraChange(frequency: .onEnd) { ctx in
+                    .onMapCameraChange(frequency: .continuous) { ctx in
                         showMapLabels = ctx.region.span.latitudeDelta < 0.68
+                        cameraVersion &+= 1
                     }
                     .onAppear {
                         configureInitialCamera()
@@ -283,7 +285,7 @@ struct RutMapView: View {
 
                     // Vector drawing preview (no hit testing — pan must pass through)
                     if core.appMode == .vector && vectorStore.activeTool != .none {
-                        drawingPreviewOverlay(proxy: proxy)
+                        drawingPreviewOverlay(proxy: proxy, cameraVersion: cameraVersion)
                             .allowsHitTesting(false)
                     }
 
@@ -1034,11 +1036,14 @@ struct RutMapView: View {
     // MARK: - Vector drawing overlays
 
     /// Canvas overlay that draws the in-progress vector shape preview.
+    /// `cameraVersion` is incremented on every camera move so the Canvas redraws
+    /// during pan/zoom even when vertices haven't changed.
     @ViewBuilder
-    private func drawingPreviewOverlay(proxy: MapProxy) -> some View {
+    private func drawingPreviewOverlay(proxy: MapProxy, cameraVersion: Int) -> some View {
         let vertices = vectorStore.drawing.vertices
         let ghost    = vectorStore.drawing.ghostCoord
         let tool     = vectorStore.activeTool
+        let _        = cameraVersion  // force dependency
 
         if !vertices.isEmpty {
             Canvas { ctx, _ in
