@@ -304,7 +304,7 @@
 				CURRENT_PROJECT_VERSION = 7;
 				DEVELOPMENT_TEAM = 759R855G64;
 				ENABLE_PREVIEWS = YES;
-				GENERATE_INFOPLIST_FILE = YES;
+				GENERATE_INFOPLIST_FILE = NO;
 				INFOPLIST_FILE = "Rut copy-Info.plist";
 				INFOPLIST_KEY_CFBundleDisplayName = Rut;
 				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.navigation";
@@ -345,7 +345,7 @@
 				CURRENT_PROJECT_VERSION = 7;
 				DEVELOPMENT_TEAM = 759R855G64;
 				ENABLE_PREVIEWS = YES;
-				GENERATE_INFOPLIST_FILE = YES;
+				GENERATE_INFOPLIST_FILE = NO;
 				INFOPLIST_FILE = "Rut copy-Info.plist";
 				INFOPLIST_KEY_CFBundleDisplayName = Rut;
 				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.navigation";
@@ -511,7 +511,7 @@
 				CURRENT_PROJECT_VERSION = 7;
 				DEVELOPMENT_TEAM = 759R855G64;
 				ENABLE_PREVIEWS = YES;
-				GENERATE_INFOPLIST_FILE = YES;
+				GENERATE_INFOPLIST_FILE = NO;
 				INFOPLIST_FILE = Info.plist;
 				INFOPLIST_KEY_CFBundleDisplayName = Rut;
 				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.navigation";
@@ -550,7 +550,7 @@
 				CURRENT_PROJECT_VERSION = 7;
 				DEVELOPMENT_TEAM = 759R855G64;
 				ENABLE_PREVIEWS = YES;
-				GENERATE_INFOPLIST_FILE = YES;
+				GENERATE_INFOPLIST_FILE = NO;
 				INFOPLIST_FILE = Info.plist;
 				INFOPLIST_KEY_CFBundleDisplayName = Rut;
 				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.navigation";
