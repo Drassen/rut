@@ -1,3 +1,9 @@
 # Ignore system-generated files
 .DS_Store
 Thumbs.db
+
+# Claude Code
+.claude/
+
+# Xcode user state
+*.xcuserstate

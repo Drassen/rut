@@ -253,7 +253,7 @@ struct VectorToolbar: View {
             Text("Width:")
                 .font(.system(size: 11))
                 .foregroundColor(RutTheme.textMuted)
-            ForEach([(15.0, "15m (low)"), (25.0, "25m (medium)"), (50.0, "50m (high)")], id: \.0) { w, label in
+            ForEach([(25.0, "25m (low)"), (50.0, "50m (medium)"), (60.0, "60m (high)")], id: \.0) { w, label in
                 let sel = vectorStore.zigzagWidth == w
                 Button(label) {
                     vectorStore.zigzagWidth = w

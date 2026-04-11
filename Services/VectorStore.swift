@@ -877,9 +877,9 @@ final class VectorStore: ObservableObject {
         } else if activeTool == .zigzag {
             var s = newShapeStyle
             switch zigzagWidth {
-            case 50: s.strokeColor = "#FF0000"; s.strokeWidth = 4
-            case 25: s.strokeColor = "#00AA00"; s.strokeWidth = 4
-            default: s.strokeColor = "#000000"; s.strokeWidth = 3
+            case 60: s.strokeColor = "#FF0000"; s.strokeWidth = 6
+            case 50: s.strokeColor = "#017301"; s.strokeWidth = 6
+            default: s.strokeColor = "#000000"; s.strokeWidth = 6
             }
             effectiveStyle = s
         } else if activeTool == .corridor {
