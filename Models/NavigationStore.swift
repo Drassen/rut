@@ -365,6 +365,7 @@ final class NavigationStore: ObservableObject {
             
             var counters: [WaypointType: Int] = [:]
             var idMapping: [String: String] = [:]
+            var wpMutations: [(index: Int, newId: String)] = []
 
             func nextCandidate(for type: WaypointType) -> String {
                 let next = (counters[type] ?? 0) + 1
@@ -387,14 +388,17 @@ final class NavigationStore: ObservableObject {
                     candidate = nextCandidate(for: type)
                 }
 
-                document.userWaypoints[wpIdx].id = candidate
-                document.userWaypoints[wpIdx].name = candidate
-                
+                wpMutations.append((index: wpIdx, newId: candidate))
                 idMapping[oldId] = candidate
                 usedIds.insert(candidate)
             }
 
             guard !idMapping.isEmpty else { return }
+
+            for m in wpMutations {
+                document.userWaypoints[m.index].id = m.newId
+                document.userWaypoints[m.index].name = m.newId
+            }
 
             for rIndex in document.routes.indices {
                 for pIndex in document.routes[rIndex].pointRefs.indices {
