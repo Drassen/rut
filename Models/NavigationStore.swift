@@ -499,9 +499,39 @@ final class NavigationStore: ObservableObject {
         }
 
     // Normalization & Creation
-    private func normalizeImportedRouteIds(_ doc: inout NavigationDocument, existingRoutes: [Route]) { var used = Set(existingRoutes.map{$0.routeId}); for i in doc.routes.indices { var r=doc.routes[i]; let base=makeRouteIdBase(from: r.name.isEmpty ? r.routeId : r.name); let u=makeUniqueRouteId(base: base, used: used); r.routeId=u; used.insert(u); doc.routes[i]=r } }
+    private func normalizeImportedRouteIds(_ doc: inout NavigationDocument, existingRoutes: [Route]) {
+        var usedIds   = Set(existingRoutes.map { $0.routeId })
+        var usedNames = Set(existingRoutes.map { $0.name })
+
+        for i in doc.routes.indices {
+            var r = doc.routes[i]
+
+            let raw = r.name.isEmpty ? r.routeId : r.name
+            let sanitized = NavigationStore.sanitizedName(raw, maxLength: 10)
+            let baseName = sanitized.isEmpty ? "ROUTE" : sanitized
+            let finalName = makeUniqueRouteName(base: baseName, used: usedNames)
+            r.name = finalName
+            usedNames.insert(finalName)
+
+            let idBase  = makeRouteIdBase(from: finalName)
+            let finalId = makeUniqueRouteId(base: idBase, used: usedIds)
+            r.routeId = finalId
+            usedIds.insert(finalId)
+
+            doc.routes[i] = r
+        }
+    }
     private func normalizeImportedWaypointIds(_ doc: inout NavigationDocument, existingWaypoints: [UserWaypoint]) { var used = Set(existingWaypoints.map{$0.id}); var m=[String:String](); for i in doc.userWaypoints.indices { var wp=doc.userWaypoints[i]; let p=wp.id; if used.contains(p) { let n=makeUniqueWaypointId(preferred: p, used: used); m[p]=n; wp.id=n }; used.insert(wp.id); doc.userWaypoints[i]=wp }; if !m.isEmpty { for ri in doc.routes.indices { for pi in doc.routes[ri].pointRefs.indices { var ref=doc.routes[ri].pointRefs[pi]; if ref.kind == .userWaypoint, let n=m[ref.refId] { ref.refId=n; doc.routes[ri].pointRefs[pi]=ref } } } } }
     private func makeRouteIdBase(from rawName: String) -> String { let s=NavigationStore.sanitizedName(rawName, maxLength: 15); return s.isEmpty ? "ROUTE" : String(s.prefix(8)) }
+    private func makeUniqueRouteName(base: String, used: Set<String>) -> String {
+        if !used.contains(base) { return base }
+        for n in 2...99 {
+            let suffix = "-\(n)"
+            let c = String(base.prefix(max(1, 10 - suffix.count))) + suffix
+            if !used.contains(c) { return c }
+        }
+        return String(base.prefix(9)) + "X"
+    }
     private func makeUniqueRouteId(base: String, used: Set<String>) -> String { if !used.contains(base) { return base }; for n in 2...99 { let c=String(base.prefix(max(1, 15-"-\(n)".count)))+"-\(n)"; if !used.contains(c) { return c } }; return base+"-X" }
     
     private func makeUniqueWaypointId(preferred: String, used: Set<String>) -> String {
