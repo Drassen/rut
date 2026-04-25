@@ -234,7 +234,11 @@ class FPLImportService: NSObject, RouteImporting, XMLParserDelegate {
         if id.contains(",") && id.contains("/") && (id.lowercased().contains("n") || id.lowercased().contains("s")) {
             return true
         }
-        
+
+        // 4. Otillåtna tecken (komma, slash, punkt, etc.) – fångar avkortade koordinat-ID utan N/S
+        let allowed = CharacterSet(charactersIn: "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789-")
+        if !id.uppercased().unicodeScalars.allSatisfy({ allowed.contains($0) }) { return true }
+
         return false
     }
 }
