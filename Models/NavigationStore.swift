@@ -47,28 +47,31 @@ final class NavigationStore: ObservableObject {
         }
 
         // --- 2. DUBBLETTKONTROLL RUTTER ---
+        var newRouteIds: [UUID] = []
+
         for route in incoming.routes {
             let isDuplicate = merged.routes.contains { existing in
                 if existing.name.caseInsensitiveCompare(route.name) != .orderedSame { return false }
                 if existing.pointRefs.count != route.pointRefs.count { return false }
-                
+
                 for (i, p1) in existing.pointRefs.enumerated() {
                     let p2 = route.pointRefs[i]
                     if p1.kind != p2.kind { return false }
                     if p1.refId == p2.refId { continue }
-                    
+
                     guard let c1 = getCoordinate(for: p1, in: merged),
                           let c2 = getCoordinate(for: p2, in: incoming) else { return false }
-                    
+
                     if abs(c1.latitude - c2.latitude) > 0.00001 || abs(c1.longitude - c2.longitude) > 0.00001 {
                         return false
                     }
                 }
                 return true
             }
-            
+
             if !isDuplicate {
                 merged.routes.append(route)
+                newRouteIds.append(route.id)
                 // Spara waypoints som denna rutt behöver
                 let wpIds = route.pointRefs.filter { $0.kind == .userWaypoint }.map { $0.refId }
                 idsToImport.formUnion(wpIds)
@@ -112,6 +115,10 @@ final class NavigationStore: ObservableObject {
         }
 
         document = merged
+
+        if autoRenumberWaypoints && !newRouteIds.isEmpty {
+            renumberWaypoints(forRouteIds: newRouteIds)
+        }
 
         if activeRouteId == nil, let first = merged.routes.first {
             activeRouteId = first.id
