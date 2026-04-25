@@ -568,7 +568,7 @@ struct RutMapView: View {
                 let p = pair.element
 
                 if !activeRouteIDs.contains(p.name) {
-                    Annotation(p.name, coordinate: displayCoordinate(for: p.coordinate)) {
+                    Annotation("i-\(route.id)-\(p.name)", coordinate: displayCoordinate(for: p.coordinate)) {
                         let type = waypointType(for: p)
                         RouteMarkerShapeView(
                             point: p,
@@ -611,7 +611,7 @@ struct RutMapView: View {
                 let type = waypointType(for: p)
                 let isDragging = isRoutePointDragActive && draggingRoutePointIdx == idx
 
-                Annotation(p.name, coordinate: displayCoordinate(for: p.coordinate)) {
+                Annotation("a-\(p.name)", coordinate: displayCoordinate(for: p.coordinate)) {
                     RouteMarkerShapeView(point: p, color: colorActive, contentColor: .white, waypointType: type, showLabel: showMapLabels && !isVector)
                         // Hide while dragging — Canvas overlay renders the live marker instead.
                         .opacity(isDragging ? 0 : vectorDim)
