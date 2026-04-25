@@ -265,6 +265,11 @@ struct RutMapView: View {
                     routePolylineOverlay(proxy: proxy)
                         .allowsHitTesting(false)
 
+                    // Leg-distance labels rendered as SwiftUI overlay, not MapKit
+                    // Annotation, so they are guaranteed to sit above all map content.
+                    legLabelsOverlay(proxy: proxy)
+                        .allowsHitTesting(false)
+
                     // Vector drawing: transparent tap-catcher + preview overlay
                     if core.appMode == .vector && vectorStore.activeTool != .none {
                         drawingTapOverlay(proxy: proxy)
@@ -610,31 +615,9 @@ struct RutMapView: View {
                     RouteMarkerShapeView(point: p, color: colorActive, contentColor: .white, waypointType: type, showLabel: showMapLabels && !isVector)
                         // Hide while dragging — Canvas overlay renders the live marker instead.
                         .opacity(isDragging ? 0 : vectorDim)
-                        .zIndex(10)
                         .onTapGesture { if core.appMode == .navigation { onPointTap?(p) } }
                 }
                 .annotationTitles(.hidden)
-
-                if showMapLabels && !isVector && idx < points.count - 1 && idx < legDistances.count {
-                    let safeP = displayCoordinate(for: p.coordinate)
-                    let safeNext = displayCoordinate(for: points[idx + 1].coordinate)
-                    let mid = CLLocationCoordinate2D(
-                        latitude: (safeP.latitude + safeNext.latitude) / 2.0,
-                        longitude: (safeP.longitude + safeNext.longitude) / 2.0
-                    )
-                    let label = String(format: "%.1fN", legDistances[idx])
-
-                    Annotation(label, coordinate: mid) {
-                        Text(label)
-                            .font(.caption2)
-                            .padding(3)
-                            .background(colorActive)
-                            .foregroundColor(.black)
-                            .cornerRadius(4)
-                            .zIndex(5)
-                    }
-                    .annotationTitles(.hidden)
-                }
             }
 
             // Ghost marker shown while dragging a line-segment insertion
@@ -956,6 +939,41 @@ struct RutMapView: View {
                     )
                     .scaleEffect(1.2)
                     .position(pt)
+                }
+            }
+        }
+    }
+
+    // MARK: - Leg distance label overlay
+
+    /// Renders leg-distance labels as a SwiftUI ZStack overlay instead of
+    /// MapKit Annotation items, guaranteeing they sit above all map content.
+    @ViewBuilder
+    private func legLabelsOverlay(proxy: MapProxy) -> some View {
+        let isVector = core.appMode == .vector
+        if showMapLabels, !isVector, let route = navStore.activeRoute {
+            let points = navStore.mapPoints(for: route)
+            let legDistances = draggingRoutePointIdx == nil
+                ? navStore.legDistancesNM(for: route)
+                : [Double]()
+
+            ZStack(alignment: .topLeading) {
+                ForEach(0..<max(0, min(points.count - 1, legDistances.count)), id: \.self) { idx in
+                    let a = displayCoordinate(for: points[idx].coordinate)
+                    let b = displayCoordinate(for: points[idx + 1].coordinate)
+                    let mid = CLLocationCoordinate2D(
+                        latitude:  (a.latitude  + b.latitude)  / 2.0,
+                        longitude: (a.longitude + b.longitude) / 2.0
+                    )
+                    if let pt = proxy.convert(mid, to: .local) {
+                        Text(String(format: "%.1fN", legDistances[idx]))
+                            .font(.caption2)
+                            .padding(3)
+                            .background(colorActive)
+                            .foregroundColor(.black)
+                            .cornerRadius(4)
+                            .position(pt)
+                    }
                 }
             }
         }
