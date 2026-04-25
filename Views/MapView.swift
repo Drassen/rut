@@ -575,7 +575,7 @@ struct RutMapView: View {
                             color: colorInactive.opacity(dimFactor),
                             contentColor: .white.opacity(0.8 * dimFactor),
                             waypointType: type,
-                            showLabel: showMapLabels && core.appMode == .navigation
+                            showLabel: false
                         )
                         .scaleEffect(hasActiveRoute ? 0.9 : 1.0)
                         .onTapGesture {
