@@ -172,6 +172,10 @@ struct RutMapView: View {
                     }
                     .onAppear {
                         configureInitialCamera()
+                        DispatchQueue.main.async { fixAnnotationZOrder() }
+                    }
+                    .onChange(of: navStore.activeRouteId) { _, _ in
+                        DispatchQueue.main.async { fixAnnotationZOrder() }
                     }
                     .task {
                         await airspaceService.fetchAllZones()
@@ -1027,6 +1031,22 @@ struct RutMapView: View {
 
     private func setMapScrollEnabled(_ enabled: Bool) {
         findMKMapView()?.isScrollEnabled = enabled
+    }
+
+    /// Sets layer.zPosition on MKAnnotationViews based on their title prefix
+    /// ("a-" = active route, "i-" = inactive route). MapKit does not expose
+    /// z-ordering in the SwiftUI API, so we reach into the underlying MKMapView.
+    private func fixAnnotationZOrder() {
+        guard let mapView = findMKMapView() else { return }
+        for annotation in mapView.annotations {
+            guard let view = mapView.view(for: annotation) else { continue }
+            let title = annotation.title ?? nil
+            if title?.hasPrefix("a-") == true {
+                view.layer.zPosition = 100
+            } else if title?.hasPrefix("i-") == true {
+                view.layer.zPosition = 0
+            }
+        }
     }
 
     /// Forces MapKit to process pending @MapContentBuilder changes.
