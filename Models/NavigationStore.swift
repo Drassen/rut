@@ -234,7 +234,7 @@ final class NavigationStore: ObservableObject {
             }
         }
         
-        if autoRenumberWaypoints && type != .custom {
+        if autoRenumberWaypoints {
             let affectedRouteIds = document.routes.filter { route in
                 route.pointRefs.contains { $0.refId == finalId && $0.kind == .userWaypoint }
             }.map { $0.id }
@@ -314,7 +314,8 @@ final class NavigationStore: ObservableObject {
                     }
                 }
             }
-        } else if autoRenumberWaypoints {
+        }
+        if autoRenumberWaypoints {
             renumberWaypoints(forRouteIds: [document.routes[routeIdx].id])
         }
     }
