@@ -988,7 +988,9 @@ struct RutMapView: View {
                 routeId: route.id, at: ins.segmentIndex + 1,
                 ref: RoutePointRef(kind: .userWaypoint, refId: newId)
             )
-            navStore.renumberWaypoints(forRouteIds: [route.id])
+            if navStore.autoRenumberWaypoints {
+                navStore.renumberWaypoints(forRouteIds: [route.id])
+            }
         }
         pendingInsert = nil
     }

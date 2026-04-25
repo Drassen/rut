@@ -718,10 +718,17 @@ private struct SettingsView: View {
     @Environment(\.dismiss) private var dismiss
     @State private var isSelectingDefaultFile = false
     @State private var currentName: String? = DefaultPresetService.shared.defaultFileName
+    @AppStorage("autoRenumberWaypoints") private var autoRenumberWaypoints: Bool = true
 
     var body: some View {
         NavigationStack {
             Form {
+                Section {
+                    Toggle("Automatically re-name and re-number waypoints", isOn: $autoRenumberWaypoints)
+                } footer: {
+                    Text("When enabled, waypoints are renamed and renumbered in route order whenever their type changes.")
+                }
+
                 Section("Default airports & navaids") {
                     if let name = currentName {
                         LabeledContent("File", value: name)

@@ -7,6 +7,7 @@ import Combine
 final class NavigationStore: ObservableObject {
     @Published var document: NavigationDocument = NavigationDocument()
     @Published var activeRouteId: UUID? = nil
+    @AppStorage("autoRenumberWaypoints") var autoRenumberWaypoints: Bool = true
 
     private let logger = ErrorLogger.shared
 
@@ -233,11 +234,11 @@ final class NavigationStore: ObservableObject {
             }
         }
         
-        if type != .custom {
+        if autoRenumberWaypoints && type != .custom {
             let affectedRouteIds = document.routes.filter { route in
                 route.pointRefs.contains { $0.refId == finalId && $0.kind == .userWaypoint }
             }.map { $0.id }
-            
+
             if !affectedRouteIds.isEmpty {
                 renumberWaypoints(forRouteIds: affectedRouteIds)
             }
@@ -313,11 +314,11 @@ final class NavigationStore: ObservableObject {
                     }
                 }
             }
-        } else {
+        } else if autoRenumberWaypoints {
             renumberWaypoints(forRouteIds: [document.routes[routeIdx].id])
         }
     }
-    
+
     func updateWaypointCoordinate(in route: Route, at indexInRoute: Int, to coordinate: CLLocationCoordinate2D) {
         guard let routeIdx = document.routes.firstIndex(where: { $0.id == route.id }) else { return }
         let pointRef = document.routes[routeIdx].pointRefs[indexInRoute]
