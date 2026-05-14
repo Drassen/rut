@@ -123,6 +123,55 @@ struct VectorPointIconView: View {
     }
 }
 
+// MARK: - DMG Export Types
+
+enum DMGShapeCategory: String, Codable {
+    case drawing
+    case area
+
+    var displayName: String {
+        switch self {
+        case .drawing: return "Drawing"
+        case .area: return "Area"
+        }
+    }
+}
+
+enum DMGAreaType: String, Codable, CaseIterable {
+    case restrictedZone   = "RESTRICTEDZONE"
+    case navigationalZone = "NAVIGATIONALZONE"
+    case prohibitedZone   = "PROHIBITEDZONE"
+    case obstacle         = "OBSTACLE"
+
+    var displayName: String {
+        switch self {
+        case .restrictedZone: return "Restricted Zone"
+        case .navigationalZone: return "Navigational Zone"
+        case .prohibitedZone: return "Prohibited Zone"
+        case .obstacle: return "Obstacle"
+        }
+    }
+}
+
+enum DMGLineStyle: String, Codable, CaseIterable {
+    case standard   // 0x07 – standard bright color
+    case alternate  // 0xFF – alternative color
+
+    var colorByte: UInt8 {
+        switch self {
+        case .standard: return 0x07
+        case .alternate: return 0xFF
+        }
+    }
+
+    var displayName: String {
+        switch self {
+        case .standard: return "Standard (0x07)"
+        case .alternate: return "Alternate (0xFF)"
+        }
+    }
+}
+
 // MARK: - VectorStyle
 
 struct VectorStyle: Codable, Equatable {
@@ -147,6 +196,11 @@ struct VectorShape: Identifiable, Codable {
     var geometry: VectorGeometry
     var style: VectorStyle = VectorStyle()
     var isVisible: Bool = true
+
+    // A109 DMG export properties
+    var dmgCategory: DMGShapeCategory = .drawing
+    var dmgAreaType: DMGAreaType = .restrictedZone
+    var dmgLineStyle: DMGLineStyle? = nil
 }
 
 // MARK: - VectorLayer

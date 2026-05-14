@@ -15,6 +15,9 @@ struct VectorShapeEditorView: View {
     @State private var opacity: Double
     @State private var pointIcon: VectorPointIcon
     @State private var iconScale: Double
+    @State private var dmgCategory: DMGShapeCategory
+    @State private var dmgAreaType: DMGAreaType
+    @State private var dmgLineStyle: DMGLineStyle?
 
     init(shape: VectorShape, layerId: UUID) {
         self.shape   = shape
@@ -27,6 +30,9 @@ struct VectorShapeEditorView: View {
         _opacity       = State(initialValue: shape.style.opacity)
         _pointIcon     = State(initialValue: shape.style.pointIcon)
         _iconScale     = State(initialValue: shape.style.iconScale)
+        _dmgCategory   = State(initialValue: shape.dmgCategory)
+        _dmgAreaType   = State(initialValue: shape.dmgAreaType)
+        _dmgLineStyle  = State(initialValue: shape.dmgLineStyle)
     }
 
     var body: some View {
@@ -108,6 +114,32 @@ struct VectorShapeEditorView: View {
                     }
                 }
                 }
+
+                // A109 DMG export section (polygon/circle only)
+                if !isPoint && !isPolyline {
+                    Section("A109 Overlay Export") {
+                        Picker("Shape Type", selection: $dmgCategory) {
+                            ForEach([DMGShapeCategory.drawing, .area], id: \.self) { cat in
+                                Text(cat.displayName).tag(cat)
+                            }
+                        }
+
+                        if dmgCategory == .area {
+                            Picker("Zone Type", selection: $dmgAreaType) {
+                                ForEach(DMGAreaType.allCases, id: \.self) { areaType in
+                                    Text(areaType.displayName).tag(areaType)
+                                }
+                            }
+                        } else {
+                            Picker("Line Style", selection: $dmgLineStyle) {
+                                Text("Custom colors").tag(DMGLineStyle?.none)
+                                ForEach(DMGLineStyle.allCases, id: \.self) { style in
+                                    Text(style.displayName).tag(style as DMGLineStyle?)
+                                }
+                            }
+                        }
+                    }
+                }
             }
             .navigationTitle("Properties")
             .navigationBarTitleDisplayMode(.inline)
@@ -144,6 +176,9 @@ struct VectorShapeEditorView: View {
         updated.style.opacity     = opacity
         updated.style.pointIcon   = pointIcon
         updated.style.iconScale   = iconScale
+        updated.dmgCategory = dmgCategory
+        updated.dmgAreaType = dmgAreaType
+        updated.dmgLineStyle = dmgLineStyle
         vectorStore.updateShape(updated, in: layerId)
     }
 }
