@@ -1,0 +1,6 @@
+name Kraftledningar
+group Util
+priority 3
+bbmin 11.309720 55.384731
+bbmax 24.052351 68.434585
+type vector

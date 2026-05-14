@@ -1,0 +1,41 @@
+{
+  "type": "FeatureCollection",
+  "features": [
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              15.6254,
+              58.4866
+            ],
+            [
+              15.6388,
+              58.4935
+            ],
+            [
+              15.6253,
+              58.4973
+            ],
+            [
+              15.6254,
+              58.4866
+            ]
+          ]
+        ]
+      },
+      "properties": {
+        "name": "a1",
+        "type": "DRAWING",
+        "zone": "none",
+        "is_zone_record": false,
+        "points": 3,
+        "elevation": 64511,
+        "color": -1,
+        "created": "2026-05-09"
+      }
+    }
+  ]
+}

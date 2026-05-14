@@ -1,0 +1,40 @@
+eam://D:/||NavigMap|vector|jeppesen|;1.tgz
+eam://D:/||VectorMap|vector|DimLager|;2.tgz
+eam://D:/||VectorMap|vector|Flyginfo|;3.tgz
+eam://D:/||VectorMap|vector|HinderNATO|;4.tgz
+eam://D:/||VectorMap|vector|Kraftledningar|;5.tgz
+eam://D:/||VectorMap|vector|Ovningar|;6.tgz
+eam://D:/||MacroScript|macros|ALL OFF.script|;7.tgz
+eam://D:/||MacroScript|macros|ALL ON.script|;8.tgz
+eam://D:/||MacroScript|macros|DAG.script|;9.tgz
+eam://D:/||MacroScript|macros|DIM0.script|;10.tgz
+eam://D:/||MacroScript|macros|DIM25.script|;11.tgz
+eam://D:/||MacroScript|macros|DIM50.script|;12.tgz
+eam://D:/||MacroScript|macros|LABELS OFF.script|;13.tgz
+eam://D:/||MacroScript|macros|LABELS ON.script|;14.tgz
+eam://D:/||MacroScript|macros|MACRO LIST.script|;15.tgz
+eam://D:/||MacroScript|macros|NATT.script|;16.tgz
+eam://D:/||MacroScript|macros|OBST LOW OFF.script|;17.tgz
+eam://D:/||MacroScript|macros|OBST LOW ON.script|;18.tgz
+eam://D:/||MacroScript|macros|OBST WARN OFF.script|;19.tgz
+eam://D:/||MacroScript|macros|OBST WARN ON.script|;20.tgz
+eam://D:/||MacroScript|macros|OUTHOUSE 10 NM.script|;21.tgz
+eam://D:/||MacroScript|macros|SJO STD.script|;22.tgz
+eam://D:/||MacroScript|macros|STARTUP 2.script|;23.tgz
+eam://D:/||MacroScript|macros|TERR WARN OFF.script|;24.tgz
+eam://D:/||MacroScript|macros|TERR WARN ON.script|;25.tgz
+eam://D:/||MacroScript|macros|THREAT RANGES.script|;26.tgz
+eam://D:/||UserObjectTemplates|SQL|1|;27.tgz
+eam://D:/||UserObjects|SQL|6|;28.tgz
+eam://D:/||Settings|settings/current|cameraSettings.json|;29.tgz
+eam://D:/||Settings|settings/current|hiddenItems.json|;30.tgz
+eam://D:/||Settings|settings/current|labelSettings.json|;31.tgz
+eam://D:/||Settings|settings/current|macroListDialogConfig.json|;32.tgz
+eam://D:/||Settings|settings/current|mapDesignSelection.json|;33.tgz
+eam://D:/||Settings|settings/current|mapSettings.json|;34.tgz
+eam://D:/||Settings|settings/current|maskAirspaces.json|;35.tgz
+eam://D:/||Settings|settings/current|quickAccessDialogConfig.json|;36.tgz
+eam://D:/||Settings|settings/current|userObjectSettings.json|;37.tgz
+eam://D:/||Settings|settings/current|zoomLevelSettings.json|;38.tgz
+eam://D:/||Settings|settings/system/symbols|3.sym|;39.tgz
+eam://D:/||Settings|settings/system|appMatrix.json|;40.tgz

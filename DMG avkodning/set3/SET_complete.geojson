@@ -1,0 +1,36 @@
+{
+  "type": "FeatureCollection",
+  "features": [
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              15.6254,
+              58.4866
+            ],
+            [
+              15.6388,
+              58.4935
+            ],
+            [
+              15.6253,
+              58.4973
+            ],
+            [
+              15.6254,
+              58.4866
+            ]
+          ]
+        ]
+      },
+      "properties": {
+        "name": "a1",
+        "type": "POLYGON",
+        "points": 4
+      }
+    }
+  ]
+}
