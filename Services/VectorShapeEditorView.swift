@@ -17,7 +17,9 @@ struct VectorShapeEditorView: View {
     @State private var iconScale: Double
     @State private var dmgCategory: DMGShapeCategory
     @State private var dmgAreaType: DMGAreaType
-    @State private var dmgLineStyle: DMGLineStyle?
+    @State private var dmgStyleClass: DMGStyleClass
+    @State private var customStyleInput: String = ""
+    @State private var showCustomStyleInput: Bool = false
 
     init(shape: VectorShape, layerId: UUID) {
         self.shape   = shape
@@ -32,12 +34,13 @@ struct VectorShapeEditorView: View {
         _iconScale     = State(initialValue: shape.style.iconScale)
         _dmgCategory   = State(initialValue: shape.dmgCategory)
         _dmgAreaType   = State(initialValue: shape.dmgAreaType)
-        _dmgLineStyle  = State(initialValue: shape.dmgLineStyle)
+        _dmgStyleClass = State(initialValue: shape.dmgStyleClass)
     }
 
     var body: some View {
         NavigationStack {
             Form {
+
                 Section("General") {
                     TextField("Name", text: $name)
                     TextField("Notes", text: $notes, axis: .vertical)
@@ -115,9 +118,9 @@ struct VectorShapeEditorView: View {
                 }
                 }
 
-                // A109 DMG export section (polygon/circle only)
-                if !isPoint && !isPolyline {
-                    Section("A109 Overlay Export") {
+                // A109 DMG export section (all shapes except points)
+                if !isPoint {
+                    Section("Euronav DMG options (A109)") {
                         Picker("Shape Type", selection: $dmgCategory) {
                             ForEach([DMGShapeCategory.drawing, .area], id: \.self) { cat in
                                 Text(cat.displayName).tag(cat)
@@ -131,16 +134,33 @@ struct VectorShapeEditorView: View {
                                 }
                             }
                         } else {
-                            Picker("Line Style", selection: $dmgLineStyle) {
-                                Text("Custom colors").tag(DMGLineStyle?.none)
-                                ForEach(DMGLineStyle.allCases, id: \.self) { style in
-                                    Text(style.displayName).tag(style as DMGLineStyle?)
+                            VStack(alignment: .leading, spacing: 12) {
+                                Picker("Style Class", selection: $dmgStyleClass) {
+                                    ForEach(KnownStyleClass.allCases, id: \.self) { known in
+                                        Text(known.displayName).tag(DMGStyleClass.known(known))
+                                    }
+                                    Divider()
+                                    Text("Custom").tag(DMGStyleClass.custom(0))
+                                }
+
+                                if case .custom = dmgStyleClass {
+                                    HStack(spacing: 8) {
+                                        TextField("ID (decimal or 0xHEX)", text: $customStyleInput)
+                                            .textFieldStyle(.roundedBorder)
+                                            .onChange(of: customStyleInput) { _, newValue in
+                                                updateCustomStyleFromInput(newValue)
+                                            }
+                                        Text(customStyleIDDisplay)
+                                            .font(.system(.caption, design: .monospaced))
+                                            .foregroundStyle(.secondary)
+                                    }
                                 }
                             }
                         }
                     }
                 }
             }
+            .frame(maxHeight: .infinity, alignment: .top)
             .navigationTitle("Properties")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
@@ -178,8 +198,34 @@ struct VectorShapeEditorView: View {
         updated.style.iconScale   = iconScale
         updated.dmgCategory = dmgCategory
         updated.dmgAreaType = dmgAreaType
-        updated.dmgLineStyle = dmgLineStyle
+        updated.dmgStyleClass = dmgStyleClass
         vectorStore.updateShape(updated, in: layerId)
+    }
+
+    private var customStyleIDDisplay: String {
+        if case .custom(let id) = dmgStyleClass {
+            return String(format: "0x%04X (%d)", id, id)
+        }
+        return ""
+    }
+
+    private func updateCustomStyleFromInput(_ input: String) {
+        let trimmed = input.trimmingCharacters(in: .whitespaces)
+        guard !trimmed.isEmpty else { return }
+
+        let id: UInt16?
+        if trimmed.lowercased().hasPrefix("0x") {
+            // Parse as hex
+            let hexStr = String(trimmed.dropFirst(2))
+            id = UInt16(hexStr, radix: 16)
+        } else {
+            // Parse as decimal
+            id = UInt16(trimmed, radix: 10)
+        }
+
+        if let id = id {
+            dmgStyleClass = .custom(id)
+        }
     }
 }
 

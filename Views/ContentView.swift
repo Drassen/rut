@@ -14,7 +14,6 @@ struct EditorWrapper: Identifiable {
 
 enum ExportFormat: String, CaseIterable, Identifiable {
     case a109  = "A109 PCMCIA"
-    case dmg   = "A109 Vector Overlay (DMG)"
     case uh60m = "UH60M (Not implemented)"
     case h145  = "H145 (Not implemented)"
     case nh90  = "NH90 (Not implemented)"
@@ -28,7 +27,7 @@ enum ExportFormat: String, CaseIterable, Identifiable {
 
     var id: String { rawValue }
 
-    var isPCMCIA: Bool { self == .a109 || self == .dmg || self == .uh60m || self == .h145 || self == .nh90 }
+    var isPCMCIA: Bool { self == .a109 || self == .uh60m || self == .h145 || self == .nh90 }
 }
 
 struct ExportContainer: Identifiable {
@@ -90,9 +89,6 @@ struct ContentView: View {
     @State private var pendingKMLURLs: [URL] = []
     @State private var showKMLImportModeDialog = false
     @State private var showLayerPanel = false
-    @State private var showDMGLayerPicker = false
-    @State private var dmgExportLayer: DMGExportService.DMGLayer = .three
-    @State private var showDMGExportCompleteAlert = false
 
     private var appVersion: String {
         Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "—"
@@ -142,40 +138,8 @@ struct ContentView: View {
         } message: {
             Text("Remove the PCMCIA card.")
         }
-        .alert("DMG Export Complete", isPresented: $showDMGExportCompleteAlert) {
-            Button("OK") { }
-        } message: {
-            Text("\(dmgExportLayer.filename) has been written to the selected folder. Remove the PCMCIA card.")
-        }
         .sheet(isPresented: $showSettingsSheet) {
             SettingsView()
-        }
-        .sheet(isPresented: $showDMGLayerPicker) {
-            NavigationStack {
-                Form {
-                    Picker("Layer", selection: $dmgExportLayer) {
-                        ForEach(DMGExportService.DMGLayer.allCases, id: \.rawValue) { layer in
-                            Text(layer.displayName).tag(layer)
-                        }
-                    }
-                }
-                .navigationTitle("DMG Export")
-                .navigationBarTitleDisplayMode(.inline)
-                .toolbar {
-                    ToolbarItem(placement: .topBarLeading) {
-                        Button("Cancel") { showDMGLayerPicker = false }
-                    }
-                    ToolbarItem(placement: .topBarTrailing) {
-                        Button("Continue") {
-                            showDMGLayerPicker = false
-                            lastImporter = .exportFolder
-                            activeImporter = .exportFolder
-                        }
-                        .bold()
-                    }
-                }
-            }
-            .tint(RutTheme.amber)
         }
         .sheet(isPresented: Binding(
             get: { !toastManager.importWarnings.isEmpty },
@@ -589,7 +553,7 @@ struct ContentView: View {
         case .apt: hasData = !navStore.document.userAirports.isEmpty
         case .nav: hasData = !navStore.document.userNavaids.isEmpty
         case .fpl, .rte, .gpx: hasData = !navStore.routes.isEmpty
-        case .rut, .a109, .uh60m, .h145, .nh90, .kml, .dmg:
+        case .rut, .a109, .uh60m, .h145, .nh90, .kml:
             hasData = !navStore.routes.isEmpty ||
                       !navStore.document.userAirports.isEmpty ||
                       !navStore.document.userNavaids.isEmpty ||
@@ -615,11 +579,6 @@ struct ContentView: View {
         guard canExport() else { return }
 
         if exportFormat == .kml { showKMLSubDialog = true; return }
-
-        if exportFormat == .dmg {
-            showDMGLayerPicker = true
-            return
-        }
 
         if exportFormat == .a109 {
             let missing = navStore.document.userAirports.isEmpty || navStore.document.userNavaids.isEmpty
@@ -668,11 +627,7 @@ struct ContentView: View {
         case .failure(let error): toastManager.showError(error)
         case .success(let urls):
             guard let folderURL = urls.first else { return }
-            if exportFormat == .dmg {
-                performDMGDirectExport(to: folderURL)
-            } else {
-                performA109DirectExport(to: folderURL)
-            }
+            performA109DirectExport(to: folderURL)
         }
     }
 
@@ -693,26 +648,6 @@ struct ContentView: View {
         } catch {
             ErrorLogger.shared.logError(error)
             toastManager.show(message: "Export failed: \(error.localizedDescription)")
-        }
-    }
-
-    private func performDMGDirectExport(to folderURL: URL) {
-        let service = DMGExportService()
-        let allShapes = core.vectorStore.documentLayers().flatMap { $0.shapes }
-
-        guard !allShapes.isEmpty else {
-            toastManager.show(message: "No vector shapes to export.", kind: .info)
-            return
-        }
-
-        do {
-            let fileData = service.export(shapes: allShapes, to: dmgExportLayer)
-            let filename = dmgExportLayer.filename
-            try writePCMCIAFile(fileData, filename: filename, to: folderURL)
-            showDMGExportCompleteAlert = true
-        } catch {
-            ErrorLogger.shared.logError(error)
-            toastManager.show(message: "DMG export failed: \(error.localizedDescription)")
         }
     }
 

@@ -1,11 +1,14 @@
 import SwiftUI
 import zlib
+import UniformTypeIdentifiers
+import UIKit
 
 // MARK: - Export format
 
 enum VectorExportFormat: String, CaseIterable, Identifiable {
     case kmz  = "KMZ"
     case atak = "ATAK (.zip)"
+    case dmg  = "Euronav 5 (A109 DMG)"
     var id: String { rawValue }
 }
 
@@ -402,6 +405,9 @@ struct VectorExportButton: View {
     @State private var exportContainer: ExportContainer? = nil
     @State private var exportFormat: VectorExportFormat = .kmz
     @State private var showExportDialog = false
+    @State private var showDMGFolderPicker = false
+    @State private var pendingDMGFiles: [String: Data]? = nil
+    @State private var showDMGExportCompleteAlert = false
 
     var body: some View {
         Button {
@@ -424,6 +430,16 @@ struct VectorExportButton: View {
         }
         .sheet(item: $exportContainer) { container in
             MultiFileExportController(fileURLs: container.urls) { _ in }
+        }
+        .sheet(isPresented: $showDMGFolderPicker) {
+            DocumentPickerView(isPresented: $showDMGFolderPicker) { folderURL in
+                writeDMGCardStructure(to: folderURL)
+            }
+        }
+        .alert("Export Complete", isPresented: $showDMGExportCompleteAlert) {
+            Button("OK") { }
+        } message: {
+            Text("PCMCIA card with vector data exported successfully. You can now remove the card.")
         }
     }
 
@@ -482,6 +498,12 @@ struct VectorExportButton: View {
             case .atak:
                 outputData = buildATAKPackage(layers: layersToExport, name: outputName)
                 filename = outputName + ".zip"
+            case .dmg:
+                let service = DMGExportService()
+                let files = service.exportDMGCard(vectorLayers: layersToExport, to: .three)
+                pendingDMGFiles = files
+                showDMGFolderPicker = true
+                return
             }
 
             let tempDir = FileManager.default.temporaryDirectory
@@ -495,6 +517,39 @@ struct VectorExportButton: View {
             }
         } catch {
             toastManager.show(message: error.localizedDescription)
+        }
+    }
+
+    // MARK: - DMG Card Export
+
+    private func writeDMGCardStructure(to folderURL: URL) {
+        guard let files = pendingDMGFiles else { return }
+        do {
+            let secured = folderURL.startAccessingSecurityScopedResource()
+            defer { if secured { folderURL.stopAccessingSecurityScopedResource() } }
+
+            // Create db/SQL folder if needed
+            let dbFolder = folderURL.appendingPathComponent("db")
+            let sqlFolder = dbFolder.appendingPathComponent("SQL")
+            try FileManager.default.createDirectory(at: sqlFolder, withIntermediateDirectories: true)
+
+            // Write all files
+            for (path, data) in files {
+                let fullPath = folderURL.appendingPathComponent(path)
+                let dir = fullPath.deletingLastPathComponent()
+                try FileManager.default.createDirectory(at: dir, withIntermediateDirectories: true)
+                try data.write(to: fullPath, options: .atomic)
+            }
+
+            // Clean up .DS_Store
+            let dsStorePath = folderURL.appendingPathComponent(".DS_Store").path
+            try? FileManager.default.removeItem(atPath: dsStorePath)
+
+            pendingDMGFiles = nil
+            showDMGExportCompleteAlert = true
+        } catch {
+            toastManager.show(message: "Export failed: \(error.localizedDescription)")
+            pendingDMGFiles = nil
         }
     }
 
@@ -704,6 +759,46 @@ struct VectorExportButton: View {
             .joined().trimmingCharacters(in: .whitespaces).replacingOccurrences(of: " ", with: "_")
         let trimmed = String(cleaned.prefix(60))
         return trimmed.isEmpty ? "export" : trimmed
+    }
+}
+
+// MARK: - Document Picker for folder selection
+
+struct DocumentPickerView: UIViewControllerRepresentable {
+    @Binding var isPresented: Bool
+    var onFolderSelected: (URL) -> Void
+
+    func makeUIViewController(context: Context) -> UIDocumentPickerViewController {
+        let picker = UIDocumentPickerViewController(forOpeningContentTypes: [.folder])
+        picker.delegate = context.coordinator
+        return picker
+    }
+
+    func updateUIViewController(_ uiViewController: UIDocumentPickerViewController, context: Context) {}
+
+    func makeCoordinator() -> Coordinator {
+        Coordinator(isPresented: $isPresented, onFolderSelected: onFolderSelected)
+    }
+
+    class Coordinator: NSObject, UIDocumentPickerDelegate {
+        @Binding var isPresented: Bool
+        var onFolderSelected: (URL) -> Void
+
+        init(isPresented: Binding<Bool>, onFolderSelected: @escaping (URL) -> Void) {
+            _isPresented = isPresented
+            self.onFolderSelected = onFolderSelected
+        }
+
+        func documentPicker(_ controller: UIDocumentPickerViewController, didPickDocumentsAt urls: [URL]) {
+            if let folderURL = urls.first {
+                onFolderSelected(folderURL)
+            }
+            isPresented = false
+        }
+
+        func documentPickerWasCancelled(_ controller: UIDocumentPickerViewController) {
+            isPresented = false
+        }
     }
 }
 

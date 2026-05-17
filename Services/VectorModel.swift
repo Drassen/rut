@@ -141,6 +141,7 @@ enum DMGAreaType: String, Codable, CaseIterable {
     case restrictedZone   = "RESTRICTEDZONE"
     case navigationalZone = "NAVIGATIONALZONE"
     case prohibitedZone   = "PROHIBITEDZONE"
+    case dangerZone       = "DANGERZONE"
     case obstacle         = "OBSTACLE"
 
     var displayName: String {
@@ -148,26 +149,58 @@ enum DMGAreaType: String, Codable, CaseIterable {
         case .restrictedZone: return "Restricted Zone"
         case .navigationalZone: return "Navigational Zone"
         case .prohibitedZone: return "Prohibited Zone"
+        case .dangerZone: return "Danger Zone"
         case .obstacle: return "Obstacle"
         }
     }
 }
 
-enum DMGLineStyle: String, Codable, CaseIterable {
-    case standard   // 0x07 – standard bright color
-    case alternate  // 0xFF – alternative color
+enum DMGStyleClass: Codable, Equatable, Hashable {
+    case known(KnownStyleClass)
+    case custom(UInt16)
 
-    var colorByte: UInt8 {
+    var styleClassID: UInt16 {
         switch self {
-        case .standard: return 0x07
-        case .alternate: return 0xFF
+        case .known(let known): return known.rawValue
+        case .custom(let id): return id
         }
     }
 
     var displayName: String {
         switch self {
-        case .standard: return "Standard (0x07)"
-        case .alternate: return "Alternate (0xFF)"
+        case .known(let known): return known.displayName
+        case .custom(let id): return String(format: "Custom (0x%04X / %d)", id, id)
+        }
+    }
+
+    func encode(to encoder: Encoder) throws {
+        var container = encoder.singleValueContainer()
+        try container.encode(styleClassID)
+    }
+
+    init(from decoder: Decoder) throws {
+        let container = try decoder.singleValueContainer()
+        let id = try container.decode(UInt16.self)
+        if let known = KnownStyleClass(rawValue: id) {
+            self = .known(known)
+        } else {
+            self = .custom(id)
+        }
+    }
+}
+
+enum KnownStyleClass: UInt16, CaseIterable {
+    case `default` = 0x0000
+    case lineTemplate = 0x0202
+    case reserved1 = 0x0402
+    case reserved2 = 0x4200
+
+    var displayName: String {
+        switch self {
+        case .default: return "Default"
+        case .lineTemplate: return "Line Template"
+        case .reserved1: return "Reserved 1 (0x0402)"
+        case .reserved2: return "Reserved 2 (0x4200)"
         }
     }
 }
@@ -200,7 +233,7 @@ struct VectorShape: Identifiable, Codable {
     // A109 DMG export properties
     var dmgCategory: DMGShapeCategory = .drawing
     var dmgAreaType: DMGAreaType = .restrictedZone
-    var dmgLineStyle: DMGLineStyle? = nil
+    var dmgStyleClass: DMGStyleClass = .known(.default)
 }
 
 // MARK: - VectorLayer
