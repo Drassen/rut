@@ -73,7 +73,8 @@ final class CoreServices: ObservableObject {
             RUTImportService(),
             APTImportService(),
             NAVImportService(),
-            ACOImportService()
+            ACOImportService(),
+            GeoJSONVectorImportService()
         ]
 
         // Register exporters
@@ -89,7 +90,8 @@ final class CoreServices: ObservableObject {
             RUTExportService(),
             APTExportService(),
             NAVExportService(),
-            KMLVectorExportService()
+            KMLVectorExportService(),
+            GeoJSONVectorExportService()
         ]
 
         toastManager.objectWillChange

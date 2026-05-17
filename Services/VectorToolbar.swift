@@ -9,6 +9,7 @@ enum VectorExportFormat: String, CaseIterable, Identifiable {
     case kmz  = "KMZ"
     case atak = "ATAK (.zip)"
     case dmg  = "Euronav 5 (A109 DMG)"
+    case geojson = "GeoJSON (.geojson)"
     var id: String { rawValue }
 }
 
@@ -504,6 +505,17 @@ struct VectorExportButton: View {
                 pendingDMGFiles = files
                 showDMGFolderPicker = true
                 return
+            case .geojson:
+                let service = GeoJSONVectorExportService()
+                var doc = NavigationDocument()
+                doc.vectorLayers = layersToExport
+                let files = try service.export(document: doc, selectedRoutes: [])
+                guard let file = files.first else {
+                    toastManager.show(message: "Export failed.", kind: .info)
+                    return
+                }
+                outputData = file.data
+                filename = outputName + ".geojson"
             }
 
             let tempDir = FileManager.default.temporaryDirectory

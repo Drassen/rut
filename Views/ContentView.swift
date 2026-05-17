@@ -179,7 +179,7 @@ struct ContentView: View {
                 get: { activeImporter != nil },
                 set: { if !$0 { activeImporter = nil } }
             ),
-            allowedContentTypes: lastImporter == .exportFolder ? [.folder] : [.item],
+            allowedContentTypes: lastImporter == .exportFolder ? [.folder] : [.item, .json],
             allowsMultipleSelection: lastImporter == .importing
         ) { result in
             // activeImporter is already nil when this fires (binding set cleared it)
