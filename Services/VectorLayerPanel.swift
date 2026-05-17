@@ -50,14 +50,6 @@ struct VectorLayerPanel: View {
             }
         }
         .background(RutTheme.surface)
-        .safeAreaInset(edge: .bottom, spacing: 0) {
-            VStack(spacing: 0) {
-                VectorExportButton()
-                    .environmentObject(vectorStore)
-                    .environmentObject(toastManager)
-            }
-            .background(RutTheme.surface)
-        }
         .alert("New Layer", isPresented: $showAddLayerAlert) {
             TextField("Layer name", text: $newLayerName)
             Button("Add") {

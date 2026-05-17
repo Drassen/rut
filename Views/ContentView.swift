@@ -89,6 +89,7 @@ struct ContentView: View {
     @State private var pendingKMLURLs: [URL] = []
     @State private var showKMLImportModeDialog = false
     @State private var showLayerPanel = false
+    @State private var selectedTab: AppMode = .navigation
 
     private var appVersion: String {
         Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "—"
@@ -96,7 +97,20 @@ struct ContentView: View {
 
     var body: some View {
         Group {
-            mainView
+            ZStack {
+                RutTheme.bg.ignoresSafeArea()
+
+                VStack(spacing: 0) {
+                    tabSelector
+                    mainView
+                }
+            }
+        }
+        .onChange(of: selectedTab) { oldValue, newValue in
+            core.appMode = newValue
+        }
+        .onAppear {
+            selectedTab = core.appMode
         }
         .tint(RutTheme.amber)
         // ── Sheets & dialogs ──
@@ -220,17 +234,41 @@ struct ContentView: View {
         }
     }
 
-    // MARK: - Main View (persistent single map)
+    // MARK: - Tab Selector
 
-    private var mainView: some View {
-        ZStack {
-            RutTheme.bg.ignoresSafeArea()
-            persistentMapWithBars
-            ToastOverlay().environmentObject(toastManager)
+    private var tabSelector: some View {
+        VStack(spacing: 0) {
+            Picker("Tab", selection: $selectedTab) {
+                Text("Navigation").tag(AppMode.navigation)
+                Text("Vectors").tag(AppMode.vector)
+            }
+            .pickerStyle(.segmented)
+            .padding(.horizontal, 14)
+            .padding(.vertical, 10)
+            .background(RutTheme.surface)
+
+            Rectangle().fill(RutTheme.border).frame(height: 1)
         }
     }
 
-    private var persistentMapWithBars: some View {
+    // MARK: - Main View (persistent single map)
+
+    private var mainView: some View {
+        VStack(spacing: 0) {
+            ZStack {
+                persistentMap
+                ToastOverlay().environmentObject(toastManager)
+            }
+            .safeAreaInset(edge: .top, spacing: 0) { topBarForCurrentMode }
+            .safeAreaInset(edge: .trailing, spacing: 0) { trailingSidePanelIfNeeded }
+            .overlay(alignment: .bottomTrailing) { phoneLayerButtonIfNeeded }
+            .sheet(isPresented: $showLayerPanel) { layerPanelSheet }
+
+            bottomBarForCurrentMode
+        }
+    }
+
+    private var persistentMap: some View {
         RutMapView(
             onPointTap: { point in
                 guard core.appMode == .navigation else { return }
@@ -247,11 +285,6 @@ struct ContentView: View {
         .environmentObject(core.vectorStore)
         .environmentObject(core.vectorStore.drawing)
         .environmentObject(core)
-        .safeAreaInset(edge: .top, spacing: 0) { topBarForCurrentMode }
-        .safeAreaInset(edge: .bottom, spacing: 0) { bottomBarForCurrentMode }
-        .safeAreaInset(edge: .trailing, spacing: 0) { trailingSidePanelIfNeeded }
-        .overlay(alignment: .bottomTrailing) { phoneLayerButtonIfNeeded }
-        .sheet(isPresented: $showLayerPanel) { layerPanelSheet }
     }
 
     @ViewBuilder private var topBarForCurrentMode: some View {
@@ -335,11 +368,6 @@ struct ContentView: View {
                 }
                 .buttonStyle(RutSecondaryButtonStyle())
 
-                Button { core.appMode = .vector } label: {
-                    Label("Vector Mode", systemImage: "triangle")
-                }
-                .buttonStyle(RutSecondaryButtonStyle())
-
                 Button { showSettingsSheet = true } label: {
                     Image(systemName: "gearshape")
                 }
@@ -409,12 +437,18 @@ struct ContentView: View {
 
     private var vectorTopBar: some View {
         VStack(spacing: 0) {
-            HStack {
-                Button { core.appMode = .navigation } label: {
-                    Label("Back", systemImage: "chevron.left")
+            HStack(spacing: 8) {
+                Spacer()
+
+                Button { lastImporter = .importing; activeImporter = .importing } label: {
+                    Label("Import", systemImage: "square.and.arrow.down")
                 }
                 .buttonStyle(RutSecondaryButtonStyle())
-                Spacer()
+
+                Button { showSettingsSheet = true } label: {
+                    Image(systemName: "gearshape")
+                }
+                .buttonStyle(RutSecondaryButtonStyle())
             }
             .padding(.horizontal, 10)
             .padding(.vertical, 8)
