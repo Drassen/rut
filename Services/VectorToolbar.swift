@@ -644,6 +644,12 @@ struct VectorToolbar: View {
             defer { if secured { folderURL.stopAccessingSecurityScopedResource() } }
 
             let dbFolder = folderURL.appendingPathComponent("db")
+
+            // Remove db folder if it exists
+            if FileManager.default.fileExists(atPath: dbFolder.path) {
+                try FileManager.default.removeItem(at: dbFolder)
+            }
+
             let sqlFolder = dbFolder.appendingPathComponent("SQL")
             try FileManager.default.createDirectory(at: sqlFolder, withIntermediateDirectories: true)
 
@@ -1016,8 +1022,13 @@ struct VectorExportButton: View {
             let secured = folderURL.startAccessingSecurityScopedResource()
             defer { if secured { folderURL.stopAccessingSecurityScopedResource() } }
 
-            // Create db/SQL folder if needed
             let dbFolder = folderURL.appendingPathComponent("db")
+
+            // Remove db folder if it exists
+            if FileManager.default.fileExists(atPath: dbFolder.path) {
+                try FileManager.default.removeItem(at: dbFolder)
+            }
+
             let sqlFolder = dbFolder.appendingPathComponent("SQL")
             try FileManager.default.createDirectory(at: sqlFolder, withIntermediateDirectories: true)
 

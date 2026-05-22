@@ -82,6 +82,7 @@ struct ContentView: View {
     @State private var showDatabase = false
     @State private var editorSheet: EditorWrapper?
     @State private var exportFormat: ExportFormat = .a109
+    @State private var showExportFormatDialog = false
     @State private var showKMLSubDialog = false
     @State private var longPressLat: Double = 0
     @State private var longPressLon: Double = 0
@@ -145,6 +146,15 @@ struct ContentView: View {
             if !navStore.document.userAirports.isEmpty   { Button("User Airports (.KML)")  { executeKMLExport(id: "kml-airports")   } }
             if !navStore.document.userNavaids.isEmpty    { Button("User Navaids (.KML)")   { executeKMLExport(id: "kml-navaids")    } }
             if !navStore.document.userWaypoints.isEmpty  { Button("User Waypoints (.KML)") { executeKMLExport(id: "kml-waypoints")  } }
+            Button("Cancel", role: .cancel) { }
+        }
+        .confirmationDialog("Export Format", isPresented: $showExportFormatDialog, titleVisibility: .visible) {
+            ForEach(ExportFormat.allCases) { format in
+                Button(format.rawValue) {
+                    exportFormat = format
+                    handleExportButtonTap()
+                }
+            }
             Button("Cancel", role: .cancel) { }
         }
         .alert("A109 Export Complete", isPresented: $showA109ExportCompleteAlert) {
@@ -406,20 +416,8 @@ struct ContentView: View {
         VStack(spacing: 0) {
             divider
             HStack(spacing: 10) {
-                Picker("Format", selection: $exportFormat) {
-                    ForEach(ExportFormat.allCases) { format in
-                        Text(format.rawValue).tag(format)
-                    }
-                }
-                .pickerStyle(.menu)
-                .foregroundColor(RutTheme.textDim)
-
-                Button { handleExportButtonTap() } label: {
-                    if exportFormat.isPCMCIA {
-                        Label("Save to Drive", systemImage: "externaldrive.badge.plus")
-                    } else {
-                        Label("Export", systemImage: "square.and.arrow.up")
-                    }
+                Button { showExportFormatDialog = true } label: {
+                    Label("Save", systemImage: "square.and.arrow.up")
                 }
                 .buttonStyle(RutPrimaryButtonStyle())
 
@@ -637,6 +635,10 @@ struct ContentView: View {
             toastManager.show(message: "Exporter for '\(exporterId)' not found."); return
         }
         do {
+            // Sync vector layers from UI to document before export
+            if exportFormat == .rut {
+                navStore.document.vectorLayers = core.vectorStore.layers.filter { !$0.isSystem }
+            }
             let files = try exporter.export(document: navStore.document, routes: navStore.routes)
             guard !files.isEmpty else { toastManager.show(message: "Nothing to export.", kind: .info); return }
             let tempDir = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)

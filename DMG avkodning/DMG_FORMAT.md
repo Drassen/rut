@@ -777,6 +777,270 @@ The style class system enables **semantic categorization** while preserving **vi
 
 ---
 
+## appMatrix.json – Rendering Style Database
+
+### Overview & Integration with Style Class IDs
+
+The **appMatrix.json file** is the **central rendering style database** that maps each Style Class ID (bytes 0x9a-0x9b) to its complete visual rendering properties. This file provides all styling information needed to render objects on screen.
+
+**File Locations**:
+- **System styles**: `/db/settings/system/appMatrix.json` (1.0 MB, 1,686 entries - primary database)
+- **Layer-specific**: `/db/vector/{LayerName}/appMatrix.json` (varies, e.g., `/db/vector/Kraftledningar/appMatrix.json`)
+
+**Connection to Object Records**:
+```
+Object in .tbl file:
+  Bytes 0x9a-0x9b: Style Class ID (e.g., 0x0244)
+  Bytes 0xa4, 0xad, 0xec-0xed: Per-object overrides
+                              ↓
+                   Look up in appMatrix.json
+                              ↓
+   Get rendering template for Style Class ID 0x0244
+                              ↓
+   Merge template + per-object overrides
+                              ↓
+                   RGBA colors, line patterns, text styling
+```
+
+### appMatrix.json File Structure
+
+**Version and Metadata**:
+```javascript
+{
+  "version": 1,              // Format version
+  "member": [                // Array of style class definitions
+    /* 1,686 entries in system database */
+  ]
+}
+```
+
+Each entry in `member` defines one Style Class and its rendering properties:
+
+```javascript
+[
+  [styleClassID_low, styleClassID_high],    // Style Class ID (0x9a, 0x9b)
+  [
+    "CLASS_NAME",                            // Human-readable class name
+    [visibility, flags...],                  // State flags
+    // Multiple rendering states (normal, hover, selected, etc.)
+    [
+      // POINT styling (symbols, markers)
+      [strokeRGBA, outlineRGBA, symbolId, alignMode, scale],
+      // LINE styling (primary line + outline/shadow)
+      [[primaryColor, pattern, width], [outlineColor, pattern, width]],
+      // POLYGON styling (fill color)
+      [[fillRGBA]],
+      // LABEL styling (text positioning and appearance)
+      [position, shape, fontColor, bgColor, outlineColor, fontSize, visible]
+    ],
+    // ... additional rendering states (hover, selected)
+  ]
+]
+```
+
+**Example: Style Class 0x0000 (OVERVIEW STATE)**:
+```javascript
+[
+  [0, 0],  // Style Class ID = 0x0000
+  [
+    "OVERVIEW STATE",
+    [0, 1, 1, 1],
+    // State 1: Normal/default rendering
+    [
+      [[28, 84, 141, 255], [254, 28, 84, 255], 32768, "eRelativeToScreen", 7],
+      [[[198, 84, 84, 255], [1, 52428], 3], [[254, 254, 254, 255], [1, 65535], 0]],
+      [[[141, 113, 226, 100]]],
+      ["ePosTop", "eTextPolygon", [141, 141, 226, 255], [252, 247, 252, 255], [252, 252, 0, 255], 22, true]
+    ],
+    // State 2: Hover/selected rendering
+    [ /* similar structure */ ]
+  ]
+]
+```
+
+### RGBA Color Format in appMatrix.json
+
+All colors use **[Red, Green, Blue, Alpha]** format where each component is 0-255:
+- `[255, 0, 0, 255]` = Opaque red
+- `[0, 0, 255, 128]` = Semi-transparent blue (50% opacity)
+- `[255, 255, 255, 0]` = Fully transparent white
+
+### Style Class Rendering Components
+
+#### POINT Styling (Symbols & Markers)
+Used for rendering symbol-based objects (airports, navaids, waypoints):
+
+```javascript
+[
+  [R, G, B, Alpha],           // Stroke/primary color (RGBA)
+  [R, G, B, Alpha],           // Outline color (RGBA)
+  symbolId,                    // -1 (no symbol) or predefined ID
+  alignmentMode,               // "eRelativeToScreen" (always face screen) or fixed
+  scale                        // 0-255 size multiplier
+]
+```
+
+#### LINE Styling (with Stroke & Outline)
+Used for rendering lines and polylines:
+
+```javascript
+[
+  // Primary line
+  [
+    [R, G, B, Alpha],          // Line color
+    [patternFact, patternId],   // Pattern (65535=solid, others=dash/dot)
+    lineWidth                   // Width in pixels
+  ],
+  // Outline/shadow (for contrast)
+  [
+    [R, G, B, Alpha],          // Outline color
+    [patternFact, patternId],   // Outline pattern
+    outlineWidth                // Outline width (0=none)
+  ]
+]
+```
+
+**Pattern Values**:
+- `65535` (0xFFFF) = Solid continuous line
+- `52428`, `52636`, etc. = Dash/dot patterns
+- `[1, value]` = Pattern configuration format
+
+#### POLYGON Styling (Fill Only)
+Used for rendering polygon areas:
+
+```javascript
+[
+  [R, G, B, Alpha]           // Fill color (RGBA)
+]
+```
+
+**Note**: Stroke/outline for polygons is handled separately via the LINE component (polygons can have both fill and stroke defined independently).
+
+#### LABEL Styling (Text Rendering)
+Used for rendering text labels on objects:
+
+```javascript
+[
+  positioningMode,            // "ePosTop" (above), "ePosCenter", "ePosBottom", etc.
+  textShape,                  // "eTextPolygon" (polygon text), "eTextLine" (line text)
+  [R, G, B, Alpha],          // Font color (RGBA)
+  [R, G, B, Alpha],          // Background color (label background)
+  [R, G, B, Alpha],          // Outline color (text outline for contrast)
+  fontSize,                   // 6-32pt typically
+  visibility                  // true (visible), false (hidden)
+]
+```
+
+### Rendering States
+
+Each Style Class typically has **2-3 rendering states**:
+
+1. **State 1: Default/Normal**
+   - Used when object is not interacting with user
+   - Default colors and rendering
+
+2. **State 2: Hover/Selected**
+   - Used when user is interacting (dragging, selecting, highlighting)
+   - Usually brighter or alternate colors
+   - May have different line widths or patterns
+
+3. **State 3: Active/Focus** (optional)
+   - Additional state for specific interactions
+   - May indicate editing mode or special focus
+
+### How appMatrix.json Integrates with Object Records
+
+**Step-by-step rendering process**:
+
+```
+1. Read object record from .tbl file (256 bytes)
+2. Extract Style Class ID from bytes 0x9a-0x9b
+   styleClassID = byte_0x9a | (byte_0x9b << 8)
+   Example: 0x44 | (0x02 << 8) = 0x0244
+
+3. Look up Style Class ID in appMatrix.json
+   Search member array for entry: [[0x44, 0x02], ...]
+
+4. Extract rendering template for Style Class 0x0244
+   Get: colors, line patterns, text styling, symbols
+
+5. Apply per-object overrides from record:
+   - Line color override at 0xa4 (if non-zero)
+   - Line width at 0xad
+   - Polygon stroke at 0xec
+   - Polygon fill at 0xed
+
+6. Merge template + overrides
+   Final appearance = template + customization
+
+7. Render object using merged properties
+   Colors, sizes, patterns from final result
+```
+
+### Per-Object Property Overrides
+
+Objects can override the default Style Class template properties:
+
+| Property | Record Offset | Type | Purpose |
+|----------|---------------|------|---------|
+| **Line Color** | 0xa4 | 8-bit index | Color palette index (override template) |
+| **Line Width** | 0xad | 8-bit value | Width multiplier (override template) |
+| **Polygon Stroke** | 0xec | 8-bit index | Stroke color (override template) |
+| **Polygon Fill** | 0xed | 8-bit index | Fill color (override template) |
+
+**Override Logic**:
+```
+IF object.byte_0xa4 != 0:
+  USE object.byte_0xa4 as color override
+ELSE:
+  USE styleClass.primaryLineColor from appMatrix.json
+
+// Same logic applies for 0xad, 0xec, 0xed
+```
+
+This allows:
+- Shared Style Class template (reduces duplication)
+- Per-object customization (visual variation)
+- Batch operations (identify objects by shared class)
+
+### Production Data Coverage
+
+**System appMatrix.json**:
+- **Total Entries**: 1,686
+- **Rendering States**: 2-3 per entry (avg 2.5)
+- **Total States**: ~4,215
+- **Unique Colors**: 10,000+
+- **File Size**: 1.0 MB
+
+**Referenced in USER6.tbl** (Production):
+- **Unique Style Classes**: 411 out of 1,686 defined
+- **Largest groups**:
+  - 0x0000: 1,230 objects (33%)
+  - 0x004f: 304 objects (8%)
+  - 0x00ea: 304 objects (8%)
+  - 0x0202: 201 objects (5%)
+
+**Unused Entries**: ~1,275 (75% not actively used in production)
+
+### Implementation Performance Notes
+
+**Startup**:
+- Load appMatrix.json into memory (1.0 MB)
+- Build cache: Style Class ID → rendering properties
+- Hash table creation is O(1686)
+
+**Per-Render**:
+- Look up Style Class ID in cache: O(1)
+- Apply overrides: O(1)
+- Total time: sub-millisecond
+
+**Memory Usage**:
+- appMatrix.json in memory: ~1.0 MB
+- Cache overhead: ~84 KB (1,686 entries × 50 bytes)
+- Per-object state: ~0.5 KB
+
+---
+
 **0xD7: Global Point Sequence Counter (8-bit)**
 - Increments across entire file, starting from 2
 - Example:

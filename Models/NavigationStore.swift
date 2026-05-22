@@ -114,6 +114,14 @@ final class NavigationStore: ObservableObject {
             if !merged.systemNavaids.contains(where: { $0.id == nv.id }) { merged.systemNavaids.append(nv) }
         }
 
+        // --- 4. IMPORTERA VEKTORER ---
+        // Merge vector layers (avoid duplicates by name)
+        for layer in incoming.vectorLayers where !layer.isSystem {
+            if !merged.vectorLayers.contains(where: { $0.name == layer.name }) {
+                merged.vectorLayers.append(layer)
+            }
+        }
+
         document = merged
 
         if autoRenumberWaypoints && !newRouteIds.isEmpty {
