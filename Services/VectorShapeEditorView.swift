@@ -121,9 +121,11 @@ struct VectorShapeEditorView: View {
 
                 // A109 DMG export section (all shapes)
                 Section("Euronav DMG options (A109)") {
-                        Picker("Shape Type", selection: $dmgCategory) {
-                            ForEach([DMGShapeCategory.drawing, .area], id: \.self) { cat in
-                                Text(cat.displayName).tag(cat)
+                        if !isPolyline {
+                            Picker("Shape Type", selection: $dmgCategory) {
+                                ForEach([DMGShapeCategory.drawing, .area], id: \.self) { cat in
+                                    Text(cat.displayName).tag(cat)
+                                }
                             }
                         }
 
