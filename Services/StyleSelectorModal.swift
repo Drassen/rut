@@ -90,7 +90,8 @@ struct StyleSelectorModal: View {
                                 List(filtered, id: \.id) { style in
                                     StyleRow(
                                         style: style,
-                                        isSelected: (previewStyle ?? initialPreviewStyle)?.styleId == style.styleId
+                                        isSelected: (previewStyle ?? initialPreviewStyle)?.styleId == style.styleId,
+                                        geometry: geometry
                                     )
                                     .contentShape(Rectangle())
                                     .onTapGesture {
@@ -587,10 +588,11 @@ struct StyleItem: Identifiable {
 struct StyleRow: View {
     let style: StyleItem
     let isSelected: Bool
+    var geometry: VectorGeometry? = nil
 
     var body: some View {
         HStack(spacing: 8) {
-            // Preview: glyph if available, otherwise styled polygon
+            // Preview: glyph if available, otherwise styled shape
             if style.symbolId > 0 {
                 GlyphDisplayView(
                     symbolId: UInt16(style.symbolId),
@@ -599,6 +601,16 @@ struct StyleRow: View {
                 )
                     .frame(width: 32, height: 32)
                     .cornerRadius(4)
+            } else if case .polyline = geometry, let lineColor = style.lineColor {
+                // Show line preview for polylines
+                Canvas { context, size in
+                    var path = Path()
+                    path.move(to: CGPoint(x: 2, y: size.height / 2))
+                    path.addLine(to: CGPoint(x: size.width - 2, y: size.height / 2))
+                    let strokeWidth = CGFloat(max(1, style.lineWeight))
+                    context.stroke(path, with: .color(lineColor), style: StrokeStyle(lineWidth: strokeWidth))
+                }
+                .frame(width: 32, height: 32)
             } else {
                 Canvas { context, size in
                     let rect = CGRect(x: 2, y: 2, width: size.width - 4, height: size.height - 4)
