@@ -166,23 +166,24 @@ Used when object should render as a **point-of-interest (POI) with a glyph/symbo
 
 **Pattern Format**: `[patternType, patternValue]`
 - `patternType`: Always `1` in observed data
-- `patternValue`: Integer encoding dash pattern
+- `patternValue`: Integer encoding line pattern
   - `65535` (0xFFFF): Solid continuous line
-  - `49344` (0xC0C0): Dashed pattern (2-dash, 6-gap repeating)
+  - `49344` (0xC0C0): **Zigzag line indicator** (for power lines)
   - `52428`: Dash pattern (example)
   - `52636, 58339, 61680, 62415, 63903, 64512, 65024, 65280, 65520`: Various dashes/dots
 
 **Pattern Decoding**:
-- Binary representation of line/gap pattern
+- Binary representation of line/gap pattern (for dash patterns)
 - High bits = dashes, low bits = gaps
 - Example: 52428 = 1100110011001100 (alternating 2px dash/gap pattern)
 
 **Zigzag Lines (Power Lines)**:
-Some styles render as zigzag line geometry rather than straight paths:
-- **KRAFTLEDNING GRON** (Green power line): Line zigzags ±45° back and forth along the path
-- **KRAFTLEDNING ROD** (Red power line): Same zigzag geometry with red color
-- The zigzag pattern is the actual line coordinate path, not a dash pattern
-- Creates visual distinction for power transmission lines in navigation displays
+- **Pattern 49344 (0xC0C0)** indicates zigzag line geometry
+- Line coordinates zigzag ±45° back and forth along the path
+- Used for **KRAFTLEDNING** (power line) styles:
+  - **KRAFTLEDNING GRON** (Green power line): Green color, zigzag pattern
+  - **KRAFTLEDNING ROD** (Red power line): Red color, zigzag pattern
+- The zigzag is the actual coordinate path, creating visual distinction for power transmission lines
 
 ### POLYGON Styling (Area Fill)
 
