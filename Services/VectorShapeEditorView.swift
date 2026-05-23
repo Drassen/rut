@@ -136,109 +136,8 @@ struct VectorShapeEditorView: View {
                                 }
                             }
                         } else {
-                            VStack(alignment: .leading, spacing: 12) {
-                                // Show currently selected style with preview
-                                if case .custom(let id) = dmgStyleClass, let styleInfo = getStyleSymbolInfo(styleId: id) {
-                                    VStack(alignment: .leading, spacing: 4) {
-                                        Text("Style Class")
-                                            .font(.caption)
-                                            .foregroundStyle(.secondary)
-                                        HStack(spacing: 12) {
-                                            if styleInfo.symbolId > 0 {
-                                                GlyphDisplayView(
-                                                    symbolId: UInt16(styleInfo.symbolId),
-                                                    primaryColor: styleInfo.primaryColor,
-                                                    secondaryColor: styleInfo.secondaryColor
-                                                )
-                                                .frame(width: 40, height: 40)
-                                            }
-                                            VStack(alignment: .leading, spacing: 2) {
-                                                Text("Custom Style")
-                                                    .font(.headline)
-                                                Text(String(format: "0x%04X (%d)", id, id))
-                                                    .font(.system(.caption, design: .monospaced))
-                                                    .foregroundStyle(.secondary)
-                                            }
-                                            Spacer()
-                                        }
-                                        .padding(8)
-                                        .background(Color(.systemGray6))
-                                        .cornerRadius(8)
-                                    }
-                                } else if case .custom(let id) = dmgStyleClass {
-                                    VStack(alignment: .leading, spacing: 4) {
-                                        Text("Style Class")
-                                            .font(.caption)
-                                            .foregroundStyle(.secondary)
-                                        HStack {
-                                            VStack(alignment: .leading, spacing: 2) {
-                                                Text("Custom Style")
-                                                    .font(.headline)
-                                                Text(String(format: "0x%04X (%d)", id, id))
-                                                    .font(.system(.caption, design: .monospaced))
-                                                    .foregroundStyle(.secondary)
-                                            }
-                                            Spacer()
-                                        }
-                                        .padding(8)
-                                        .background(Color(.systemGray6))
-                                        .cornerRadius(8)
-                                    }
-                                } else if case .known(let known) = dmgStyleClass, let styleInfo = getStyleSymbolInfo(styleId: known.rawValue) {
-                                    VStack(alignment: .leading, spacing: 4) {
-                                        Text("Style Class")
-                                            .font(.caption)
-                                            .foregroundStyle(.secondary)
-                                        HStack(spacing: 12) {
-                                            if styleInfo.symbolId > 0 {
-                                                GlyphDisplayView(
-                                                    symbolId: UInt16(styleInfo.symbolId),
-                                                    primaryColor: styleInfo.primaryColor,
-                                                    secondaryColor: styleInfo.secondaryColor
-                                                )
-                                                .frame(width: 40, height: 40)
-                                            }
-                                            VStack(alignment: .leading, spacing: 2) {
-                                                Text(known.displayName)
-                                                    .font(.headline)
-                                                Text(String(format: "0x%04X (%d)", known.rawValue, known.rawValue))
-                                                    .font(.system(.caption, design: .monospaced))
-                                                    .foregroundStyle(.secondary)
-                                            }
-                                            Spacer()
-                                        }
-                                        .padding(8)
-                                        .background(Color(.systemGray6))
-                                        .cornerRadius(8)
-                                    }
-                                } else if case .known(let known) = dmgStyleClass {
-                                    VStack(alignment: .leading, spacing: 4) {
-                                        Text("Style Class")
-                                            .font(.caption)
-                                            .foregroundStyle(.secondary)
-                                        HStack {
-                                            VStack(alignment: .leading, spacing: 2) {
-                                                Text(known.displayName)
-                                                    .font(.headline)
-                                                Text(String(format: "0x%04X (%d)", known.rawValue, known.rawValue))
-                                                    .font(.system(.caption, design: .monospaced))
-                                                    .foregroundStyle(.secondary)
-                                            }
-                                            Spacer()
-                                        }
-                                        .padding(8)
-                                        .background(Color(.systemGray6))
-                                        .cornerRadius(8)
-                                    }
-                                }
-
-                                // Browser button
-                                Button(action: { showStyleSelector = true }) {
-                                    Label("Select Style", systemImage: "paintbrush")
-                                }
-                                .buttonStyle(.bordered)
-                                .frame(maxWidth: .infinity)
-                            }
+                            stylePreviewBox()
+                                .onTapGesture { showStyleSelector = true }
                         }
                     }
             }
@@ -365,6 +264,68 @@ struct VectorShapeEditorView: View {
         let b = CGFloat(array[2]) / 255.0
         let a = array.count >= 4 ? CGFloat(array[3]) / 255.0 : 1.0
         return Color(red: r, green: g, blue: b, opacity: a)
+    }
+
+    @ViewBuilder
+    private func stylePreviewBox() -> some View {
+        HStack(spacing: 12) {
+            if case .custom(let id) = dmgStyleClass, let styleInfo = getStyleSymbolInfo(styleId: id) {
+                if styleInfo.symbolId > 0 {
+                    GlyphDisplayView(
+                        symbolId: UInt16(styleInfo.symbolId),
+                        primaryColor: styleInfo.primaryColor,
+                        secondaryColor: styleInfo.secondaryColor
+                    )
+                    .frame(width: 40, height: 40)
+                }
+                VStack(alignment: .leading, spacing: 2) {
+                    Text("Custom Style")
+                        .font(.headline)
+                    Text(String(format: "0x%04X (%d)", id, id))
+                        .font(.system(.caption, design: .monospaced))
+                        .foregroundStyle(.secondary)
+                }
+                Spacer()
+            } else if case .custom(let id) = dmgStyleClass {
+                VStack(alignment: .leading, spacing: 2) {
+                    Text("Custom Style")
+                        .font(.headline)
+                    Text(String(format: "0x%04X (%d)", id, id))
+                        .font(.system(.caption, design: .monospaced))
+                        .foregroundStyle(.secondary)
+                }
+                Spacer()
+            } else if case .known(let known) = dmgStyleClass, let styleInfo = getStyleSymbolInfo(styleId: known.rawValue) {
+                if styleInfo.symbolId > 0 {
+                    GlyphDisplayView(
+                        symbolId: UInt16(styleInfo.symbolId),
+                        primaryColor: styleInfo.primaryColor,
+                        secondaryColor: styleInfo.secondaryColor
+                    )
+                    .frame(width: 40, height: 40)
+                }
+                VStack(alignment: .leading, spacing: 2) {
+                    Text(known.displayName)
+                        .font(.headline)
+                    Text(String(format: "0x%04X (%d)", known.rawValue, known.rawValue))
+                        .font(.system(.caption, design: .monospaced))
+                        .foregroundStyle(.secondary)
+                }
+                Spacer()
+            } else if case .known(let known) = dmgStyleClass {
+                VStack(alignment: .leading, spacing: 2) {
+                    Text(known.displayName)
+                        .font(.headline)
+                    Text(String(format: "0x%04X (%d)", known.rawValue, known.rawValue))
+                        .font(.system(.caption, design: .monospaced))
+                        .foregroundStyle(.secondary)
+                }
+                Spacer()
+            }
+        }
+        .padding(8)
+        .background(Color(.systemGray6))
+        .cornerRadius(8)
     }
 
     private func updateCustomStyleFromInput(_ input: String) {
