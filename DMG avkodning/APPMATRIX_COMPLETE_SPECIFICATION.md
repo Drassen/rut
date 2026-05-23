@@ -178,11 +178,11 @@ Used when object should render as a **point-of-interest (POI) with a glyph/symbo
 - Example: 52428 = 1100110011001100 (alternating 2px dash/gap pattern)
 
 **Zigzag Lines (Power Lines)**:
-Some styles use **two overlapping line layers** to create zigzag effects:
-- **KRAFTLEDNING GRON** (Green power line): Thin solid line (weight 2) over thick dashed line (weight 7, pattern 0xC0C0)
-- **KRAFTLEDNING ROD** (Red power line): Same structure with red color
-- The solid line appears on top of dashes, creating a visual zigzag/intermittent effect
-- Both lines use the same color for seamless appearance
+Some styles render as zigzag line geometry rather than straight paths:
+- **KRAFTLEDNING GRON** (Green power line): Line zigzags ±30° back and forth along the path
+- **KRAFTLEDNING ROD** (Red power line): Same zigzag geometry with red color
+- The zigzag pattern is the actual line coordinate path, not a dash pattern
+- Creates visual distinction for power transmission lines in navigation displays
 
 ### POLYGON Styling (Area Fill)
 
