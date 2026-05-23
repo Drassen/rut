@@ -173,7 +173,7 @@ struct StyleSelectorModal: View {
                                             weight: style.lineWeight,
                                             outlineColor: style.outlineColor,
                                             outlineWeight: style.outlineWeight,
-                                            isZigzag: style.lineDashPattern == 49344
+                                            isZigzag: style.outlineDashPattern == 49344
                                         )
                                         .frame(height: 60)
                                     }
