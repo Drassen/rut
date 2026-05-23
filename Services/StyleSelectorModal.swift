@@ -183,6 +183,7 @@ struct StyleSelectorModal: View {
                                 Spacer()
                             }
                             .padding(12)
+                            .frame(maxWidth: 160)
                         } else {
                             VStack {
                                 Image(systemName: "paintbrush.fill")
