@@ -107,123 +107,63 @@ struct StyleSelectorModal: View {
 
                         // Right: Preview
                         if let style = previewStyle ?? initialPreviewStyle {
-                            ScrollView {
-                                VStack(alignment: .leading, spacing: 12) {
-                                    Text(style.name)
-                                        .font(.headline)
-
-                                    // Symbol (POI glyph ID) - if present, show only this
-                                    if style.symbolId > 0 {
-                                        VStack(alignment: .leading, spacing: 4) {
-                                            Text("POI Symbol")
+                            VStack(alignment: .leading, spacing: 12) {
+                                if style.symbolId > 0 {
+                                    Text("Symbol")
+                                        .font(.caption2)
+                                        .foregroundStyle(.secondary)
+                                    GlyphDisplayView(
+                                        symbolId: UInt16(style.symbolId),
+                                        primaryColor: style.primaryColor,
+                                        secondaryColor: style.secondaryColor
+                                    )
+                                    .frame(height: 100)
+                                } else if let lineColor = style.lineColor {
+                                    VStack(alignment: .leading, spacing: 4) {
+                                        HStack {
+                                            Text("Line")
                                                 .font(.caption2)
                                                 .foregroundStyle(.secondary)
-                                            GlyphDisplayView(
-                                                symbolId: UInt16(style.symbolId),
-                                                primaryColor: style.primaryColor,
-                                                secondaryColor: style.secondaryColor
-                                            )
-                                            .frame(height: 100)
-                                        }
-                                        .frame(maxWidth: .infinity, alignment: .leading)
-                                    } else {
-                                        // Only show line preview if no glyph
-                                        if let lineColor = style.lineColor {
-                                        VStack(alignment: .leading, spacing: 4) {
-                                            Text("Line Style")
+                                            Spacer()
+                                            Text(String(format: "%.1f", style.lineWeight))
                                                 .font(.caption2)
                                                 .foregroundStyle(.secondary)
-                                            LinePreviewView(
-                                                color: lineColor,
-                                                dashPattern: style.lineDashPattern,
-                                                weight: style.lineWeight,
-                                                outlineColor: style.outlineColor,
-                                                outlineWeight: style.outlineWeight
-                                            )
-                                            .frame(height: 60)
                                         }
+                                        LinePreviewView(
+                                            color: lineColor,
+                                            dashPattern: style.lineDashPattern,
+                                            weight: style.lineWeight,
+                                            outlineColor: style.outlineColor,
+                                            outlineWeight: style.outlineWeight
+                                        )
+                                        .frame(height: 60)
                                     }
-
-                                        // Only show polygon preview if no glyph
-                                        if let fillColor = style.polygonFillColor {
-                                        VStack(alignment: .leading, spacing: 4) {
-                                            Text("Polygon Fill")
+                                } else if let fillColor = style.polygonFillColor {
+                                    VStack(alignment: .leading, spacing: 4) {
+                                        HStack {
+                                            Text("Polygon")
                                                 .font(.caption2)
                                                 .foregroundStyle(.secondary)
-                                            PolygonPreviewView(
-                                                fillColor: fillColor,
-                                                lineColor: style.lineColor,
-                                                dashPattern: style.lineDashPattern,
-                                                weight: style.lineWeight,
-                                                outlineColor: style.outlineColor,
-                                                outlineDashPattern: style.outlineDashPattern,
-                                                outlineWeight: style.outlineWeight
-                                            )
-                                            .frame(height: 60)
-                                        }
-                                    }
-                                    }
-
-                                    // Text preview
-                                    if let textColor = style.textColor {
-                                        VStack(alignment: .leading, spacing: 4) {
-                                            Text("Text (\(style.textType), \(style.textPosition))")
+                                            Spacer()
+                                            Text(String(format: "%.1f", style.lineWeight))
                                                 .font(.caption2)
                                                 .foregroundStyle(.secondary)
-                                            HStack {
-                                                Text("Sample Text")
-                                                    .font(.system(size: CGFloat(style.fontSize), weight: style.textBold ? .bold : .regular))
-                                                    .foregroundStyle(textColor)
-                                                    .padding(4)
-                                                    .background(style.textBackgroundColor ?? Color.clear)
-                                                    .cornerRadius(2)
-                                                Spacer()
-                                            }
-                                            .padding(8)
-                                            .background(Color(.systemGray6))
-                                            .cornerRadius(4)
                                         }
+                                        PolygonPreviewView(
+                                            fillColor: fillColor,
+                                            lineColor: style.lineColor,
+                                            dashPattern: style.lineDashPattern,
+                                            weight: style.lineWeight,
+                                            outlineColor: style.outlineColor,
+                                            outlineDashPattern: style.outlineDashPattern,
+                                            outlineWeight: style.outlineWeight
+                                        )
+                                        .frame(height: 60)
                                     }
-
-                                    // Style parameters
-                                    VStack(alignment: .leading, spacing: 6) {
-                                        Grid(alignment: .leading, horizontalSpacing: 8, verticalSpacing: 4) {
-                                            GridRow {
-                                                Text("ID").font(.caption2).foregroundStyle(.secondary)
-                                                Text(style.hexId).font(.system(.caption, design: .monospaced))
-                                            }
-                                            if style.symbolId > 0 {
-                                                GridRow {
-                                                    Text("Symbol").font(.caption2).foregroundStyle(.secondary)
-                                                    Text("\(style.symbolId)").font(.caption)
-                                                }
-                                            }
-                                            GridRow {
-                                                Text("Line Weight").font(.caption2).foregroundStyle(.secondary)
-                                                Text("\(style.lineWeight)").font(.caption)
-                                            }
-                                            GridRow {
-                                                Text("Dash Pattern").font(.caption2).foregroundStyle(.secondary)
-                                                Text("0x\(String(style.lineDashPattern, radix: 16).uppercased())").font(.system(.caption, design: .monospaced))
-                                            }
-                                            GridRow {
-                                                Text("Font Size").font(.caption2).foregroundStyle(.secondary)
-                                                Text("\(style.fontSize)pt").font(.caption)
-                                            }
-                                            GridRow {
-                                                Text("Text Type").font(.caption2).foregroundStyle(.secondary)
-                                                Text(style.textType).font(.caption)
-                                            }
-                                        }
-                                    }
-                                    .padding(8)
-                                    .background(Color(.systemGray6))
-                                    .cornerRadius(6)
-
-                                    Spacer()
                                 }
-                                .padding(12)
+                                Spacer()
                             }
+                            .padding(12)
                         } else {
                             VStack {
                                 Image(systemName: "paintbrush.fill")
