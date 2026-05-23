@@ -321,6 +321,11 @@ struct VectorShapeEditorView: View {
                         .foregroundStyle(.secondary)
                 }
                 Spacer()
+            } else {
+                Text("SELECT STYLE")
+                    .font(.headline)
+                    .foregroundStyle(.secondary)
+                Spacer()
             }
         }
         .padding(8)
