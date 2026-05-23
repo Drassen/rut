@@ -130,12 +130,31 @@ struct StyleSelectorModal: View {
                                                 .foregroundStyle(.secondary)
                                         }
                                         Canvas { context, size in
-                                            let rect = CGRect(origin: .zero, size: size)
+                                            let minDim = min(size.width, size.height)
+                                            let rect = CGRect(x: (size.width - minDim) / 2, y: (size.height - minDim) / 2, width: minDim, height: minDim)
                                             let circlePath = Path(ellipseIn: rect)
                                             let strokeWidth = CGFloat(max(1, style.lineWeight))
-                                            context.stroke(circlePath, with: .color(lineColor), style: StrokeStyle(lineWidth: strokeWidth, lineCap: .round, lineJoin: .round))
+                                            let dashStyle = StrokeStyle(
+                                                lineWidth: strokeWidth,
+                                                lineCap: .round,
+                                                lineJoin: .round,
+                                                dash: self.dashPatternToDashArray(style.lineDashPattern)
+                                            )
+                                            context.stroke(circlePath, with: .color(lineColor), style: dashStyle)
+
+                                            if let outlineColor = style.outlineColor, style.outlineWeight > 0 {
+                                                let outlineStrokeWidth = CGFloat(style.outlineWeight)
+                                                let outlineDashStyle = StrokeStyle(
+                                                    lineWidth: outlineStrokeWidth,
+                                                    lineCap: .round,
+                                                    lineJoin: .round,
+                                                    dash: self.dashPatternToDashArray(style.outlineDashPattern)
+                                                )
+                                                context.stroke(circlePath, with: .color(outlineColor), style: outlineDashStyle)
+                                            }
                                         }
                                         .frame(height: 60)
+                                        .aspectRatio(1, contentMode: .fit)
                                     }
                                 } else if let lineColor = style.lineColor {
                                     VStack(alignment: .leading, spacing: 4) {
@@ -476,6 +495,35 @@ struct StyleSelectorModal: View {
         default:
             return "📍 Other"
         }
+    }
+
+    private func dashPatternToDashArray(_ pattern: UInt16) -> [CGFloat] {
+        if pattern == 0xFFFF {
+            return []
+        }
+        var dashes: [CGFloat] = []
+        var currentDash: CGFloat = 0
+        var isDash = (pattern & 0x8000) != 0
+
+        for i in (0..<16).reversed() {
+            let bit = (pattern >> i) & 1
+            let isBitSet = bit != 0
+
+            if isBitSet == isDash {
+                currentDash += 1
+            } else {
+                if currentDash > 0 {
+                    dashes.append(currentDash)
+                }
+                isDash = isBitSet
+                currentDash = 1
+            }
+        }
+        if currentDash > 0 {
+            dashes.append(currentDash)
+        }
+
+        return dashes.isEmpty ? [] : dashes
     }
 }
 
