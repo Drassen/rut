@@ -305,7 +305,14 @@ struct DMGExportService {
         writeInt32LE(&rec, at: 0xa2, value: lonMicrodeg)
 
         // 0x9a-0x9b: Style Class ID (16-bit LE)
-        let styleID = shape.dmgStyleClass.styleClassID
+        var styleID = shape.dmgStyleClass.styleClassID
+        if styleID == 0 {
+            // Use default styles if none is set
+            styleID = switch geometryType {
+            case 0x31: 0x024A  // Point: use 0x024A
+            default: 0x0034    // Lines, polygons, circles: use 0x0034
+            }
+        }
         writeUInt16LE(&rec, at: 0x9a, value: styleID)
 
         // 0xad: Line color index (VGA-256)
