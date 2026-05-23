@@ -179,7 +179,7 @@ Used when object should render as a **point-of-interest (POI) with a glyph/symbo
 
 **Zigzag Lines (Power Lines)**:
 Some styles render as zigzag line geometry rather than straight paths:
-- **KRAFTLEDNING GRON** (Green power line): Line zigzags ±30° back and forth along the path
+- **KRAFTLEDNING GRON** (Green power line): Line zigzags ±45° back and forth along the path
 - **KRAFTLEDNING ROD** (Red power line): Same zigzag geometry with red color
 - The zigzag pattern is the actual line coordinate path, not a dash pattern
 - Creates visual distinction for power transmission lines in navigation displays
