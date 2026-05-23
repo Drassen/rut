@@ -163,7 +163,7 @@ struct StyleSelectorModal: View {
                                                 .font(.caption2)
                                                 .foregroundStyle(.secondary)
                                             Spacer()
-                                            Text(String(format: "%.1f", style.lineWeight))
+                                            Text("\(style.lineWeight)")
                                                 .font(.caption2)
                                                 .foregroundStyle(.secondary)
                                         }
@@ -184,7 +184,7 @@ struct StyleSelectorModal: View {
                                                 .font(.caption2)
                                                 .foregroundStyle(.secondary)
                                             Spacer()
-                                            Text(String(format: "%.1f", style.lineWeight))
+                                            Text("\(style.lineWeight)")
                                                 .font(.caption2)
                                                 .foregroundStyle(.secondary)
                                         }
@@ -200,6 +200,27 @@ struct StyleSelectorModal: View {
                                         .frame(height: 60)
                                     }
                                 }
+
+                                if let textColor = style.textColor {
+                                    VStack(alignment: .leading, spacing: 4) {
+                                        Text("Label")
+                                            .font(.caption2)
+                                            .foregroundStyle(.secondary)
+                                        HStack {
+                                            Text("Sample Text")
+                                                .font(.system(size: CGFloat(style.fontSize), weight: style.textBold ? .bold : .regular))
+                                                .foregroundStyle(textColor)
+                                                .padding(4)
+                                                .background(style.textBackgroundColor ?? Color.clear)
+                                                .cornerRadius(2)
+                                            Spacer()
+                                        }
+                                        .padding(8)
+                                        .background(Color(.systemGray6))
+                                        .cornerRadius(4)
+                                    }
+                                }
+
                                 Spacer()
                             }
                             .padding(12)
