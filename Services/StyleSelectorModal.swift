@@ -172,7 +172,8 @@ struct StyleSelectorModal: View {
                                             dashPattern: style.lineDashPattern,
                                             weight: style.lineWeight,
                                             outlineColor: style.outlineColor,
-                                            outlineWeight: style.outlineWeight
+                                            outlineWeight: style.outlineWeight,
+                                            isZigzag: style.name.contains("KRAFTLEDNING")
                                         )
                                         .frame(height: 60)
                                     }
@@ -678,6 +679,7 @@ struct LinePreviewView: View {
     let weight: Int
     let outlineColor: Color?
     let outlineWeight: Int
+    var isZigzag: Bool = false
 
     var body: some View {
         Canvas { context, size in
@@ -686,16 +688,12 @@ struct LinePreviewView: View {
             // Draw outline first (only if weight > 0)
             if let outlineColor = outlineColor, outlineWeight > 0 {
                 let outlineStrokeWidth = CGFloat(outlineWeight)
-                var outlinePath = Path()
-                outlinePath.move(to: CGPoint(x: 0, y: size.height / 2))
-                outlinePath.addLine(to: CGPoint(x: size.width, y: size.height / 2))
+                var outlinePath = createLinePath(size: size, isZigzag: isZigzag)
                 context.stroke(outlinePath, with: .color(outlineColor), style: StrokeStyle(lineWidth: outlineStrokeWidth))
             }
 
             // Draw main line with dash pattern
-            var linePath = Path()
-            linePath.move(to: CGPoint(x: 0, y: size.height / 2))
-            linePath.addLine(to: CGPoint(x: size.width, y: size.height / 2))
+            var linePath = createLinePath(size: size, isZigzag: isZigzag)
 
             let dashStyle = StrokeStyle(
                 lineWidth: strokeWidth,
@@ -705,6 +703,27 @@ struct LinePreviewView: View {
             )
             context.stroke(linePath, with: .color(color), style: dashStyle)
         }
+    }
+
+    private func createLinePath(size: CGSize, isZigzag: Bool) -> Path {
+        var path = Path()
+        let centerY = size.height / 2
+        let zigzagAmplitude = size.height / 4
+        let segments = 4
+        let segmentWidth = size.width / CGFloat(segments)
+
+        if isZigzag {
+            path.move(to: CGPoint(x: 0, y: centerY))
+            for i in 1...segments {
+                let x = segmentWidth * CGFloat(i)
+                let offset = (i % 2 == 0) ? zigzagAmplitude : -zigzagAmplitude
+                path.addLine(to: CGPoint(x: x, y: centerY + offset))
+            }
+        } else {
+            path.move(to: CGPoint(x: 0, y: centerY))
+            path.addLine(to: CGPoint(x: size.width, y: centerY))
+        }
+        return path
     }
 
     private func dashPatternToDashArray(_ pattern: UInt16) -> [CGFloat] {
