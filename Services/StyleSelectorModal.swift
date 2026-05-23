@@ -118,6 +118,25 @@ struct StyleSelectorModal: View {
                                         secondaryColor: style.secondaryColor
                                     )
                                     .frame(height: 100)
+                                } else if case .circle = geometry, let lineColor = style.lineColor {
+                                    VStack(alignment: .leading, spacing: 4) {
+                                        HStack {
+                                            Text("Circle")
+                                                .font(.caption2)
+                                                .foregroundStyle(.secondary)
+                                            Spacer()
+                                            Text(String(format: "%.1f", style.lineWeight))
+                                                .font(.caption2)
+                                                .foregroundStyle(.secondary)
+                                        }
+                                        Canvas { context, size in
+                                            let rect = CGRect(origin: .zero, size: size)
+                                            let circlePath = Path(ellipseIn: rect)
+                                            let strokeWidth = CGFloat(max(1, style.lineWeight))
+                                            context.stroke(circlePath, with: .color(lineColor), style: StrokeStyle(lineWidth: strokeWidth, lineCap: .round, lineJoin: .round))
+                                        }
+                                        .frame(height: 60)
+                                    }
                                 } else if let lineColor = style.lineColor {
                                     VStack(alignment: .leading, spacing: 4) {
                                         HStack {
