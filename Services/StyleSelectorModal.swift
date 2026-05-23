@@ -602,11 +602,26 @@ struct StyleRow: View {
                     .frame(width: 32, height: 32)
                     .cornerRadius(4)
             } else if case .polyline = geometry, let lineColor = style.lineColor {
-                // Show line preview for polylines
+                // Show line preview for polylines (zigzag if pattern indicates)
                 Canvas { context, size in
                     var path = Path()
-                    path.move(to: CGPoint(x: 2, y: size.height / 2))
-                    path.addLine(to: CGPoint(x: size.width - 2, y: size.height / 2))
+                    let centerY = size.height / 2
+                    let isZigzag = style.outlineDashPattern == 49344
+
+                    if isZigzag {
+                        path.move(to: CGPoint(x: 2, y: centerY))
+                        let segments = 2
+                        let segmentWidth = (size.width - 4) / CGFloat(segments)
+                        let zigzagAmplitude = size.height / 4
+                        for i in 1...segments {
+                            let x = 2 + segmentWidth * CGFloat(i)
+                            let offset = (i % 2 == 0) ? zigzagAmplitude : -zigzagAmplitude
+                            path.addLine(to: CGPoint(x: x, y: centerY + offset))
+                        }
+                    } else {
+                        path.move(to: CGPoint(x: 2, y: centerY))
+                        path.addLine(to: CGPoint(x: size.width - 2, y: centerY))
+                    }
                     let strokeWidth = CGFloat(max(1, style.lineWeight))
                     context.stroke(path, with: .color(lineColor), style: StrokeStyle(lineWidth: strokeWidth))
                 }
