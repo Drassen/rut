@@ -5,6 +5,7 @@ struct StyleSelectorModal: View {
 
     @Binding var selectedStyleId: DMGStyleClass
     var geometry: VectorGeometry? = nil  // Optional: filter by geometry type
+    var onStyleChange: ((StyleItem) -> Void)? = nil  // Callback when style is selected
     @State private var selectedCategoryIndex = 0
     @State private var categories: [StyleCategory] = []
     @State private var isLoading = true
@@ -96,6 +97,7 @@ struct StyleSelectorModal: View {
                                     .contentShape(Rectangle())
                                     .onTapGesture {
                                         previewStyle = style
+                                        onStyleChange?(style)
                                     }
                                     .listRowInsets(.init(top: 0, leading: 0, bottom: 0, trailing: 0))
                                 }
