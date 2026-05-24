@@ -12,6 +12,7 @@
 		4234157F2EEF03C200F0ACCA /* Errors.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4234155A2EEF03C200F0ACCA /* Errors.swift */; };
 		423415822EEF03C200F0ACCA /* RutApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4234155F2EEF03C200F0ACCA /* RutApp.swift */; };
 		423415862EEF12E100F0ACCA /* LaunchScreen.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = 423415852EEF12E100F0ACCA /* LaunchScreen.storyboard */; };
+		42B55B652FC0973600B43894 /* Supporting Files/euronav5 in Resources */ = {isa = PBXBuildFile; fileRef = 42B55B642FC0973600B43894 /* Supporting Files/euronav5 */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -23,6 +24,7 @@
 		423415852EEF12E100F0ACCA /* LaunchScreen.storyboard */ = {isa = PBXFileReference; lastKnownFileType = file.storyboard; path = LaunchScreen.storyboard; sourceTree = "<group>"; };
 		428892EC2F4EE1250061C6ED /* Rut copy-Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; name = "Rut copy-Info.plist"; path = "/Users/drassen/kodprojekt/ios/rut/Rut copy-Info.plist"; sourceTree = "<absolute>"; };
 		429A0F072EEF5A9C00A4960A /* .gitignore */ = {isa = PBXFileReference; lastKnownFileType = text; path = .gitignore; sourceTree = "<group>"; };
+		42B55B642FC0973600B43894 /* Supporting Files/euronav5 */ = {isa = PBXFileReference; lastKnownFileType = folder; path = "Supporting Files/euronav5"; sourceTree = "<group>"; };
 		42EE06B32ED4F10100952608 /* Rut.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Rut.app; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
 
@@ -103,6 +105,7 @@
 		42EE06AA2ED4F10100952608 = {
 			isa = PBXGroup;
 			children = (
+				42B55B642FC0973600B43894 /* Supporting Files/euronav5 */,
 				423415852EEF12E100F0ACCA /* LaunchScreen.storyboard */,
 				42EE06B42ED4F10100952608 /* Products */,
 				423415892EEF359100F0ACCA /* Models */,
@@ -191,6 +194,7 @@
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				42B55B652FC0973600B43894 /* Supporting Files/euronav5 in Resources */,
 				423415862EEF12E100F0ACCA /* LaunchScreen.storyboard in Resources */,
 				423415612EEF03C200F0ACCA /* Assets.xcassets in Resources */,
 				423415632EEF03C200F0ACCA /* README.md in Resources */,

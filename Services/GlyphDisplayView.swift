@@ -61,48 +61,9 @@ struct GlyphDisplayView: View {
     }
 
     private func loadGlyphImage(symbolId: UInt16) async -> UIImage? {
-        // Try to load 3.sym file
-        var sym3Path: String? = nil
-
-        // Check app bundle first (euronav5 resources)
-        if let bundlePath = Bundle.main.resourcePath {
-            let bundlePaths = [
-                bundlePath + "/Supporting Files/euronav5/3.sym",
-                bundlePath + "/euronav5/3.sym",
-                bundlePath + "/3.sym"
-            ]
-            for path in bundlePaths {
-                if FileManager.default.fileExists(atPath: path) {
-                    sym3Path = path
-                    break
-                }
-            }
-        }
-
-        // Check development paths
-        if sym3Path == nil {
-            let devPaths = [
-                NSHomeDirectory() + "/kodprojekt/ios/rut/Supporting Files/euronav5/3.sym",
-                "/Users/drassen/kodprojekt/ios/rut/Supporting Files/euronav5/3.sym",
-                NSHomeDirectory() + "/kodprojekt/ios/rut/DMG avkodning/vector map data/db/settings/system/symbols/3.sym",
-                "/Users/drassen/kodprojekt/ios/rut/DMG avkodning/vector map data/db/settings/system/symbols/3.sym"
-            ]
-            for path in devPaths {
-                if FileManager.default.fileExists(atPath: path) {
-                    sym3Path = path
-                    break
-                }
-            }
-        }
-
-        guard let sym3Path = sym3Path,
-              let data = try? Data(contentsOf: URL(fileURLWithPath: sym3Path)),
-              let metadata = GlyphBitmapExtractor.loadMetadata(from: data) else {
-            return nil
-        }
-
-        // Find the metadata for this symbol ID
-        guard let glyphMetadata = metadata.first(where: { $0.symId == symbolId }) else {
+        // Get glyph info from manager (searches all .sym files)
+        guard let glyphInfo = GlyphManager.shared.getGlyphInfo(symbolId: symbolId),
+              let data = try? Data(contentsOf: URL(fileURLWithPath: glyphInfo.filePath)) else {
             return nil
         }
 
@@ -113,7 +74,7 @@ struct GlyphDisplayView: View {
         // Extract glyph as image
         return GlyphBitmapExtractor.extractGlyph(
             from: data,
-            metadata: glyphMetadata,
+            metadata: glyphInfo.metadata,
             primaryColor: primaryUIColor,
             secondaryColor: secondaryUIColor
         )

@@ -399,16 +399,31 @@ struct RutMapView: View {
             let sel = item.id == selectedId
             Annotation(item.name, coordinate: item.coordinate, anchor: .center) {
                 VStack(spacing: 2) {
-                    VectorPointIconView(
-                        icon: item.style.pointIcon,
-                        color: sel ? Color.white : Color(hex: item.style.strokeColor).opacity(item.style.opacity),
-                        size: (sel ? 28.0 : 22.0) * item.style.iconScale
-                    )
+                    if item.style.euronaveSymbolId > 0 {
+                        GlyphDisplayView(
+                            symbolId: UInt16(item.style.euronaveSymbolId),
+                            primaryColor: Color(hex: item.style.strokeColor),
+                            secondaryColor: nil
+                        )
+                        .frame(width: (sel ? 28.0 : 22.0) * item.style.iconScale, height: (sel ? 28.0 : 22.0) * item.style.iconScale)
+                        .opacity(item.style.opacity)
                         .onTapGesture {
                             if core.appMode == .vector {
                                 vectorStore.selectShape(id: item.id, layerId: item.layerId)
                             }
                         }
+                    } else {
+                        VectorPointIconView(
+                            icon: item.style.pointIcon,
+                            color: sel ? Color.white : Color(hex: item.style.strokeColor).opacity(item.style.opacity),
+                            size: (sel ? 28.0 : 22.0) * item.style.iconScale
+                        )
+                            .onTapGesture {
+                                if core.appMode == .vector {
+                                    vectorStore.selectShape(id: item.id, layerId: item.layerId)
+                                }
+                            }
+                    }
                     if core.appMode == .vector {
                         Text(item.name)
                             .font(.system(size: 10, weight: .medium))

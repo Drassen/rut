@@ -218,6 +218,8 @@ struct VectorStyle: Codable, Equatable {
     var pointIcon: VectorPointIcon = .circle
     /// Point-only: icon render scale multiplier (0.5 – 3.0)
     var iconScale: Double    = 1.0
+    /// Point-only: Euronav glyph symbol ID (0 = use pointIcon instead)
+    var euronaveSymbolId: Int = 0
 }
 
 // MARK: - VectorShape

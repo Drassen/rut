@@ -21,6 +21,8 @@ struct VectorShapeEditorView: View {
     @State private var customStyleInput: String = ""
     @State private var showCustomStyleInput: Bool = false
     @State private var showStyleSelector: Bool = false
+    @State private var selectedStyleName: String = ""
+    @State private var selectedStyle: Style? = nil
 
     init(shape: VectorShape, layerId: UUID) {
         self.shape   = shape
@@ -121,7 +123,7 @@ struct VectorShapeEditorView: View {
 
                 // A109 DMG export section (all shapes)
                 Section("Euronav DMG options (A109)") {
-                        if !isPolyline {
+                        if !isPolyline && !isPoint {
                             Picker("Shape Type", selection: $dmgCategory) {
                                 ForEach([DMGShapeCategory.drawing, .area], id: \.self) { cat in
                                     Text(cat.displayName).tag(cat)
@@ -160,13 +162,26 @@ struct VectorShapeEditorView: View {
                 selectedStyleId: $dmgStyleClass,
                 geometry: shape.geometry,
                 onStyleChange: { style in
-                    if let lineColor = style.lineColor {
+                    selectedStyle = style
+                    selectedStyleName = style.name
+                    // For points with symbols: use primary color; otherwise use line color
+                    if isPoint && style.symbolId > 0 {
+                        if let primaryColor = style.primaryColor {
+                            strokeColorUI = primaryColor
+                        }
+                    } else if let lineColor = style.lineColor {
                         strokeColorUI = lineColor
                     }
                     if let fillColor = style.polygonFillColor {
                         fillColorUI = fillColor
                     }
                     strokeWidth = Double(style.lineWeight)
+                    // For points: store the style's glyph if available
+                    if isPoint && style.symbolId > 0 {
+                        var updatedShape = shape
+                        updatedShape.style.euronaveSymbolId = style.symbolId
+                        // Update without saving, just to reflect in preview
+                    }
                 }
             )
         }
@@ -192,6 +207,7 @@ struct VectorShapeEditorView: View {
         updated.style.opacity     = opacity
         updated.style.pointIcon   = pointIcon
         updated.style.iconScale   = iconScale
+        updated.style.euronaveSymbolId = selectedStyle?.symbolId ?? 0
         updated.dmgCategory = dmgCategory
         updated.dmgAreaType = dmgAreaType
         updated.dmgStyleClass = dmgStyleClass
@@ -268,65 +284,50 @@ struct VectorShapeEditorView: View {
 
     @ViewBuilder
     private func stylePreviewBox() -> some View {
-        HStack(spacing: 12) {
-            if case .custom(let id) = dmgStyleClass, let styleInfo = getStyleSymbolInfo(styleId: id) {
-                if styleInfo.symbolId > 0 {
-                    GlyphDisplayView(
-                        symbolId: UInt16(styleInfo.symbolId),
-                        primaryColor: styleInfo.primaryColor,
-                        secondaryColor: styleInfo.secondaryColor
-                    )
-                    .frame(width: 40, height: 40)
-                }
-                VStack(alignment: .leading, spacing: 2) {
-                    Text("Custom Style")
-                        .font(.headline)
-                    Text(String(format: "0x%04X (%d)", id, id))
-                        .font(.system(.caption, design: .monospaced))
+        HStack(spacing: 8) {
+            // Use canonical preview from selected Style object if available
+            if let style = selectedStyle {
+                style.previewView(geometry: shape.geometry)
+            } else {
+                // Fallback: show placeholder
+                RoundedRectangle(cornerRadius: 4)
+                    .stroke(Color.gray.opacity(0.3), lineWidth: 1)
+                    .frame(width: 32, height: 32)
+            }
+
+            // Show style info
+            if !selectedStyleName.isEmpty {
+                VStack(alignment: .leading, spacing: 1) {
+                    Text(selectedStyleName)
+                        .font(.caption)
+                        .lineLimit(1)
+                    Text(String(format: "0x%04X", dmgStyleClass.styleClassID))
+                        .font(.system(.caption2, design: .monospaced))
                         .foregroundStyle(.secondary)
                 }
-                Spacer()
             } else if case .custom(let id) = dmgStyleClass {
-                VStack(alignment: .leading, spacing: 2) {
-                    Text("Custom Style")
-                        .font(.headline)
-                    Text(String(format: "0x%04X (%d)", id, id))
-                        .font(.system(.caption, design: .monospaced))
+                VStack(alignment: .leading, spacing: 1) {
+                    Text("Custom")
+                        .font(.caption)
+                    Text(String(format: "0x%04X", id))
+                        .font(.system(.caption2, design: .monospaced))
                         .foregroundStyle(.secondary)
                 }
-                Spacer()
-            } else if case .known(let known) = dmgStyleClass, let styleInfo = getStyleSymbolInfo(styleId: known.rawValue) {
-                if styleInfo.symbolId > 0 {
-                    GlyphDisplayView(
-                        symbolId: UInt16(styleInfo.symbolId),
-                        primaryColor: styleInfo.primaryColor,
-                        secondaryColor: styleInfo.secondaryColor
-                    )
-                    .frame(width: 40, height: 40)
-                }
-                VStack(alignment: .leading, spacing: 2) {
-                    Text(known.displayName)
-                        .font(.headline)
-                    Text(String(format: "0x%04X (%d)", known.rawValue, known.rawValue))
-                        .font(.system(.caption, design: .monospaced))
-                        .foregroundStyle(.secondary)
-                }
-                Spacer()
             } else if case .known(let known) = dmgStyleClass {
-                VStack(alignment: .leading, spacing: 2) {
+                VStack(alignment: .leading, spacing: 1) {
                     Text(known.displayName)
-                        .font(.headline)
-                    Text(String(format: "0x%04X (%d)", known.rawValue, known.rawValue))
-                        .font(.system(.caption, design: .monospaced))
+                        .font(.caption)
+                        .lineLimit(1)
+                    Text(String(format: "0x%04X", known.rawValue))
+                        .font(.system(.caption2, design: .monospaced))
                         .foregroundStyle(.secondary)
                 }
-                Spacer()
             } else {
                 Text("SELECT STYLE")
-                    .font(.headline)
+                    .font(.caption)
                     .foregroundStyle(.secondary)
-                Spacer()
             }
+            Spacer()
         }
         .padding(8)
         .background(Color(.systemGray6))

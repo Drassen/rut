@@ -19,6 +19,20 @@ Kritisk funktion: export/import av 6 filer till PCMCIA-kort för AgustaWestland 
 - `PCMCIA avkodning/` – all reverse-engineering dokumentation
 - `PCMCIA avkodning/verify_card.py` – verifiera kort mot kända referenskort
 
+## Euronav5 Format Documentation
+
+**Omfattande, bit-för-bit specifikation av Euronav5 vektordatabasformat:**
+
+- **[EURONAV5_FORMAT_MAIN.md](EURONAV5_FORMAT_MAIN.md)** – Överblick över hela formatet, arkitektur, och komponenter
+  - DMG-databas (USER*.tbl)
+  - appMatrix.json (stildefinitioner)
+  - *.sym-filer (glyfbitmaps)
+
+**Komponentspecifikationer:**
+- **[EURONAV5_FORMAT_DMG.md](EURONAV5_FORMAT_DMG.md)** – Detaljerad 256-byte recordlayout, fältmappning, figurhantering
+- **[EURONAV5_FORMAT_APPMATRIX.md](EURONAV5_FORMAT_APPMATRIX.md)** – JSON-strukturer, rendering-states, färgformat
+- **[EURONAV5_FORMAT_SYM.md](EURONAV5_FORMAT_SYM.md)** – Glyfbitmapformat, metadata, extraktion
+
 ## Testinfrastruktur
 
 - `PCMCIA avkodning/dap/Testkort/` – kort skapade av **äldre DAP-planeringsdator**, **fysiskt testade i helikopter**
@@ -106,3 +120,6 @@ Om kortet dras ur iPaden innan iOS flushät skrivbuffertarna kan FAT1 bli inkomp
 - **Export:** Implementerad i `A109ExportService.swift` – verkar komplett.
 - **Import:** Implementerad i `A109ImportService.swift` – verkar komplett. ZIP ej implementerat.
 - **LFV luftrum:** Laddas vid app-start, visas som icke-klickbara polygoner.
+
+## felsökning
+När man försöker hitta ett fel i koden måste hela felkedjan kontrolleras och reproduceras och förklaras innan den åtgärdas. Det räcker inte med att bara hitta felet.
