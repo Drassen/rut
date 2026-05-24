@@ -74,7 +74,8 @@ final class CoreServices: ObservableObject {
             APTImportService(),
             NAVImportService(),
             ACOImportService(),
-            GeoJSONVectorImportService()
+            GeoJSONVectorImportService(),
+            SAPIImportService()
         ]
 
         // Register exporters

@@ -139,6 +139,18 @@
 			</array>
 		</dict>
 		<dict>
+			<key>CFBundleTypeName</key>
+			<string>SAPPEN Airspace Data</string>
+			<key>CFBundleTypeRole</key>
+			<string>Viewer</string>
+			<key>LSHandlerRank</key>
+			<string>Alternate</string>
+			<key>LSItemContentTypes</key>
+			<array>
+				<string>com.serveraren.rut.sapi</string>
+			</array>
+		</dict>
+		<dict>
 			<key>UTTypeConformsTo</key>
 			<array>
 				<string>public.plain-text</string>
@@ -340,6 +352,23 @@
 				<key>public.mime-type</key>
 				<array>
 					<string>application/vnd.google-earth.kmz</string>
+				</array>
+			</dict>
+		</dict>
+		<dict>
+			<key>UTTypeConformsTo</key>
+			<array>
+				<string>public.json</string>
+			</array>
+			<key>UTTypeDescription</key>
+			<string>SAPPEN Airspace Data</string>
+			<key>UTTypeIdentifier</key>
+			<string>com.serveraren.rut.sapi</string>
+			<key>UTTypeTagSpecification</key>
+			<dict>
+				<key>public.filename-extension</key>
+				<array>
+					<string>sapi</string>
 				</array>
 			</dict>
 		</dict>
