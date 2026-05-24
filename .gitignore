@@ -7,3 +7,6 @@ Thumbs.db
 
 # Xcode user state
 *.xcuserstate
+
+# Reverse-engineering and test data
+DMG avkodning/
