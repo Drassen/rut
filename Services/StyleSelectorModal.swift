@@ -534,6 +534,8 @@ struct StyleSelectorModal: View {
         return Color(red: r, green: g, blue: b, opacity: a)
     }
 
+    /// Categorize style by semantic meaning (not strict layer bounds).
+    /// Note: Layer-specific validation happens during export via DMGLayer.isValidStyleID(_:).
     private func categorizeStyle(styleId: UInt16) -> String {
         switch styleId {
         case 0...99:
