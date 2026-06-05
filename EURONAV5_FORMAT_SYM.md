@@ -1,9 +1,10 @@
 # Euronav5 .sym (Symbol Glyph) Format – Complete Specification
 
-**Status**: ✓ COMPLETE (May 24, 2026)  
+**Status**: ✓ COMPLETE (June 4, 2026)  
 **Scope**: Binary bitmap font files for point-of-interest symbols  
-**Glyphs per file**: Variable (typically 20–30 glyphs per file)  
-**Total file size**: Variable (typically 120–150 KB per file)  
+**Production files**: 4 symbol sets (0.sym, 1.sym, 2.sym, 3.sym, 130 KB each)  
+**Estimated glyphs**: 200–300 per file (~1,200 total in production)  
+**Total file size**: 520 KB across all 4 files  
 **Bitmap resolution**: 256×256 pixels (standard for system files), can vary
 
 ---

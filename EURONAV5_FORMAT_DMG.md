@@ -1,9 +1,47 @@
 # Euronav5 DMG Database Format – Complete Specification
 
-**Status**: ✓ COMPLETE (May 24, 2026)  
+**Status**: ✓ COMPLETE (June 4, 2026)  
 **Scope**: Vector object storage in USER*.tbl binary database  
 **Record size**: 256 bytes (fixed)  
-**Character encoding**: 6-bit custom (see EURONAV5_FORMAT_MAIN.md)
+**Character encoding**: 6-bit custom (see EURONAV5_FORMAT_MAIN.md)  
+**Layers**: USER1-USER6 (typically only USER6 contains data in production)  
+**Style System**: 5-layer rendering with layer-specific style ID validation
+
+---
+
+## Layer Structure (USER1-USER6)
+
+The DMG database supports **6 user-editable layers** stored in separate .tbl files:
+
+| Layer | Filename | Size (Typical) | Status | Notes |
+|-------|----------|----------------|--------|-------|
+| **Layer 0** | USER1.tbl | 7.4 KB | Empty | Reserved for future use |
+| **Layer 1** | USER2.tbl | 7.4 KB | Empty | Reserved for future use |
+| **Layer 2** | USER3.tbl | 7.4 KB | Empty | Reserved for future use |
+| **Layer 3** | USER4.tbl | 7.4 KB | Empty | Reserved for future use |
+| **Layer 4** | USER5.tbl | 7.4 KB | Empty | Reserved for future use |
+| **Layer 5** | USER6.tbl | 4.3 MB | **Active** | Contains all vector geometry in production databases |
+
+**Important**: In current production databases, only **USER6 is used**. iOS app exports to USER1-USER5 (layers 0-4).
+
+---
+
+## Style ID Validation
+
+Objects store a **Style Class ID** at bytes 0x9a-0x9b that references rendering styles in appMatrix.json. Style IDs are **layer-specific**:
+
+| Rendering Layer | Valid Style ID Range | Count | Usage |
+|-----------------|----------------------|-------|-------|
+| **Layer 0** | 0–335 | 336 styles | Overview/base features |
+| **Layer 1** | 0–522 | 523 styles | Detailed rendering |
+| **Layer 2** | 0–271 | 272 styles | Specialized overlay |
+| **Layer 3** | 0–271 | 272 styles | Specialized overlay |
+| **Layer 4** | 0–271 | 272 styles | Specialized overlay |
+
+**Validation Rules**:
+- When exporting to a specific DMG layer, validate all Style Class IDs against the corresponding rendering layer bounds
+- A style ID valid in one layer may be invalid in another
+- Default styles: Point=0x0022 (Layer 1), Line/Polygon=0x0034 (valid in all layers)
 
 ---
 
@@ -31,7 +69,7 @@
 
 | Offset | Size | Field | Type | Description |
 |--------|------|-------|------|-------------|
-| 0x9a | 2 | StyleClassID | u16 LE | Style Class ID (low, high bytes) = low \| (high << 8) |
+| 0x9a | 2 | StyleClassID | u16 LE | Style Class ID (low, high bytes) = low \| (high << 8) — **MUST validate against layer bounds** |
 | 0x9c | 2 | Latitude | f32 BE* | Geographic latitude (degrees, -90 to +90) |
 | 0xa0 | 2 | Longitude | f32 BE* | Geographic longitude (degrees, -180 to +180) |
 | 0xa4 | 1 | Radius/Type | — | For circles: radius code; for areas: geometry type |

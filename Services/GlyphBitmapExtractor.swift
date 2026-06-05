@@ -56,34 +56,32 @@ struct GlyphBitmapExtractor {
 
                 guard byteOffset + 1 < data.count else { continue }
 
-                let primaryValue = Int(data[byteOffset])
-                let secondaryValue = Int(data[byteOffset + 1])
+                let p0 = Int(data[byteOffset])
+                let p1 = Int(data[byteOffset + 1])
 
-                // Skip white background (255,255,255)
-                if primaryValue == 255 && secondaryValue == 255 {
-                    // Transparent pixel
-                    let imageOffset = (y * bytesPerRow) + (x * bytesPerPixel)
-                    imageBytes[imageOffset] = 0
-                    imageBytes[imageOffset + 1] = 0
-                    imageBytes[imageOffset + 2] = 0
-                    imageBytes[imageOffset + 3] = 0
-                    continue
+                var r: UInt8 = 0
+                var g: UInt8 = 0
+                var b: UInt8 = 0
+                var a: UInt8 = 255
+
+                // Glyph rendering: p0 and p1 control color and opacity
+                if p0 > 200 && p1 < 50 {
+                    // Border: black
+                    r = 0; g = 0; b = 0; a = 255
+                } else if p1 < 50 {
+                    // Background: transparent
+                    r = 0; g = 0; b = 0; a = 0
+                } else {
+                    // Fill: primary color with p1 as opacity
+                    r = primaryRGBA.0; g = primaryRGBA.1; b = primaryRGBA.2
+                    a = UInt8(min(255, p1))
                 }
 
-                // Interpolate between primary and secondary colors based on grayscale value
-                let maxValue = max(primaryValue, secondaryValue)
-                let t = max(0.0, Double(maxValue - 200) / 55.0)
-
-                let r = Int(Double(primaryRGBA.0) + (Double(secondaryRGBA.0) - Double(primaryRGBA.0)) * t)
-                let g = Int(Double(primaryRGBA.1) + (Double(secondaryRGBA.1) - Double(primaryRGBA.1)) * t)
-                let b = Int(Double(primaryRGBA.2) + (Double(secondaryRGBA.2) - Double(primaryRGBA.2)) * t)
-                let a = 255
-
                 let imageOffset = (y * bytesPerRow) + (x * bytesPerPixel)
-                imageBytes[imageOffset] = UInt8(r)
-                imageBytes[imageOffset + 1] = UInt8(g)
-                imageBytes[imageOffset + 2] = UInt8(b)
-                imageBytes[imageOffset + 3] = UInt8(a)
+                imageBytes[imageOffset] = r
+                imageBytes[imageOffset + 1] = g
+                imageBytes[imageOffset + 2] = b
+                imageBytes[imageOffset + 3] = a
             }
         }
 
@@ -113,13 +111,17 @@ struct GlyphBitmapExtractor {
     }
 
     static func loadMetadata(from data: Data) -> [GlyphMetadata]? {
-        guard data.count >= 0x1B0 else { return nil }
+        guard data.count >= 16 else { return nil }
 
         var metadata: [GlyphMetadata] = []
+        var offset = 0
 
-        for i in 0..<28 {
-            let offset = i * 16
-            guard offset + 16 <= data.count else { break }
+        while offset + 16 <= data.count {
+            // Check for all-zero terminator record
+            let record = data.subdata(in: offset..<offset+16)
+            if record.allSatisfy({ $0 == 0 }) {
+                break
+            }
 
             let symId = data.subdata(in: offset..<offset+2).withUnsafeBytes { $0.load(as: UInt16.self).littleEndian }
             let xStart = data.subdata(in: offset+4..<offset+6).withUnsafeBytes { $0.load(as: UInt16.self).littleEndian }
@@ -128,6 +130,7 @@ struct GlyphBitmapExtractor {
             let yEnd = data.subdata(in: offset+10..<offset+12).withUnsafeBytes { $0.load(as: UInt16.self).littleEndian }
 
             metadata.append(GlyphMetadata(symId: symId, xStart: xStart, yStart: yStart, xEnd: xEnd, yEnd: yEnd))
+            offset += 16
         }
 
         return metadata.isEmpty ? nil : metadata

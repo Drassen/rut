@@ -1,9 +1,10 @@
 # Euronav5 appMatrix Format – Complete Specification
 
-**Status**: ✓ COMPLETE (May 24, 2026)  
+**Status**: ✓ COMPLETE (June 4, 2026)  
 **Scope**: Style definition database for rendering objects  
 **Format**: JSON array structure  
-**System database**: 1,686 predefined style classes  
+**System database**: **1,675 predefined style classes** (verified from production database)  
+**Architecture**: 5 rendering layers (0-4) with layer-specific style ID ranges  
 **Per-layer databases**: Optional extensions to system styles
 
 ---
@@ -11,8 +12,13 @@
 ## File Locations
 
 ```
-System styles (universal):
-  /db/settings/system/appMatrix.json  (~1.0 MB, 1,686 styles)
+System styles (primary database):
+  /db/settings/system/appMatrix.json  (~1.0 MB, 1,675 total styles)
+
+Operator-specific variants:
+  /db/settings/system-setups/LUHS/appMatrix.json        (Swedish operator variant)
+  /db/settings/system-setups/LUHS_EOS/appMatrix.json    (EOS variant)
+  /db/settings/Factory/system-setups/Factory/appMatrix.json (fallback)
 
 Layer-specific styles (optional):
   /db/vector/{LayerName}/appMatrix.json
@@ -26,14 +32,33 @@ Layer-specific styles (optional):
 
 ---
 
+## 5-Layer Rendering Architecture
+
+The appMatrix uses a **5-layer rendering system** with independent style ID ranges per layer:
+
+| Layer | Styles | Valid ID Range | Purpose |
+|-------|--------|----------------|---------|
+| **Layer 0** | 336 | 0–335 | Overview/base features |
+| **Layer 1** | 523 | 0–522 | Detailed rendering (LARGEST) |
+| **Layer 2** | 272 | 0–271 | Specialized overlay 1 |
+| **Layer 3** | 272 | 0–271 | Specialized overlay 2 |
+| **Layer 4** | 272 | 0–271 | Specialized overlay 3 |
+
+**Total**: 1,675 styles
+
+**Important**: Style IDs are **layer-specific**. A style ID valid in Layer 1 may be invalid in Layer 2. When exporting or rendering, validate style IDs against the selected layer's bounds.
+
+---
+
 ## Top-Level JSON Structure
 
 ```javascript
 {
   "version": 1,
   "member": [
-    // Array of 1,686 style class definitions
-    // Index 0–1685
+    // Array of 1,675 style class definitions
+    // Organized by layer (Layer 0, 1, 2, 3, 4)
+    // Style IDs are layer-specific and should be validated against layer bounds
   ]
 }
 ```
