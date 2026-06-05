@@ -1,10 +1,10 @@
 # Euronav5 appMatrix Format – Complete Specification
 
-**Status**: ✓ COMPLETE (June 4, 2026)  
+**Status**: ✓ COMPLETE (June 5, 2026)  
 **Scope**: Style definition database for rendering objects  
 **Format**: JSON array structure  
-**System database**: **1,675 predefined style classes** (verified from production database)  
-**Architecture**: 5 rendering layers (0-4) with layer-specific style ID ranges  
+**System database**: **585 unique style classes** with 1,675 total (layer, style_id) combinations  
+**Architecture**: 5 visualization layers (0-4) representing different zoom/display modes  
 **Per-layer databases**: Optional extensions to system styles
 
 ---
@@ -32,21 +32,21 @@ Layer-specific styles (optional):
 
 ---
 
-## 5-Layer Rendering Architecture
+## 5-Layer Visualization Architecture
 
-The appMatrix uses a **5-layer rendering system** with independent style ID ranges per layer:
+The appMatrix uses a **5-layer visualization system** representing different display modes/zoom levels:
 
-| Layer | Styles | Valid ID Range | Purpose |
-|-------|--------|----------------|---------|
-| **Layer 0** | 336 | 0–335 | Overview/base features |
-| **Layer 1** | 523 | 0–522 | Detailed rendering (LARGEST) |
-| **Layer 2** | 272 | 0–271 | Specialized overlay 1 |
-| **Layer 3** | 272 | 0–271 | Specialized overlay 2 |
-| **Layer 4** | 272 | 0–271 | Specialized overlay 3 |
+| Layer | Entries | Purpose |
+|-------|---------|---------|
+| **Layer 0** | 336 | Overview mode (lowest zoom/detail) |
+| **Layer 1** | 523 | Standard detailed rendering |
+| **Layer 2** | 272 | Specialized display variant |
+| **Layer 3** | 272 | Specialized display variant |
+| **Layer 4** | 272 | Specialized display variant |
 
-**Total**: 1,675 styles
+**Total combinations**: 1,675 (layer, style_id) pairs across **585 unique style IDs**
 
-**Important**: Style IDs are **layer-specific**. A style ID valid in Layer 1 may be invalid in Layer 2. When exporting or rendering, validate style IDs against the selected layer's bounds.
+**Important**: These layers represent **visualization contexts in the planning station/helicopter display**, NOT export constraints. The same style ID (e.g., 50) can appear in multiple layers, with potentially different rendering properties per layer. When exporting to USER*.tbl, you use any valid style ID from appMatrix regardless of which visualization layer the user later chooses to display.
 
 ---
 

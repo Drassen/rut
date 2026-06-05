@@ -17,23 +17,6 @@ struct DMGExportService {
         var displayName: String {
             "Layer \(rawValue)"
         }
-
-        /// Valid Style Class ID range for this layer (from appMatrix.json, June 2026)
-        var styleIDRange: ClosedRange<UInt16> {
-            switch self {
-            case .zero:
-                return 0...335  // Layer 0: 336 styles
-            case .one:
-                return 0...522  // Layer 1: 523 styles (largest)
-            case .two, .three, .four:
-                return 0...271  // Layers 2-4: 272 styles each
-            }
-        }
-
-        /// Check if a Style Class ID is valid for this layer
-        func isValidStyleID(_ styleID: UInt16) -> Bool {
-            styleIDRange.contains(styleID)
-        }
     }
 
     // Template header (4297 bytes): CONSTANT SQL schema + 13 header data records (0-12)
@@ -249,7 +232,7 @@ struct DMGExportService {
                 guard isValidCoordinate(lat, lon), radiusMeters > 0 else { continue }
                 data.append(buildAreaCircleRecord(
                     lat: lat, lon: lon, radiusMeters: radiusMeters,
-                    figureName: figureName, shape: shape, layer: layer
+                    figureName: figureName, shape: shape
                 ))
                 figureCounter = figureCounter &+ 1
             } else {
@@ -261,7 +244,7 @@ struct DMGExportService {
                         data.append(buildDrawingRecord(
                             lat: coord[0], lon: coord[1],
                             figureName: figureName, shape: shape,
-                            figureCounter: figureCounter, geometryType: 0x00, layer: layer
+                            figureCounter: figureCounter, geometryType: 0x00
                         ))
                     }
                     if !coordinates.isEmpty {
@@ -274,7 +257,7 @@ struct DMGExportService {
                         data.append(buildDrawingRecord(
                             lat: coord[0], lon: coord[1],
                             figureName: figureName, shape: shape,
-                            figureCounter: figureCounter, geometryType: 0x80, layer: layer
+                            figureCounter: figureCounter, geometryType: 0x80
                         ))
                     }
                     if !coordinates.isEmpty {
@@ -304,7 +287,7 @@ struct DMGExportService {
     /// Build a 256-byte DRAWING record for one point
     private func buildDrawingRecord(
         lat: Double, lon: Double, figureName: String,
-        shape: VectorShape, figureCounter: UInt8, geometryType: UInt8, layer: DMGLayer
+        shape: VectorShape, figureCounter: UInt8, geometryType: UInt8
     ) -> Data {
         var rec = [UInt8](repeating: 0, count: 256)
 
@@ -323,21 +306,13 @@ struct DMGExportService {
         writeInt32LE(&rec, at: 0xa2, value: lonMicrodeg)
 
         // 0x9a-0x9b: Style Class ID (16-bit LE)
-        // NOTE: Style IDs are layer-specific. Valid ranges vary by rendering layer:
-        // Layer 0: 0–335, Layer 1: 0–522, Layer 2-4: 0–271 (see EURONAV5_FORMAT_APPMATRIX.md)
         var styleID = shape.dmgStyleClass.styleClassID
         if styleID == 0 {
-            // Use default styles if none is set (valid in all layers)
+            // Use default styles if none is set
             styleID = switch geometryType {
-            case 0x31: 0x0022  // Point: use 34 (valid in all layers)
-            default: 0x0034    // Lines, polygons, circles: use 52 (valid in all layers)
+            case 0x31: 0x0022  // Point: use 34
+            default: 0x0034    // Lines, polygons, circles: use 52
             }
-        } else if !layer.isValidStyleID(styleID) {
-            // Warn if style ID is outside layer bounds
-            let validRange = layer.styleIDRange
-            print("⚠️ Warning: Shape '\(shape.name)' has Style ID 0x\(String(format: "%04X", styleID)) "
-                + "which is outside valid range for \(layer.displayName) (0–\(validRange.upperBound)). "
-                + "May not render correctly in helicopter.")
         }
         writeUInt16LE(&rec, at: 0x9a, value: styleID)
 
@@ -362,7 +337,7 @@ struct DMGExportService {
     /// Build a 256-byte AREA circle record
     private func buildAreaCircleRecord(
         lat: Double, lon: Double, radiusMeters: Double,
-        figureName: String, shape: VectorShape, layer: DMGLayer
+        figureName: String, shape: VectorShape
     ) -> Data {
         var rec = [UInt8](repeating: 0, count: 256)
 

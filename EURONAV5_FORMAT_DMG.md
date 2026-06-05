@@ -1,11 +1,11 @@
 # Euronav5 DMG Database Format – Complete Specification
 
-**Status**: ✓ COMPLETE (June 4, 2026)  
+**Status**: ✓ COMPLETE (June 5, 2026)  
 **Scope**: Vector object storage in USER*.tbl binary database  
 **Record size**: 256 bytes (fixed)  
 **Character encoding**: 6-bit custom (see EURONAV5_FORMAT_MAIN.md)  
 **Layers**: USER1-USER6 (typically only USER6 contains data in production)  
-**Style System**: 5-layer rendering with layer-specific style ID validation
+**Style System**: References appMatrix.json for style rendering (visualization-layer agnostic)
 
 ---
 
@@ -26,24 +26,6 @@ The DMG database supports **6 user-editable layers** stored in separate .tbl fil
 
 ---
 
-## Style ID Validation
-
-Objects store a **Style Class ID** at bytes 0x9a-0x9b that references rendering styles in appMatrix.json. Style IDs are **layer-specific**:
-
-| Rendering Layer | Valid Style ID Range | Count | Usage |
-|-----------------|----------------------|-------|-------|
-| **Layer 0** | 0–335 | 336 styles | Overview/base features |
-| **Layer 1** | 0–522 | 523 styles | Detailed rendering |
-| **Layer 2** | 0–271 | 272 styles | Specialized overlay |
-| **Layer 3** | 0–271 | 272 styles | Specialized overlay |
-| **Layer 4** | 0–271 | 272 styles | Specialized overlay |
-
-**Validation Rules**:
-- When exporting to a specific DMG layer, validate all Style Class IDs against the corresponding rendering layer bounds
-- A style ID valid in one layer may be invalid in another
-- Default styles: Point=0x0022 (Layer 1), Line/Polygon=0x0034 (valid in all layers)
-
----
 
 ## Record Structure (256 bytes)
 
@@ -69,7 +51,7 @@ Objects store a **Style Class ID** at bytes 0x9a-0x9b that references rendering 
 
 | Offset | Size | Field | Type | Description |
 |--------|------|-------|------|-------------|
-| 0x9a | 2 | StyleClassID | u16 LE | Style Class ID (low, high bytes) = low \| (high << 8) — **MUST validate against layer bounds** |
+| 0x9a | 2 | StyleClassID | u16 LE | Style Class ID (low, high bytes) = low \| (high << 8) — references appMatrix.json styling |
 | 0x9c | 2 | Latitude | f32 BE* | Geographic latitude (degrees, -90 to +90) |
 | 0xa0 | 2 | Longitude | f32 BE* | Geographic longitude (degrees, -180 to +180) |
 | 0xa4 | 1 | Radius/Type | — | For circles: radius code; for areas: geometry type |

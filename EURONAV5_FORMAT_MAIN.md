@@ -53,7 +53,7 @@ styleClassID = byte_0x9a | (byte_0x9b << 8)
 Example: 0x44 | (0x02 << 8) = 0x0244
 ```
 
-The system contains **1,675 predefined style classes** (verified from production database, June 2026) organized in **5 rendering layers**, covering aviation, terrain, obstacles, navigational aids, etc.
+The system contains **585 unique style classes** appearing across **5 visualization layers** (1,675 total combinations), covering aviation, terrain, obstacles, navigational aids, etc. The visualization layers represent different display modes (zoom levels, detail levels), not export constraints.
 
 ---
 
