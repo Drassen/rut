@@ -1,0 +1,10 @@
+#  EuroAvionics Macro - Recorded: 2022-06-03 11:51
+
+UserInterface("","root").pressButton("BUTTON_MAP");
+Menu("","MapMenu").setFocusedItem("itemDTEDProfile");
+Menu("","MapMenu").setFocusedItem("itemMapLine");
+Menu("","MapMenu").setFocusedItem("item_menuLabels");
+MenuSubmenuItem("MapMenu","item_menuLabels").pressItem("0");
+MenuRadioItem("menuLabels","itemLabelsOff").select("0");
+Menu("MapMenu","menuLabels").hideMenu("0");
+Menu("","MapMenu").hideMenu("0");

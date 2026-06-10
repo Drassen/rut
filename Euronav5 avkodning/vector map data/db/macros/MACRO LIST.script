@@ -1,0 +1,18 @@
+#  EuroAvionics Macro - Recorded: 2022-06-03 11:37
+
+UserInterface("","root").pressButton("BUTTON_MENU");
+Menu("","MainMenu").setFocusedItem("item_menuFlightPlan");
+Menu("","MainMenu").setFocusedItem("itemFlightInfo");
+Menu("","MainMenu").setFocusedItem("itemChecklists");
+Menu("","MainMenu").setFocusedItem("itemIoStatus");
+Menu("","MainMenu").setFocusedItem("itemFlightRec");
+Menu("","MainMenu").setFocusedItem("item_menuMaintenance");
+MenuSubmenuItem("MainMenu","item_menuMaintenance").pressItem("0");
+MenuSubmenuItem("menuMaintenance","item_menuSetup").pressItem("0");
+MenuSubmenuItem("menuSetup","item_menuGeneral").pressItem("0");
+Menu("menuSetup","menuGeneral").setFocusedItem("itemObstacleWarning");
+Menu("menuSetup","menuGeneral").setFocusedItem("itemTerrainWarning");
+Menu("menuSetup","menuGeneral").setFocusedItem("itemAirspaceIndication");
+Menu("menuSetup","menuGeneral").setFocusedItem("itemUnits");
+Menu("menuSetup","menuGeneral").setFocusedItem("itemMacros");
+MenuTextItem("menuGeneral","itemMacros").pressItem("0");

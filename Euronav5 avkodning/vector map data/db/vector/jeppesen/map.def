@@ -1,0 +1,6 @@
+name jeppesen
+group Navig
+priority 3
+bbmin -180.000000 -89.995280
+bbmax 180.000000 89.999983
+type vector

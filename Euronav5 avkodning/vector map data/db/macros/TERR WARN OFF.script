@@ -1,0 +1,21 @@
+#  EuroAvionics Macro - Recorded: 2022-11-22 13:39
+
+UserInterface("","root").pressButton("BUTTON_MENU");
+Menu("","MainMenu").setFocusedItem("item_menuFlightPlan");
+Menu("","MainMenu").setFocusedItem("itemFlightInfo");
+Menu("","MainMenu").setFocusedItem("itemChecklists");
+Menu("","MainMenu").setFocusedItem("itemIoStatus");
+Menu("","MainMenu").setFocusedItem("itemFlightRec");
+Menu("","MainMenu").setFocusedItem("item_menuDataCom");
+Menu("","MainMenu").setFocusedItem("item_menuMaintenance");
+MenuSubmenuItem("MainMenu","item_menuMaintenance").pressItem("0");
+MenuSubmenuItem("menuMaintenance","item_menuSetup").pressItem("0");
+MenuSubmenuItem("menuSetup","item_menuGeneral").pressItem("0");
+Menu("menuSetup","menuGeneral").setFocusedItem("itemObstacleWarning");
+Menu("menuSetup","menuGeneral").setFocusedItem("itemTerrainWarning");
+MenuTextItem("menuGeneral","itemTerrainWarning").pressItem("0");
+CheckBox("TerrainWarningDialog","chkEnable").setChecked("false");
+Dialog("","TerrainWarningDialog").setFocusWidget("rbtManual");
+Dialog("","TerrainWarningDialog").setFocusWidget("rbtAuto");
+Dialog("","TerrainWarningDialog").setFocusWidget("btnOk");
+Button("TerrainWarningDialog","btnOk").pressButton("0");

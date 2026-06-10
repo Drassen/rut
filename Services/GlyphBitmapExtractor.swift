@@ -12,6 +12,7 @@ struct GlyphBitmapExtractor {
         var height: Int { Int(yEnd - yStart + 1) }
     }
 
+
     static func extractGlyph(
         from data: Data,
         metadata: GlyphMetadata,
@@ -64,17 +65,22 @@ struct GlyphBitmapExtractor {
                 var b: UInt8 = 0
                 var a: UInt8 = 255
 
-                // Glyph rendering: p0 and p1 control color and opacity
-                if p0 > 200 && p1 < 50 {
-                    // Border: black
-                    r = 0; g = 0; b = 0; a = 255
-                } else if p1 < 50 {
-                    // Background: transparent
+                // p0-only interpretation with tuned thresholds
+                if p0 > 200 && p1 < 100 {
+                    // Border: primary color with full opacity
+                    r = primaryRGBA.0; g = primaryRGBA.1; b = primaryRGBA.2; a = 255
+                } else if p0 < 30 {
+                    // Transparent
                     r = 0; g = 0; b = 0; a = 0
+                } else if p0 > 50 {
+                    // Fill: secondary color with p0 as opacity
+                    r = secondaryRGBA.0
+                    g = secondaryRGBA.1
+                    b = secondaryRGBA.2
+                    a = UInt8(min(255, p0))
                 } else {
-                    // Fill: primary color with p1 as opacity
-                    r = primaryRGBA.0; g = primaryRGBA.1; b = primaryRGBA.2
-                    a = UInt8(min(255, p1))
+                    // Between transparent and fill threshold
+                    r = 0; g = 0; b = 0; a = 0
                 }
 
                 let imageOffset = (y * bytesPerRow) + (x * bytesPerPixel)

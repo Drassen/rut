@@ -1,0 +1,24 @@
+#  EuroAvionics Macro - Recorded: 2026-03-09 11:02
+
+UserInterface("","root").pressButton("BUTTON_MAP");
+Menu("","MapMenu").setFocusedItem("itemDTEDProfile");
+Menu("","MapMenu").setFocusedItem("itemMapLine");
+Menu("","MapMenu").setFocusedItem("item_menuLabels");
+Menu("","MapMenu").setFocusedItem("item_menuMaps");
+MenuSubmenuItem("MapMenu","item_menuMaps").pressItem("0");
+Menu("MapMenu","menuMaps").setFocusedItem("itemGndVector");
+Menu("MapMenu","menuMaps").setFocusedItem("Flyginfo");
+Menu("MapMenu","menuMaps").setFocusedItem("GRIDCGRS");
+Menu("MapMenu","menuMaps").setFocusedItem("Kraftledningar");
+Menu("MapMenu","menuMaps").setFocusedItem("Ovningar");
+Menu("MapMenu","menuMaps").setFocusedItem("itemGndRaster");
+Menu("MapMenu","menuMaps").setFocusedItem("itemDtedSetup");
+Menu("MapMenu","menuMaps").setFocusedItem("item_menuUserDatabases");
+MenuSubmenuItem("menuMaps","item_menuUserDatabases").pressItem("0");
+Menu("menuMaps","menuUserDatabases").setFocusedItem("itemUser2");
+Menu("menuMaps","menuUserDatabases").setFocusedItem("itemUser3");
+Menu("menuMaps","menuUserDatabases").setFocusedItem("itemUser4");
+Menu("menuMaps","menuUserDatabases").setFocusedItem("itemUser5");
+Menu("menuMaps","menuUserDatabases").setFocusedItem("itemUser6");
+Menu("menuMaps","menuUserDatabases").setFocusedItem("itemIntervisibility");
+MenuTextItem("menuUserDatabases","itemIntervisibility").pressItem("0");

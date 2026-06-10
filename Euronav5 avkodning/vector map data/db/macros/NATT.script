@@ -1,0 +1,23 @@
+#  EuroAvionics Macro - Recorded: 2017-09-05 12:53
+
+UserInterface("","root").pressButton("BUTTON_MENU");
+Menu("","MainMenu").setFocusedItem("item_menuFlightPlan");
+Menu("","MainMenu").setFocusedItem("itemShutDown");
+Menu("","MainMenu").setFocusedItem("item_menuMaintenance");
+MenuSubmenuItem("MainMenu","item_menuMaintenance").pressItem("0");
+MenuSubmenuItem("menuMaintenance","item_menuSetup").pressItem("0");
+Menu("menuMaintenance","menuSetup").setFocusedItem("item_menuSystem");
+MenuSubmenuItem("menuSetup","item_menuSystem").pressItem("0");
+Menu("menuSetup","menuSystem").setFocusedItem("itemAppearanceEditor");
+Menu("menuSetup","menuSystem").setFocusedItem("itemMaskAirspaces");
+Menu("menuSetup","menuSystem").setFocusedItem("itemBrightnessSetup");
+MenuTextItem("menuSystem","itemBrightnessSetup").pressItem("0");
+SpinEdit("BrightnessDialog","txtVector").setText("3");
+Dialog("","BrightnessDialog").setFocusWidget("txtRaster");
+SpinEdit("BrightnessDialog","txtRaster").setText("4");
+Dialog("","BrightnessDialog").setFocusWidget("txtTerrain");
+SpinEdit("BrightnessDialog","txtTerrain").setText("6");
+Dialog("","BrightnessDialog").setFocusWidget("txtOverlay");
+SpinEdit("BrightnessDialog","txtOverlay").setText("6");
+Dialog("","BrightnessDialog").setFocusWidget("txtVector");
+Dialog("","BrightnessDialog").close("0");

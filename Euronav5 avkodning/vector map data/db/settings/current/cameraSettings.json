@@ -1,0 +1,10 @@
+{
+"version":1,
+"member":
+[
+  {"footprintVisible":true},
+  {"showFOV":false},
+  {"labelVisible":false},
+  {"steerCam":false}
+]
+}

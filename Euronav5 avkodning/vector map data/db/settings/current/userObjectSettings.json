@@ -1,0 +1,22 @@
+{
+"version":1,
+"member":
+[
+  {"userDatabase":"USER2"},
+  {"masterEnabled":true},
+  {"enabledUserDb":[true,true,true,true,true,true]},
+  {"containsMovingObjects":[true,true,true,true,true,true]},
+  {"containsObstacles":[true,true,true,true,true,true]},
+  {"enableNonPersistentObjects":true},
+  {"userObjectGroup1":"AIS"},
+  {"userObjectGroup2":"USER2"},
+  {"userObjectGroup3":"SEA OBJEC"},
+  {"userObjectGroup4":"USER4"},
+  {"userObjectGroup5":"USER5"},
+  {"userObjectGroup6":"HINDER"},
+  {"detectionRange":false},
+  {"lethalityRange":false},
+  {"lethalityRangeFill":false},
+  {"labelFilter":63}
+]
+}

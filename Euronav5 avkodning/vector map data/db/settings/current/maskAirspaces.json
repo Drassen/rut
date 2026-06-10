@@ -1,0 +1,11 @@
+{
+"version":1,
+"member":
+[
+  {"maskEnable":true},
+  {"enableDynamicLimit":false},
+  {"upper":2865},
+  {"lower":0},
+  {"height":609}
+]
+}

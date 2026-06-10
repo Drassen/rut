@@ -1,0 +1,72 @@
+{
+"version":1,
+"member":
+[
+  {
+    "macroName1":"EMERGENCY"
+  },
+  {
+    "macroName2":"DAG"
+  },
+  {
+    "macroName3":"NATT"
+  },
+  {
+    "macroName4":"DIM0"
+  },
+  {
+    "macroName5":"DIM25"
+  },
+  {
+    "macroName6":"DIM50"
+  },
+  {
+    "macroName7":"MACRO LIST"
+  },
+  {
+    "macroName8":"LABELS ON"
+  },
+  {
+    "macroName9":"LABELS OFF"
+  },
+  {
+    "macroName10":"OBST WARN ON"
+  },
+  {
+    "macroName11":"OBST WARN OFF"
+  },
+  {
+    "macroName12":"TERR WARN ON"
+  },
+  {
+    "macroName13":"TERR WARN OFF"
+  },
+  {
+    "macroName14":"ALL ON"
+  },
+  {
+    "macroName15":"ALL OFF"
+  },
+  {
+    "macroName16":"OBST LOW OFF"
+  },
+  {
+    "macroName17":"OBST LOW ON"
+  },
+  {
+    "macroName18":"STARTUP 2"
+  },
+  {
+    "macroName19":"THREAT RANGES"
+  },
+  {
+    "macroName20":"SJO STD"
+  },
+  {
+    "macroName21":"OUTHOUSE 10 NM"
+  },
+  {
+    "countMacros":21
+  }
+]
+}

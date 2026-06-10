@@ -8,7 +8,7 @@ import UIKit
 enum VectorExportFormat: String, CaseIterable, Identifiable {
     case kmz  = "KMZ"
     case atak = "ATAK (.zip)"
-    case dmg  = "Euronav 5 (A109 DMG)"
+    case dmg  = "Euronav 5 (A109 Euronav5)"
     case geojson = "GeoJSON (.geojson)"
     var id: String { rawValue }
 }
@@ -27,9 +27,9 @@ struct VectorToolbar: View {
     @State private var corridorWidthText = "1000"
     @State private var showExportDialog = false
     @State private var exportFormat: VectorExportFormat = .kmz
-    @State private var showDMGFolderPicker = false
-    @State private var pendingDMGFiles: [String: Data]? = nil
-    @State private var showDMGExportCompleteAlert = false
+    @State private var showEuronav5FolderPicker = false
+    @State private var pendingEuronav5Files: [String: Data]? = nil
+    @State private var showEuronav5ExportCompleteAlert = false
     @State private var exportContainer: ExportContainer? = nil
 
     var body: some View {
@@ -204,12 +204,12 @@ struct VectorToolbar: View {
         .sheet(item: $exportContainer) { container in
             MultiFileExportController(fileURLs: container.urls) { _ in }
         }
-        .sheet(isPresented: $showDMGFolderPicker) {
-            DocumentPickerView(isPresented: $showDMGFolderPicker) { folderURL in
-                writeDMGCardStructure(to: folderURL)
+        .sheet(isPresented: $showEuronav5FolderPicker) {
+            DocumentPickerView(isPresented: $showEuronav5FolderPicker) { folderURL in
+                writeEuronav5CardStructure(to: folderURL)
             }
         }
-        .alert("Export Complete", isPresented: $showDMGExportCompleteAlert) {
+        .alert("Export Complete", isPresented: $showEuronav5ExportCompleteAlert) {
             Button("OK") { }
         } message: {
             Text("PCMCIA card with vector data exported successfully. You can now remove the card.")
@@ -605,10 +605,10 @@ struct VectorToolbar: View {
                 outputData = buildATAKPackage(layers: layersToExport, name: outputName)
                 filename = outputName + ".zip"
             case .dmg:
-                let service = DMGExportService()
-                let files = service.exportDMGCard(vectorLayers: layersToExport, to: .three)
-                pendingDMGFiles = files
-                showDMGFolderPicker = true
+                let service = Euronav5ExportService()
+                let files = service.exportEuronav5Card(vectorLayers: layersToExport, to: .three)
+                pendingEuronav5Files = files
+                showEuronav5FolderPicker = true
                 return
             case .geojson:
                 let service = GeoJSONVectorExportService()
@@ -637,8 +637,8 @@ struct VectorToolbar: View {
         }
     }
 
-    private func writeDMGCardStructure(to folderURL: URL) {
-        guard let files = pendingDMGFiles else { return }
+    private func writeEuronav5CardStructure(to folderURL: URL) {
+        guard let files = pendingEuronav5Files else { return }
         do {
             let secured = folderURL.startAccessingSecurityScopedResource()
             defer { if secured { folderURL.stopAccessingSecurityScopedResource() } }
@@ -663,11 +663,11 @@ struct VectorToolbar: View {
             let dsStorePath = folderURL.appendingPathComponent(".DS_Store").path
             try? FileManager.default.removeItem(atPath: dsStorePath)
 
-            pendingDMGFiles = nil
-            showDMGExportCompleteAlert = true
+            pendingEuronav5Files = nil
+            showEuronav5ExportCompleteAlert = true
         } catch {
             toastManager.show(message: "Export failed: \(error.localizedDescription)")
-            pendingDMGFiles = nil
+            pendingEuronav5Files = nil
         }
     }
 
@@ -888,9 +888,9 @@ struct VectorExportButton: View {
     @State private var exportContainer: ExportContainer? = nil
     @State private var exportFormat: VectorExportFormat = .kmz
     @State private var showExportDialog = false
-    @State private var showDMGFolderPicker = false
-    @State private var pendingDMGFiles: [String: Data]? = nil
-    @State private var showDMGExportCompleteAlert = false
+    @State private var showEuronav5FolderPicker = false
+    @State private var pendingEuronav5Files: [String: Data]? = nil
+    @State private var showEuronav5ExportCompleteAlert = false
 
     var body: some View {
         Button {
@@ -914,12 +914,12 @@ struct VectorExportButton: View {
         .sheet(item: $exportContainer) { container in
             MultiFileExportController(fileURLs: container.urls) { _ in }
         }
-        .sheet(isPresented: $showDMGFolderPicker) {
-            DocumentPickerView(isPresented: $showDMGFolderPicker) { folderURL in
-                writeDMGCardStructure(to: folderURL)
+        .sheet(isPresented: $showEuronav5FolderPicker) {
+            DocumentPickerView(isPresented: $showEuronav5FolderPicker) { folderURL in
+                writeEuronav5CardStructure(to: folderURL)
             }
         }
-        .alert("Export Complete", isPresented: $showDMGExportCompleteAlert) {
+        .alert("Export Complete", isPresented: $showEuronav5ExportCompleteAlert) {
             Button("OK") { }
         } message: {
             Text("PCMCIA card with vector data exported successfully. You can now remove the card.")
@@ -982,10 +982,10 @@ struct VectorExportButton: View {
                 outputData = buildATAKPackage(layers: layersToExport, name: outputName)
                 filename = outputName + ".zip"
             case .dmg:
-                let service = DMGExportService()
-                let files = service.exportDMGCard(vectorLayers: layersToExport, to: .three)
-                pendingDMGFiles = files
-                showDMGFolderPicker = true
+                let service = Euronav5ExportService()
+                let files = service.exportEuronav5Card(vectorLayers: layersToExport, to: .three)
+                pendingEuronav5Files = files
+                showEuronav5FolderPicker = true
                 return
             case .geojson:
                 let service = GeoJSONVectorExportService()
@@ -1014,10 +1014,10 @@ struct VectorExportButton: View {
         }
     }
 
-    // MARK: - DMG Card Export
+    // MARK: - Euronav5 Card Export
 
-    private func writeDMGCardStructure(to folderURL: URL) {
-        guard let files = pendingDMGFiles else { return }
+    private func writeEuronav5CardStructure(to folderURL: URL) {
+        guard let files = pendingEuronav5Files else { return }
         do {
             let secured = folderURL.startAccessingSecurityScopedResource()
             defer { if secured { folderURL.stopAccessingSecurityScopedResource() } }
@@ -1044,11 +1044,11 @@ struct VectorExportButton: View {
             let dsStorePath = folderURL.appendingPathComponent(".DS_Store").path
             try? FileManager.default.removeItem(atPath: dsStorePath)
 
-            pendingDMGFiles = nil
-            showDMGExportCompleteAlert = true
+            pendingEuronav5Files = nil
+            showEuronav5ExportCompleteAlert = true
         } catch {
             toastManager.show(message: "Export failed: \(error.localizedDescription)")
-            pendingDMGFiles = nil
+            pendingEuronav5Files = nil
         }
     }
 

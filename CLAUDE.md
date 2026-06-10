@@ -21,17 +21,27 @@ Kritisk funktion: export/import av 6 filer till PCMCIA-kort för AgustaWestland 
 
 ## Euronav5 Format Documentation
 
-**Omfattande, bit-för-bit specifikation av Euronav5 vektordatabasformat:**
+**Verifierad, bit-för-bit specifikation i [Docs/Euronav5/](Docs/Euronav5/):**
 
-- **[EURONAV5_FORMAT_MAIN.md](EURONAV5_FORMAT_MAIN.md)** – Överblick över hela formatet, arkitektur, och komponenter
-  - DMG-databas (USER*.tbl)
-  - appMatrix.json (stildefinitioner)
-  - *.sym-filer (glyfbitmaps)
+- **[Docs/Euronav5/README.md](Docs/Euronav5/README.md)** – Överblick + verifieringsstatus
+- **[Docs/Euronav5/TBL_FORMAT.md](Docs/Euronav5/TBL_FORMAT.md)** – USER*.tbl: 3480-byte header + 4104-byte pages (16×256-byte records), recordlayout
+- **[Docs/Euronav5/INDEX_FORMAT.md](Docs/Euronav5/INDEX_FORMAT.md)** – ID/LN/OI-index: B-träd, exakt byggalgoritm
+- **[Docs/Euronav5/EXPORT_GUIDE.md](Docs/Euronav5/EXPORT_GUIDE.md)** – iOS-exportrecept + vilka värden appen måste tillhandahålla
+- **[Docs/Euronav5/APPMATRIX_SYM.md](Docs/Euronav5/APPMATRIX_SYM.md)** – appMatrix.json + .sym
+- **[Docs/Euronav5/VERIFICATION.md](Docs/Euronav5/VERIFICATION.md)** – Bevismetod + öppna frågor
 
-**Komponentspecifikationer:**
-- **[EURONAV5_FORMAT_DMG.md](EURONAV5_FORMAT_DMG.md)** – Detaljerad 256-byte recordlayout, fältmappning, figurhantering
-- **[EURONAV5_FORMAT_APPMATRIX.md](EURONAV5_FORMAT_APPMATRIX.md)** – JSON-strukturer, rendering-states, färgformat
-- **[EURONAV5_FORMAT_SYM.md](EURONAV5_FORMAT_SYM.md)** – Glyfbitmapformat, metadata, extraktion
+Referensimplementation (byte-exakt mot alla referensfiler):
+`Euronav5 avkodning/analysis/euronav5.py`. Kör `python3 verify_all.py` där
+för att ompröva alla påståenden mot referensdatan.
+
+**Känd implementation-status (June 10, 2026):**
+- Formatspec: ✓ Komplett — 22/22 .tbl och 48/48 .idx återskapas byte-exakt;
+  alla 10 set regenereras byte-exakt från enbart figur-input
+- iOS-export: ✓ Omskriven — `Euronav5Encoder.swift` (byte-exakt Swift-port,
+  verifierad mot alla 60 referensfiler via `verify_swift.py`) +
+  `Euronav5ExportService.swift` (tunn adapter VectorShape → figurer)
+- OBS: alla tidigare "byte_08/byte_12/byte_68/zone block"-formler och
+  "DMG"-analyser var feltolkningar av page-strukturen — använd dem inte
 
 ## Testinfrastruktur
 
@@ -117,9 +127,18 @@ Om kortet dras ur iPaden innan iOS flushät skrivbuffertarna kan FAT1 bli inkomp
 
 ## Känd implementation-status
 
-- **Export:** Implementerad i `A109ExportService.swift` – verkar komplett.
-- **Import:** Implementerad i `A109ImportService.swift` – verkar komplett. ZIP ej implementerat.
-- **LFV luftrum:** Laddas vid app-start, visas som icke-klickbara polygoner.
+### A109 PCMCIA (helikopterrutting – 6 filer)
+- **Export:** Implementerad i `A109ExportService.swift` ✓ Komplett
+- **Import:** Implementerad i `A109ImportService.swift` ✓ Komplett. ZIP ej implementerat.
+
+### Euronav5 Vektoröverlag (kartdata)
+- **Formatspec:** ✓ Komplett och bevisad byte-exakt — se [Docs/Euronav5/](Docs/Euronav5/)
+- **Export:** ✓ `Euronav5Encoder.swift` + `Euronav5ExportService.swift`
+  (omskrivna June 10, 2026; encodern verifierad byte-exakt mot alla 60
+  referensfiler med `Euronav5 avkodning/analysis/verify_swift.py`)
+
+### Annat
+- **LFV luftrum:** Laddas vid app-start, visas som icke-klickbara polygoner
 
 ## felsökning
 När man försöker hitta ett fel i koden måste hela felkedjan kontrolleras och reproduceras och förklaras innan den åtgärdas. Det räcker inte med att bara hitta felet.

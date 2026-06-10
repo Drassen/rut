@@ -1,0 +1,6 @@
+name Ovningar
+group Util
+priority 3
+bbmin 0.000000 0.000000
+bbmax 19.606389 60.426111
+type vector

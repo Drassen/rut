@@ -10,3 +10,6 @@ Thumbs.db
 
 # Reverse-engineering and test data
 DMG avkodning/
+
+# Full reference database dump (6.7 GB, exceeds GitHub limits) — kept local only
+Euronav5 avkodning/full_db/

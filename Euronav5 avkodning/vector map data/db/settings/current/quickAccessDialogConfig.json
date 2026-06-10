@@ -1,0 +1,201 @@
+{
+"version":1,
+"member":
+[
+  {
+    "macroName1":"LABELS ON"
+  },
+  {
+    "macroName2":"LABELS OFF"
+  },
+  {
+    "macroName3":"DAG"
+  },
+  {
+    "macroName4":"NATT"
+  },
+  {
+    "macroName5":"DIM0"
+  },
+  {
+    "macroName6":"DIM25"
+  },
+  {
+    "macroName7":"DIM50"
+  },
+  {
+    "macroName8":"MACRO LIST"
+  },
+  {
+    "macroName9":"- - -"
+  },
+  {
+    "macroName10":"- - -"
+  },
+  {
+    "macroName11":"- - -"
+  },
+  {
+    "macroName12":"- - -"
+  },
+  {
+    "macroName13":"- - -"
+  },
+  {
+    "macroName14":"- - -"
+  },
+  {
+    "macroName15":"- - -"
+  },
+  {
+    "macroName16":"- - -"
+  },
+  {
+    "macroName17":"OBST WARN ON"
+  },
+  {
+    "macroName18":"OBST WARN OFF"
+  },
+  {
+    "macroName19":"TERR WARN ON"
+  },
+  {
+    "macroName20":"TERR WARN OFF"
+  },
+  {
+    "macroName21":"ALL ON"
+  },
+  {
+    "macroName22":"ALL OFF"
+  },
+  {
+    "macroName23":"OBST LOW OFF"
+  },
+  {
+    "macroName24":"OBST LOW ON"
+  },
+  {
+    "macroName25":"- - -"
+  },
+  {
+    "macroName26":"- - -"
+  },
+  {
+    "macroName27":"- - -"
+  },
+  {
+    "macroName28":"- - -"
+  },
+  {
+    "macroName29":"- - -"
+  },
+  {
+    "macroName30":"- - -"
+  },
+  {
+    "macroName31":"- - -"
+  },
+  {
+    "macroName32":"- - -"
+  },
+  {
+    "macroName33":"SJO STD"
+  },
+  {
+    "macroName34":"THREAT RANGES"
+  },
+  {
+    "macroName35":"OUTHOUSE 10 NM"
+  },
+  {
+    "macroName36":"- - -"
+  },
+  {
+    "macroName37":"- - -"
+  },
+  {
+    "macroName38":"- - -"
+  },
+  {
+    "macroName39":"- - -"
+  },
+  {
+    "macroName40":"- - -"
+  },
+  {
+    "macroName41":"- - -"
+  },
+  {
+    "macroName42":"- - -"
+  },
+  {
+    "macroName43":"- - -"
+  },
+  {
+    "macroName44":"- - -"
+  },
+  {
+    "macroName45":"- - -"
+  },
+  {
+    "macroName46":"- - -"
+  },
+  {
+    "macroName47":"- - -"
+  },
+  {
+    "macroName48":"- - -"
+  },
+  {
+    "macroName49":"- - -"
+  },
+  {
+    "macroName50":"- - -"
+  },
+  {
+    "macroName51":"- - -"
+  },
+  {
+    "macroName52":"- - -"
+  },
+  {
+    "macroName53":"- - -"
+  },
+  {
+    "macroName54":"- - -"
+  },
+  {
+    "macroName55":"- - -"
+  },
+  {
+    "macroName56":"- - -"
+  },
+  {
+    "macroName57":"- - -"
+  },
+  {
+    "macroName58":"- - -"
+  },
+  {
+    "macroName59":"- - -"
+  },
+  {
+    "macroName60":"- - -"
+  },
+  {
+    "macroName61":"- - -"
+  },
+  {
+    "macroName62":"- - -"
+  },
+  {
+    "macroName63":"- - -"
+  },
+  {
+    "macroName64":"- - -"
+  },
+  {
+    "startupMacro":"STARTUP 2"
+  }
+]
+}

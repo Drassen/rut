@@ -123,9 +123,9 @@ struct VectorPointIconView: View {
     }
 }
 
-// MARK: - DMG Export Types
+// MARK: - Euronav5 Export Types
 
-enum DMGShapeCategory: String, Codable {
+enum Euronav5ShapeCategory: String, Codable {
     case drawing
     case area
 
@@ -137,7 +137,7 @@ enum DMGShapeCategory: String, Codable {
     }
 }
 
-enum DMGAreaType: String, Codable, CaseIterable {
+enum Euronav5AreaType: String, Codable, CaseIterable {
     case restrictedZone   = "RESTRICTEDZONE"
     case navigationalZone = "NAVIGATIONALZONE"
     case prohibitedZone   = "PROHIBITEDZONE"
@@ -155,7 +155,7 @@ enum DMGAreaType: String, Codable, CaseIterable {
     }
 }
 
-enum DMGStyleClass: Codable, Equatable, Hashable {
+enum Euronav5StyleClass: Codable, Equatable, Hashable {
     case known(KnownStyleClass)
     case custom(UInt16)
 
@@ -232,10 +232,10 @@ struct VectorShape: Identifiable, Codable {
     var style: VectorStyle = VectorStyle()
     var isVisible: Bool = true
 
-    // A109 DMG export properties
-    var dmgCategory: DMGShapeCategory = .drawing
-    var dmgAreaType: DMGAreaType = .restrictedZone
-    var dmgStyleClass: DMGStyleClass = .known(.default)
+    // A109 Euronav5 export properties
+    var dmgCategory: Euronav5ShapeCategory = .drawing
+    var dmgAreaType: Euronav5AreaType = .restrictedZone
+    var dmgStyleClass: Euronav5StyleClass = .known(.default)
 }
 
 // MARK: - VectorLayer

@@ -1,0 +1,6 @@
+name HinderNATO
+group Util
+priority 27
+bbmin 11.005600 54.949617
+bbmax 24.115785 68.656340
+type vector

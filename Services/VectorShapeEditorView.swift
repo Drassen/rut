@@ -15,9 +15,9 @@ struct VectorShapeEditorView: View {
     @State private var opacity: Double
     @State private var pointIcon: VectorPointIcon
     @State private var iconScale: Double
-    @State private var dmgCategory: DMGShapeCategory
-    @State private var dmgAreaType: DMGAreaType
-    @State private var dmgStyleClass: DMGStyleClass
+    @State private var dmgCategory: Euronav5ShapeCategory
+    @State private var dmgAreaType: Euronav5AreaType
+    @State private var dmgStyleClass: Euronav5StyleClass
     @State private var customStyleInput: String = ""
     @State private var showCustomStyleInput: Bool = false
     @State private var showStyleSelector: Bool = false
@@ -121,11 +121,11 @@ struct VectorShapeEditorView: View {
                 }
                 }
 
-                // A109 DMG export section (all shapes)
-                Section("Euronav DMG options (A109)") {
+                // A109 Euronav5 export section (all shapes)
+                Section("Euronav Euronav5 options (A109)") {
                         if !isPolyline && !isPoint {
                             Picker("Shape Type", selection: $dmgCategory) {
-                                ForEach([DMGShapeCategory.drawing, .area], id: \.self) { cat in
+                                ForEach([Euronav5ShapeCategory.drawing, .area], id: \.self) { cat in
                                     Text(cat.displayName).tag(cat)
                                 }
                             }
@@ -133,7 +133,7 @@ struct VectorShapeEditorView: View {
 
                         if dmgCategory == .area {
                             Picker("Zone Type", selection: $dmgAreaType) {
-                                ForEach(DMGAreaType.allCases, id: \.self) { areaType in
+                                ForEach(Euronav5AreaType.allCases, id: \.self) { areaType in
                                     Text(areaType.displayName).tag(areaType)
                                 }
                             }

@@ -1,0 +1,6 @@
+name Flyginfo
+group Util
+priority 3
+bbmin 10.365433 54.262500
+bbmax 25.605007 69.160028
+type vector

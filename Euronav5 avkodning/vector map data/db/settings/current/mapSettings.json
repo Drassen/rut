@@ -1,0 +1,20 @@
+{
+"version":1,
+"member":
+[
+  {"showGndVectorMap":true},
+  {"showNavigVectorMap":true},
+  {"showFisVectorMap":false},
+  {"visibleUtilVectorMaps":["Flyginfo","Kraftledningar"]},
+  {"showRasterMap":true},
+  {"showTerrainMap":false},
+  {"mapOrientation":"eTrackUp"},
+  {"mapMode":"eBorder"},
+  {"mapPanningMode":"eStationary"},
+  {"vectorMapBrightness":1},
+  {"rasterMapBrightness":1},
+  {"terrainMapBrightness":1},
+  {"overlayBrightness":1},
+  {"viewSync":"eIndependent"}
+]
+}

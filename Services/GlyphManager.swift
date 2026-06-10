@@ -57,8 +57,8 @@ class GlyphManager {
         let devPaths = [
             NSHomeDirectory() + "/kodprojekt/ios/rut/Supporting Files/euronav5",
             "/Users/drassen/kodprojekt/ios/rut/Supporting Files/euronav5",
-            NSHomeDirectory() + "/kodprojekt/ios/rut/DMG avkodning/vector map data/db/settings/system/symbols",
-            "/Users/drassen/kodprojekt/ios/rut/DMG avkodning/vector map data/db/settings/system/symbols"
+            NSHomeDirectory() + "/kodprojekt/ios/rut/Euronav5 avkodning/vector map data/db/settings/system/symbols",
+            "/Users/drassen/kodprojekt/ios/rut/Euronav5 avkodning/vector map data/db/settings/system/symbols"
         ]
 
         for dir in devPaths {

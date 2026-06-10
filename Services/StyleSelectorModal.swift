@@ -3,7 +3,7 @@ import SwiftUI
 struct StyleSelectorModal: View {
     @Environment(\.dismiss) private var dismiss
 
-    @Binding var selectedStyleId: DMGStyleClass
+    @Binding var selectedStyleId: Euronav5StyleClass
     var geometry: VectorGeometry? = nil  // Optional: filter by geometry type
     var onStyleChange: ((Style) -> Void)? = nil  // Callback when style is selected
     @State private var selectedCategoryIndex = 0
