@@ -167,7 +167,30 @@
 				</array>
 			</dict>
 		</dict>
+		<dict>
+			<key>CFBundleTypeName</key>
+			<string>Rut Vector Layers (.rutvector)</string>
+			<key>CFBundleTypeRole</key>
+			<string>Editor</string>
+			<key>LSHandlerRank</key>
+			<string>Owner</string>
+			<key>LSItemContentTypes</key>
+			<array>
+				<string>com.serveraren.rut.rutvector</string>
+			</array>
+		</dict>
 	</array>
+	<key>LSSupportsOpeningDocumentsInPlace</key>
+	<true/>
+	<key>UIApplicationSceneManifest</key>
+	<dict>
+		<key>UIApplicationSupportsMultipleScenes</key>
+		<false/>
+	</dict>
+	<key>UIFileSharingEnabled</key>
+	<true/>
+	<key>UILaunchStoryboardName</key>
+	<string>LaunchScreen</string>
 	<key>UTExportedTypeDeclarations</key>
 	<array>
 		<dict>
@@ -218,6 +241,24 @@
 				<key>public.filename-extension</key>
 				<array>
 					<string>nav</string>
+				</array>
+			</dict>
+		</dict>
+		<dict>
+			<key>UTTypeConformsTo</key>
+			<array>
+				<string>public.json</string>
+				<string>public.data</string>
+			</array>
+			<key>UTTypeDescription</key>
+			<string>Rut Vector Layers Document</string>
+			<key>UTTypeIdentifier</key>
+			<string>com.serveraren.rut.rutvector</string>
+			<key>UTTypeTagSpecification</key>
+			<dict>
+				<key>public.filename-extension</key>
+				<array>
+					<string>rutvector</string>
 				</array>
 			</dict>
 		</dict>
@@ -373,18 +414,5 @@
 			</dict>
 		</dict>
 	</array>
-    
-    <key>UILaunchStoryboardName</key>
-    <string>LaunchScreen</string>
-    <key>UIFileSharingEnabled</key>
-    <true/>
-    <key>LSSupportsOpeningDocumentsInPlace</key>
-    <true/>
-
-    <key>UIApplicationSceneManifest</key>
-    <dict>
-        <key>UIApplicationSupportsMultipleScenes</key>
-        <false/>
-    </dict>
 </dict>
 </plist>

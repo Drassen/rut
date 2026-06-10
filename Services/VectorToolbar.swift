@@ -10,6 +10,7 @@ enum VectorExportFormat: String, CaseIterable, Identifiable {
     case atak = "ATAK (.zip)"
     case dmg  = "Euronav 5 (A109 Euronav5)"
     case geojson = "GeoJSON (.geojson)"
+    case rutvector = "Rut Vector (.rutvector)"
     var id: String { rawValue }
 }
 
@@ -621,6 +622,17 @@ struct VectorToolbar: View {
                 }
                 outputData = file.data
                 filename = outputName + ".geojson"
+            case .rutvector:
+                let service = RutVectorExportService()
+                var doc = NavigationDocument()
+                doc.vectorLayers = layersToExport
+                let files = try service.export(document: doc, selectedRoutes: [])
+                guard let file = files.first else {
+                    toastManager.show(message: "Export failed.", kind: .info)
+                    return
+                }
+                outputData = file.data
+                filename = outputName + ".rutvector"
             }
 
             let tempDir = FileManager.default.temporaryDirectory
@@ -998,6 +1010,17 @@ struct VectorExportButton: View {
                 }
                 outputData = file.data
                 filename = outputName + ".geojson"
+            case .rutvector:
+                let service = RutVectorExportService()
+                var doc = NavigationDocument()
+                doc.vectorLayers = layersToExport
+                let files = try service.export(document: doc, selectedRoutes: [])
+                guard let file = files.first else {
+                    toastManager.show(message: "Export failed.", kind: .info)
+                    return
+                }
+                outputData = file.data
+                filename = outputName + ".rutvector"
             }
 
             let tempDir = FileManager.default.temporaryDirectory

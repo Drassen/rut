@@ -75,6 +75,7 @@ final class CoreServices: ObservableObject {
             NAVImportService(),
             ACOImportService(),
             GeoJSONVectorImportService(),
+            RutVectorImportService(),
             SAPIImportService()
         ]
 
@@ -92,7 +93,8 @@ final class CoreServices: ObservableObject {
             APTExportService(),
             NAVExportService(),
             KMLVectorExportService(),
-            GeoJSONVectorExportService()
+            GeoJSONVectorExportService(),
+            RutVectorExportService()
         ]
 
         toastManager.objectWillChange
