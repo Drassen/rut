@@ -236,6 +236,13 @@ struct VectorShape: Identifiable, Codable {
     var dmgCategory: Euronav5ShapeCategory = .drawing
     var dmgAreaType: Euronav5AreaType = .restrictedZone
     var dmgStyleClass: Euronav5StyleClass = .known(.default)
+    /// Threat ranges in metres (points only): RANGELETHAL = engagement/kill
+    /// radius, RANGEDETECTION = detection radius. nil = not set.
+    var dmgRangeLethalMeters: Double? = nil
+    var dmgRangeDetectionMeters: Double? = nil
+    /// Altitude / zone ceiling entered in FEET (points, polygons, circles).
+    /// Exported as ELEVATION in metres (ft × 0.3048). nil = not set (−1025).
+    var dmgElevationFeet: Double? = nil
 }
 
 // MARK: - VectorLayer

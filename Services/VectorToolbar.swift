@@ -90,7 +90,6 @@ struct VectorToolbar: View {
                         toolButtonWithLabel(tool: .polyline, icon: "line.diagonal", label: "Line")
                         toolButtonWithLabel(tool: .polygon,  icon: "triangle",      label: "Polygon")
                         toolButtonWithLabel(tool: .circle,   icon: "circle",        label: "Circle")
-                        zigzagToolButtonWithLabel
                         corridorToolButtonWithLabel
 
                         Spacer()
@@ -127,9 +126,6 @@ struct VectorToolbar: View {
 
                         activeToolBadge
 
-                        if vectorStore.activeTool == .zigzag {
-                            zigzagWidthPicker
-                        }
                         if vectorStore.activeTool == .corridor {
                             corridorWidthField
                         }
@@ -247,7 +243,6 @@ struct VectorToolbar: View {
             switch vectorStore.activeTool {
             case .point:    return "Point"
             case .polyline: return "Line"
-            case .zigzag:    return "Powerline"
             case .corridor:  return "Corridor"
             case .polygon:   return "Polygon"
             case .circle:    return "Circle"
@@ -290,29 +285,6 @@ struct VectorToolbar: View {
         }
     }
 
-    private var zigzagWidthPicker: some View {
-        HStack(spacing: 4) {
-            Text("Width:")
-                .font(.system(size: 11))
-                .foregroundColor(RutTheme.textMuted)
-            ForEach([(25.0, "25m (low)"), (50.0, "50m (medium)"), (60.0, "60m (high)")], id: \.0) { w, label in
-                let sel = vectorStore.zigzagWidth == w
-                Button(label) {
-                    vectorStore.zigzagWidth = w
-                }
-                .font(.system(size: 12, weight: sel ? .bold : .regular))
-                .foregroundColor(sel ? .black : RutTheme.text)
-                .padding(.horizontal, 8)
-                .padding(.vertical, 4)
-                .background(sel ? RutTheme.amber : RutTheme.surface2)
-                .clipShape(RoundedRectangle(cornerRadius: 6))
-                .overlay(RoundedRectangle(cornerRadius: 6).stroke(
-                    sel ? RutTheme.amber : RutTheme.border, lineWidth: 1))
-                .buttonStyle(.plain)
-            }
-        }
-    }
-
     private var corridorToolButton: some View {
         let isActive = vectorStore.activeTool == .corridor
         return Button {
@@ -330,36 +302,6 @@ struct VectorToolbar: View {
                     CGPoint(x: w * 0.15, y: h * 0.70),
 
                     CGPoint(x: w * 0.15, y: h * 0.40),
-                ]
-                var path = Path()
-                path.move(to: pts[0])
-                pts.dropFirst().forEach { path.addLine(to: $0) }
-                ctx.stroke(path, with: .color(isActive ? .black : RutTheme.text),
-                           style: StrokeStyle(lineWidth: 1.6, lineCap: .round, lineJoin: .round))
-            }
-            .frame(width: 32, height: 28)
-            .background(isActive ? RutTheme.amber : RutTheme.surface2)
-            .clipShape(RoundedRectangle(cornerRadius: 6))
-            .overlay(RoundedRectangle(cornerRadius: 6).stroke(
-                isActive ? RutTheme.amber : RutTheme.border, lineWidth: 1))
-        }
-        .buttonStyle(.plain)
-    }
-
-    private var zigzagToolButton: some View {
-        let isActive = vectorStore.activeTool == .zigzag
-        return Button {
-            vectorStore.activeTool = .zigzag
-        } label: {
-            Canvas { ctx, size in
-                let w = size.width, h = size.height
-                let pts: [CGPoint] = [
-                    CGPoint(x: w * 0.15, y: h * 0.60),
-                    CGPoint(x: w * 0.30, y: h * 0.40),
-                    CGPoint(x: w * 0.45, y: h * 0.60),
-                    CGPoint(x: w * 0.60, y: h * 0.40),
-                    CGPoint(x: w * 0.75, y: h * 0.60),
-                    CGPoint(x: w * 0.90, y: h * 0.40),
                 ]
                 var path = Path()
                 path.move(to: pts[0])
@@ -464,43 +406,6 @@ struct VectorToolbar: View {
         .buttonStyle(.plain)
     }
 
-    private var zigzagToolButtonWithLabel: some View {
-        let isActive = vectorStore.activeTool == .zigzag
-        return Button {
-            vectorStore.activeTool = .zigzag
-        } label: {
-            VStack(spacing: 2) {
-                Canvas { ctx, size in
-                    let w = size.width, h = size.height
-                    let pts: [CGPoint] = [
-                        CGPoint(x: w * 0.15, y: h * 0.60),
-                        CGPoint(x: w * 0.30, y: h * 0.40),
-                        CGPoint(x: w * 0.45, y: h * 0.60),
-                        CGPoint(x: w * 0.60, y: h * 0.40),
-                        CGPoint(x: w * 0.75, y: h * 0.60),
-                        CGPoint(x: w * 0.90, y: h * 0.40),
-                    ]
-                    var path = Path()
-                    path.move(to: pts[0])
-                    pts.dropFirst().forEach { path.addLine(to: $0) }
-                    ctx.stroke(path, with: .color(isActive ? .black : RutTheme.text),
-                               style: StrokeStyle(lineWidth: 1.6, lineCap: .round, lineJoin: .round))
-                }
-                .frame(width: 20, height: 18)
-                Text("Powerline")
-                    .font(.system(size: 9, weight: isActive ? .semibold : .regular))
-            }
-            .foregroundColor(isActive ? .black : RutTheme.text)
-            .padding(.horizontal, 8)
-            .padding(.vertical, 5)
-            .background(isActive ? RutTheme.amber : RutTheme.surface2)
-            .clipShape(RoundedRectangle(cornerRadius: 6))
-            .overlay(RoundedRectangle(cornerRadius: 6).stroke(
-                isActive ? RutTheme.amber : RutTheme.border, lineWidth: 1))
-        }
-        .buttonStyle(.plain)
-    }
-
     private var corridorToolButtonWithLabel: some View {
         let isActive = vectorStore.activeTool == .corridor
         return Button {
@@ -546,12 +451,6 @@ struct VectorToolbar: View {
         switch vectorStore.activeTool {
         case .point:    base = "Point"
         case .polyline: base = "Line"
-        case .zigzag:
-            switch vectorStore.zigzagWidth {
-            case 50: base = "RLED"
-            case 25: base = "GLED"
-            default: base = "SLED"
-            }
         case .corridor: base = "Corridor"
         case .polygon:  base = "Polygon"
         case .circle:   base = "Circle"

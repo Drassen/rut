@@ -58,21 +58,32 @@ struct Euronav5ExportService {
     private func figure(from shape: VectorShape) -> Euronav5Encoder.Figure? {
         guard shape.isVisible else { return nil }
         // Zone type is only meaningful for area shapes; plain drawings
-        // carry an empty TYPE (APPERANCE is derived from it).
+        // carry an empty TYPE.
         let type = shape.dmgCategory == .area ? shape.dmgAreaType.rawValue : ""
 
         switch shape.geometry {
         case .point(let lat, let lon):
             guard let center = microdegrees(lat: lat, lon: lon) else { return nil }
             return Euronav5Encoder.Figure(
-                kind: .point, name: shape.name, type: type, points: [center])
+                kind: .point, name: shape.name, type: type, points: [center],
+                rangeLethalMeters: meters(shape.dmgRangeLethalMeters),
+                rangeDetectionMeters: meters(shape.dmgRangeDetectionMeters),
+                elevationMeters: elevationMeters(shape),
+                appearanceOverride: appearance(for: shape, kind: .point))
 
         case .circle(let lat, let lon, let radiusMeters):
             guard let center = microdegrees(lat: lat, lon: lon),
                   radiusMeters >= 0.5 else { return nil }
+            // The planner's circle tool always writes a zone TYPE — every
+            // reference circle is NAVIGATIONALZONE. A circle with empty
+            // TYPE is an unobserved combination, so mimic the planner
+            // exactly when the user hasn't chosen a zone type.
+            let circleType = type.isEmpty ? "NAVIGATIONALZONE" : type
             return Euronav5Encoder.Figure(
-                kind: .circle, name: shape.name, type: type, points: [center],
-                radiusMeters: Int32(radiusMeters.rounded()))
+                kind: .circle, name: shape.name, type: circleType, points: [center],
+                radiusMeters: Int32(radiusMeters.rounded()),
+                elevationMeters: elevationMeters(shape),
+                appearanceOverride: appearance(for: shape, kind: .circle))
 
         case .polyline(let coordinates):
             guard let points = microdegrees(coordinates: coordinates) else { return nil }
@@ -82,11 +93,13 @@ struct Euronav5ExportService {
             if points.count > 3, points.first! == points.last! {
                 return Euronav5Encoder.Figure(
                     kind: .polygon, name: shape.name, type: type,
-                    points: Array(points.dropLast()))
+                    points: Array(points.dropLast()),
+                    appearanceOverride: appearance(for: shape, kind: .polygon))
             }
             guard points.count >= 2 else { return nil }
             return Euronav5Encoder.Figure(
-                kind: .line, name: shape.name, type: type, points: points)
+                kind: .line, name: shape.name, type: type, points: points,
+                appearanceOverride: appearance(for: shape, kind: .line))
 
         case .polygon(let coordinates):
             guard var points = microdegrees(coordinates: coordinates) else { return nil }
@@ -95,8 +108,51 @@ struct Euronav5ExportService {
             }
             guard points.count >= 3 else { return nil }
             return Euronav5Encoder.Figure(
-                kind: .polygon, name: shape.name, type: type, points: points)
+                kind: .polygon, name: shape.name, type: type, points: points,
+                elevationMeters: elevationMeters(shape),
+                appearanceOverride: appearance(for: shape, kind: .polygon))
         }
+    }
+
+    /// APPERANCE (appMatrix style id) for a shape.
+    ///
+    /// The style the user picked in the style selector wins. Otherwise pick
+    /// a default that is actually visible on the EuroNav display — the raw
+    /// TYPE-derived planner mapping renders points without any symbol
+    /// (FDRAWING has none) and RESTRICTEDZONE as the all-white, disabled
+    /// FOPERATION style.
+    private func appearance(for shape: VectorShape,
+                            kind: Euronav5Encoder.FigureKind) -> Int32? {
+        // 0x0000 is the model's "no style chosen" default. (Other legacy
+        // KnownStyleClass values are exported verbatim like any pick.)
+        let picked = shape.dmgStyleClass.styleClassID
+        if picked != 0 {
+            return Int32(picked)
+        }
+        switch kind {
+        case .point:
+            return 408   // POI — yellow glyph; only symbol styles render points
+        case .circle:
+            return nil   // circles always carry a zone TYPE; the encoder's
+                         // TYPE mapping yields the planner's 802 default
+        case .line, .polygon:
+            if shape.dmgCategory == .area,
+               shape.dmgAreaType == .restrictedZone {
+                return 805  // FWARNING (blue) instead of the white FOPERATION
+            }
+            return nil      // planner-faithful TYPE mapping in the encoder
+        }
+    }
+
+    /// ELEVATION in metres from the shape's foot-entered altitude.
+    private func elevationMeters(_ shape: VectorShape) -> Int32? {
+        guard let feet = shape.dmgElevationFeet, feet.isFinite else { return nil }
+        return Int32((feet * 0.3048).rounded())
+    }
+
+    private func meters(_ value: Double?) -> Int32 {
+        guard let value, value.isFinite, value >= 1 else { return 0 }
+        return Int32(value.rounded())
     }
 
     private func microdegrees(lat: Double, lon: Double) -> (Int32, Int32)? {

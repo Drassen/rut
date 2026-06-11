@@ -49,7 +49,6 @@ enum DrawingTool: Equatable {
     case polyline
     case polygon
     case circle
-    case zigzag
     case corridor
 }
 
@@ -69,7 +68,6 @@ final class DrawingStateMachine: ObservableObject {
         case .circle:  return 2
         case .polyline: return 2
         case .polygon:  return 3
-        case .zigzag:    return 2
         case .corridor:  return 2
         }
     }
@@ -82,7 +80,7 @@ final class DrawingStateMachine: ObservableObject {
         switch tool {
         case .none:    break
         case .point:   vertices = [coord]
-        case .polyline, .polygon, .zigzag, .corridor: vertices.append(coord)
+        case .polyline, .polygon, .corridor: vertices.append(coord)
         case .circle:
             if vertices.isEmpty {
                 vertices = [coord]   // tap 1 = center
@@ -122,12 +120,6 @@ final class DrawingStateMachine: ObservableObject {
             return VectorShape(name: name,
                                geometry: .circle(lat: center.latitude, lon: center.longitude, radiusMeters: dist),
                                style: style)
-        case .zigzag:
-            guard vertices.count >= 2 else { return nil }
-            let zigzagCoords = Self.makeZigzagCoords(from: vertices, widthMeters: widthMeters)
-            return VectorShape(name: name,
-                               geometry: .polyline(coordinates: zigzagCoords.map { [$0.latitude, $0.longitude] }),
-                               style: style)
         case .corridor:
             guard vertices.count >= 2 else { return nil }
             let ring = Self.makeCorridorPolygon(from: vertices, radiusMeters: widthMeters / 2)
@@ -138,45 +130,6 @@ final class DrawingStateMachine: ObservableObject {
     }
 
     func cancel() { reset() }
-
-    // MARK: - Zigzag geometry
-
-    /// Converts an axis polyline into a zigzag polyline.
-    /// Teeth are at 30° to the axis, total width 50 m (±25 m from center).
-    static func makeZigzagCoords(from axis: [CLLocationCoordinate2D], widthMeters: Double = 50) -> [CLLocationCoordinate2D] {
-        let halfWidth = widthMeters / 2                        // meters each side
-        let angleRad  = 30.0 * .pi / 180.0
-        let stepAlong = halfWidth / tan(angleRad)              // ~43.3 m along axis per half-period
-
-        var result: [CLLocationCoordinate2D] = [axis[0]]
-        var distSinceLastPeak = 0.0
-        var side = 1.0
-
-        for segIdx in 0 ..< axis.count - 1 {
-            let from = axis[segIdx]
-            let to   = axis[segIdx + 1]
-            let segLen = geoDistance(from, to)
-            guard segLen > 0 else { continue }
-            let bear = geoBearing(from, to)
-
-            var walked = 0.0
-            while walked < segLen {
-                let nextPeakAt = stepAlong - distSinceLastPeak
-                if nextPeakAt > segLen - walked {
-                    distSinceLastPeak += segLen - walked
-                    break
-                }
-                walked += nextPeakAt
-                distSinceLastPeak = 0.0
-                let center = geoInterpolate(from: from, to: to, fraction: walked / segLen)
-                let peak   = geoOffset(from: center, bearingDeg: bear + 90.0, meters: side * halfWidth)
-                result.append(peak)
-                side = -side
-            }
-        }
-        result.append(axis.last!)
-        return result
-    }
 
     // MARK: - Geo helpers (flat-earth approximation, sufficient at tactical scales)
 
@@ -365,7 +318,6 @@ final class VectorStore: ObservableObject {
     /// Separate @Published so the map can gate airspace rendering without
     /// going through layers (which re-renders user shapes too).
     @Published var airspaceVisible: Bool = true
-    @Published var zigzagWidth: Double = 50
     @Published var corridorWidth: Double = 1000
 
     // Drag state is panel-local — NOT @Published to avoid triggering map re-renders on every finger move
@@ -874,14 +826,6 @@ final class VectorStore: ObservableObject {
             var s = newShapeStyle
             s.strokeColor = "#FFFFFF"
             effectiveStyle = s
-        } else if activeTool == .zigzag {
-            var s = newShapeStyle
-            switch zigzagWidth {
-            case 60: s.strokeColor = "#FF0000"; s.strokeWidth = 6
-            case 50: s.strokeColor = "#017301"; s.strokeWidth = 6
-            default: s.strokeColor = "#000000"; s.strokeWidth = 6
-            }
-            effectiveStyle = s
         } else if activeTool == .corridor {
             var s = newShapeStyle
             s.fillColor = "#00000000" // transparent fill
@@ -889,7 +833,7 @@ final class VectorStore: ObservableObject {
         } else {
             effectiveStyle = newShapeStyle
         }
-        let toolWidth = activeTool == .corridor ? corridorWidth : zigzagWidth
+        let toolWidth = corridorWidth
         guard activeTool != .none,
               let shape = drawing.commitAndReset(tool: activeTool, name: name, style: effectiveStyle, widthMeters: toolWidth)
         else { return }

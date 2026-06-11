@@ -19,6 +19,9 @@ struct VectorShapeEditorView: View {
     @State private var dmgAreaType: Euronav5AreaType
     @State private var dmgStyleClass: Euronav5StyleClass
     @State private var customStyleInput: String = ""
+    @State private var rangeLethalText: String = ""
+    @State private var rangeDetectionText: String = ""
+    @State private var elevationFeetText: String = ""
     @State private var showCustomStyleInput: Bool = false
     @State private var showStyleSelector: Bool = false
     @State private var selectedStyleName: String = ""
@@ -38,6 +41,12 @@ struct VectorShapeEditorView: View {
         _dmgCategory   = State(initialValue: shape.dmgCategory)
         _dmgAreaType   = State(initialValue: shape.dmgAreaType)
         _dmgStyleClass = State(initialValue: shape.dmgStyleClass)
+        _rangeLethalText = State(initialValue:
+            shape.dmgRangeLethalMeters.map { String(Int($0.rounded())) } ?? "")
+        _rangeDetectionText = State(initialValue:
+            shape.dmgRangeDetectionMeters.map { String(Int($0.rounded())) } ?? "")
+        _elevationFeetText = State(initialValue:
+            shape.dmgElevationFeet.map { String(Int($0.rounded())) } ?? "")
     }
 
     var body: some View {
@@ -122,26 +131,70 @@ struct VectorShapeEditorView: View {
                 }
 
                 // A109 Euronav5 export section (all shapes)
-                Section("Euronav Euronav5 options (A109)") {
-                        if !isPolyline && !isPoint {
-                            Picker("Shape Type", selection: $dmgCategory) {
-                                ForEach([Euronav5ShapeCategory.drawing, .area], id: \.self) { cat in
-                                    Text(cat.displayName).tag(cat)
-                                }
+                Section {
+                    if !isPolyline && !isPoint {
+                        Picker("Shape Type", selection: $dmgCategory) {
+                            ForEach([Euronav5ShapeCategory.drawing, .area], id: \.self) { cat in
+                                Text(cat.displayName).tag(cat)
                             }
-                        }
-
-                        if dmgCategory == .area {
-                            Picker("Zone Type", selection: $dmgAreaType) {
-                                ForEach(Euronav5AreaType.allCases, id: \.self) { areaType in
-                                    Text(areaType.displayName).tag(areaType)
-                                }
-                            }
-                        } else {
-                            stylePreviewBox()
-                                .onTapGesture { showStyleSelector = true }
                         }
                     }
+
+                    if dmgCategory == .area {
+                        Picker("Zone Type", selection: $dmgAreaType) {
+                            ForEach(Euronav5AreaType.allCases, id: \.self) { areaType in
+                                Text(areaType.displayName).tag(areaType)
+                            }
+                        }
+                    } else {
+                        LabeledContent("Style") {
+                            stylePreviewBox()
+                        }
+                        .contentShape(Rectangle())
+                        .onTapGesture { showStyleSelector = true }
+                    }
+
+                    // Altitude / ceiling — points, polygons, circles (not lines)
+                    if !isPolyline {
+                        LabeledContent("Altitude / ceiling") {
+                            HStack(spacing: 4) {
+                                TextField("\u{2014}", text: $elevationFeetText)
+                                    .keyboardType(.numberPad)
+                                    .multilineTextAlignment(.trailing)
+                                    .frame(width: 90)
+                                Text("ft").foregroundStyle(.secondary)
+                            }
+                        }
+                    }
+
+                    // Threat ranges — points only
+                    if isPoint {
+                        LabeledContent("Lethal range") {
+                            HStack(spacing: 4) {
+                                TextField("\u{2014}", text: $rangeLethalText)
+                                    .keyboardType(.numberPad)
+                                    .multilineTextAlignment(.trailing)
+                                    .frame(width: 90)
+                                Text("m").foregroundStyle(.secondary)
+                            }
+                        }
+                        LabeledContent("Detection range") {
+                            HStack(spacing: 4) {
+                                TextField("\u{2014}", text: $rangeDetectionText)
+                                    .keyboardType(.numberPad)
+                                    .multilineTextAlignment(.trailing)
+                                    .frame(width: 90)
+                                Text("m").foregroundStyle(.secondary)
+                            }
+                        }
+                    }
+                } header: {
+                    Text("Euronav5 (A109)")
+                } footer: {
+                    if !isPolyline {
+                        Text("Altitude in feet (stored on the card in metres) — the zone ceiling, which also turns on the EuroNav warning. Threat ranges draw rings around a point (lethal = engagement radius, detection = sensor radius), shown via the THREAT RANGES display setting. Leave empty for none.")
+                    }
+                }
             }
             .frame(maxHeight: .infinity, alignment: .top)
             .navigationTitle("Properties")
@@ -211,7 +264,24 @@ struct VectorShapeEditorView: View {
         updated.dmgCategory = dmgCategory
         updated.dmgAreaType = dmgAreaType
         updated.dmgStyleClass = dmgStyleClass
+        updated.dmgRangeLethalMeters = parseMeters(rangeLethalText)
+        updated.dmgRangeDetectionMeters = parseMeters(rangeDetectionText)
+        updated.dmgElevationFeet = parseFeet(elevationFeetText)
         vectorStore.updateShape(updated, in: layerId)
+    }
+
+    private func parseFeet(_ text: String) -> Double? {
+        let cleaned = text.trimmingCharacters(in: .whitespaces)
+            .replacingOccurrences(of: ",", with: ".")
+        guard !cleaned.isEmpty, let v = Double(cleaned), v.isFinite else { return nil }
+        return v
+    }
+
+    private func parseMeters(_ text: String) -> Double? {
+        let cleaned = text.trimmingCharacters(in: .whitespaces)
+            .replacingOccurrences(of: ",", with: ".")
+        guard let v = Double(cleaned), v.isFinite, v >= 1 else { return nil }
+        return v
     }
 
     private var customStyleIDDisplay: String {

@@ -90,8 +90,8 @@ NUL terminator and are zero-padded.
 | 0xc7 | i32 | LATITUDE | microdegrees = `round(deg × 1 000 000)` |
 | 0xcb | i32 | LONGITUDE | microdegrees |
 | 0xcf | i32 | ELEVATION | metres; **−1025 = not set**; zone ceiling otherwise (3048/4572/6096 m = 10/15/20 kft observed) |
-| 0xd3 | i32 | RANGELETHAL | observed 0 |
-| 0xd7 | i32 | RANGEDETECTION | **circle radius in metres** (circle figures), else 0 |
+| 0xd3 | i32 | RANGELETHAL | threat engagement radius in metres (e.g. SAM kill range) — used by the planner's threat point templates ("OUTHOUSE 10 NM" = 18 520 m); 0 in all drawn-figure reference data |
+| 0xd7 | i32 | RANGEDETECTION | threat detection radius in metres; the planner's circle tool reuses this as the **plain circle radius** (circle figures), else 0 |
 | 0xdb | char[16] | ATTACHMENT | observed empty |
 | 0xeb | f64 | SPEED | observed 0.0 |
 | 0xf3 | i32 | COURSE | observed 0 |

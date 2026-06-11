@@ -59,6 +59,41 @@ values are not reused — production shows such gaps).
 Consistent in every reference figure. (Styles 801 FMISSION, 804 FSAR,
 805 FWARNING exist in appMatrix but no set exercises them.)
 
+**Rendering caveats (decoded from appMatrix):** the F-zone styles are
+muted by design — thin colored outline (800 red, 802 olive, 804 lilac,
+805 blue, 806 khaki) with an opaque white polygon fill. 803 FOPERATION
+and 801 FMISSION are all-white with visibility flags `[0,0,0,0]` —
+effectively invisible. None of the F-styles has a point symbol
+(`symbolId = -1`), so a point object with an F-style renders nothing;
+point objects need a symbol style (POI 408, OBSTACLE 411, PERSON 412,
+NO FLY 413, …).
+
+**iOS app policy** (`Euronav5ExportService.appearance(for:kind:)`): the
+user's style-picker choice (`dmgStyleClass`) is exported as APPERANCE
+when set; otherwise defaults are chosen for visibility — points → 408
+POI, RESTRICTEDZONE areas → 805 FWARNING (instead of the white 803), all
+other lines/areas → the planner-faithful TYPE mapping above. The
+encoder itself keeps the faithful mapping so the reference sets still
+regenerate byte-exactly.
+
+**Circles always carry a zone TYPE.** Every planner-made reference
+circle has `TYPE=NAVIGATIONALZONE` (+ APPERANCE 802) — an empty-TYPE
+circle is an unobserved combination. The iOS adapter therefore writes
+the user's zone type, or `NAVIGATIONALZONE` when none is chosen, so the
+encoder's TYPE mapping yields the planner's exact field values. Ring
+radius is `RANGEDETECTION` (metres).
+
+**Threat-range semantics** (point objects): `RANGELETHAL` = engagement/
+kill radius (e.g. how far an air-defence site can shoot), `RANGEDETECTION`
+= detection radius. The planner's threat point templates ("OUTHOUSE
+10 NM" = 18 520 m, "FTG STOFF 6 NM" = 11 112 m) set RANGELETHAL; the
+circle tool reuses RANGEDETECTION as a plain circle. Both rings are
+drawn around a single point record and toggled in EuroNav via the
+THREAT RANGES / Intervisibility display menu.
+
+The card format has **no per-shape color fields** — in-app stroke/fill
+colors cannot transfer; APPERANCE is the only rendering control.
+
 ### WARNINGSENSITIVE
 
 Set to 1 exactly when ELEVATION is set, 0 otherwise — true for every
@@ -73,8 +108,9 @@ expose it separately.
 
 ### Everything else
 
-LABEL = 1, DESCRIPTION/ATTACHMENT empty, SPEED/COURSE/CLASS/SOURCE/
-RANGELETHAL = 0, RANGEDETECTION = circle radius (else 0).
+LABEL = 1, DESCRIPTION/ATTACHMENT empty, SPEED/COURSE/CLASS/SOURCE = 0.
+RANGEDETECTION = circle radius; on points the app's threat-range fields
+are exported as RANGELETHAL / RANGEDETECTION (0 when not set).
 
 ## Recipe
 

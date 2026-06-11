@@ -41,11 +41,18 @@ struct Euronav5Encoder {
         var points: [(Int32, Int32)]
         /// Circle radius in metres (.circle only).
         var radiusMeters: Int32 = 0
+        /// Threat ranges in metres (.point only): RANGELETHAL = engagement
+        /// radius, RANGEDETECTION = detection radius.
+        var rangeLethalMeters: Int32 = 0
+        var rangeDetectionMeters: Int32 = 0
         /// Zone ceiling / object height in metres; nil = not set (-1025).
         var elevationMeters: Int32?
         /// Warning-system flag. nil = derive from elevation (the planner
         /// behaviour observed in 100% of reference data).
         var warningSensitive: Bool?
+        /// appMatrix style id to write as APPERANCE. nil = derive from
+        /// TYPE via the planner-faithful mapping below.
+        var appearanceOverride: Int32?
     }
 
     struct Timestamp {
@@ -178,6 +185,7 @@ struct Euronav5Encoder {
         var latitude: Int32
         var longitude: Int32
         var elevation: Int32
+        var rangeLethal: Int32
         var rangeDetection: Int32
         var warningSensitive: UInt8
     }
@@ -199,9 +207,12 @@ struct Euronav5Encoder {
                 out.append(Record(
                     id: Int32(out.count + 1), objectId: oid, ts: ts,
                     type: f.type, name: f.name,
-                    appearance: appearance(forType: f.type, kind: f.kind),
+                    appearance: f.appearanceOverride
+                        ?? appearance(forType: f.type, kind: f.kind),
                     latitude: lat, longitude: lon, elevation: elev,
-                    rangeDetection: f.kind == .circle ? f.radiusMeters : 0,
+                    rangeLethal: f.rangeLethalMeters,
+                    rangeDetection: f.kind == .circle ? f.radiusMeters
+                                                      : f.rangeDetectionMeters,
                     warningSensitive: warn))
             }
         }
@@ -240,7 +251,7 @@ struct Euronav5Encoder {
         put(r.latitude, &b, 0xc7)
         put(r.longitude, &b, 0xcb)
         put(r.elevation, &b, 0xcf)
-        // RANGELETHAL (0xd3) = 0
+        put(r.rangeLethal, &b, 0xd3)
         put(r.rangeDetection, &b, 0xd7)
         // ATTACHMENT (0xdb, 16 B) empty; SPEED (0xeb, f64) = 0; COURSE (0xf3) = 0
         b[0xf7] = r.warningSensitive
