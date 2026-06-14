@@ -24,22 +24,25 @@ struct StyleSelectorModal: View {
     var body: some View {
         NavigationStack {
             VStack(spacing: 0) {
-                // Category dropdown at top
-                HStack {
-                    Text("Category:")
-                        .font(.subheadline)
-                        .foregroundStyle(.secondary)
-                    Picker("Category", selection: $selectedCategoryIndex) {
-                        ForEach(0..<categories.count, id: \.self) { idx in
-                            Text(categories[idx].name).tag(idx)
+                // Category dropdown at top — only for points; lines/polygons/
+                // circles use one flat list (categories are noise there).
+                if !usesFlatList {
+                    HStack {
+                        Text("Category:")
+                            .font(.subheadline)
+                            .foregroundStyle(.secondary)
+                        Picker("Category", selection: $selectedCategoryIndex) {
+                            ForEach(0..<categories.count, id: \.self) { idx in
+                                Text(categories[idx].name).tag(idx)
+                            }
                         }
+                        .pickerStyle(.menu)
+                        Spacer()
                     }
-                    .pickerStyle(.menu)
-                    Spacer()
+                    .padding(.horizontal, 12)
+                    .padding(.vertical, 8)
+                    Divider()
                 }
-                .padding(.horizontal, 12)
-                .padding(.vertical, 8)
-                Divider()
 
                 // Main content area
                 if isLoading {
@@ -136,28 +139,19 @@ struct StyleSelectorModal: View {
                                             let minDim = min(size.width, size.height)
                                             let rect = CGRect(x: (size.width - minDim) / 2, y: (size.height - minDim) / 2, width: minDim, height: minDim)
                                             let circlePath = Path(ellipseIn: rect)
+                                            let circleTicks = tickedLinePath(points: ellipsePerimeterPoints(in: rect), closed: true)
                                             let strokeWidth = CGFloat(max(1, style.lineWeight))
-                                            let isLineZigzag = style.lineDashPattern == 49344
-                                            let linePathToStroke = isLineZigzag ? self.createZigzagCirclePath(size: size) : circlePath
-                                            let dashStyle = StrokeStyle(
-                                                lineWidth: strokeWidth,
-                                                lineCap: .round,
-                                                lineJoin: .round,
-                                                dash: isLineZigzag ? [] : self.dashPatternToDashArray(style.lineDashPattern)
-                                            )
-                                            context.stroke(linePathToStroke, with: .color(lineColor), style: dashStyle)
+                                            let isLineTick = isTickDashPattern(style.lineDashPattern)
+                                            context.stroke(isLineTick ? circleTicks : circlePath, with: .color(lineColor),
+                                                           style: StrokeStyle(lineWidth: strokeWidth, lineCap: .round, lineJoin: .round,
+                                                                              dash: isLineTick ? [] : euronavDashArray(style.lineDashPattern)))
 
                                             if let outlineColor = style.outlineColor, style.outlineWeight > 0 {
                                                 let outlineStrokeWidth = CGFloat(style.outlineWeight)
-                                                let isOutlineZigzag = style.outlineDashPattern == 49344
-                                                let outlinePathToStroke = isOutlineZigzag ? self.createZigzagCirclePath(size: size) : circlePath
-                                                let outlineDashStyle = StrokeStyle(
-                                                    lineWidth: outlineStrokeWidth,
-                                                    lineCap: .round,
-                                                    lineJoin: .round,
-                                                    dash: isOutlineZigzag ? [] : self.dashPatternToDashArray(style.outlineDashPattern)
-                                                )
-                                                context.stroke(outlinePathToStroke, with: .color(outlineColor), style: outlineDashStyle)
+                                                let isOutlineTick = isTickDashPattern(style.outlineDashPattern)
+                                                context.stroke(isOutlineTick ? circleTicks : circlePath, with: .color(outlineColor),
+                                                               style: StrokeStyle(lineWidth: outlineStrokeWidth, lineCap: .round, lineJoin: .round,
+                                                                                  dash: isOutlineTick ? [] : euronavDashArray(style.outlineDashPattern)))
                                             }
                                         }
                                         .frame(height: 60)
@@ -180,7 +174,7 @@ struct StyleSelectorModal: View {
                                             weight: style.lineWeight,
                                             outlineColor: style.outlineColor,
                                             outlineWeight: style.outlineWeight,
-                                            isZigzag: style.outlineDashPattern == 49344 || style.lineDashPattern == 49344
+                                            isZigzag: isTickDashPattern(style.outlineDashPattern) || isTickDashPattern(style.lineDashPattern)
                                         )
                                         .frame(height: 60)
                                     }
@@ -281,39 +275,6 @@ struct StyleSelectorModal: View {
         }
         return false
     }
-
-    private func createZigzagCirclePath(size: CGSize, amplitude: CGFloat = 5) -> Path {
-        let centerX = size.width / 2
-        let centerY = size.height / 2
-        let baseRadius = min(size.width, size.height) / 2 - 2
-        let stepAngle = CGFloat.pi / 3  // 60 degrees
-
-        var points: [CGPoint] = []
-        var isOutset = false
-
-        var angle: CGFloat = 0
-        while angle < 2 * CGFloat.pi {
-            let radius = isOutset ? (baseRadius + amplitude) : (baseRadius - amplitude)
-            let x = centerX + radius * cos(angle)
-            let y = centerY + radius * sin(angle)
-            points.append(CGPoint(x: x, y: y))
-
-            angle += stepAngle
-            isOutset.toggle()
-        }
-
-        var zigzagPath = Path()
-        if !points.isEmpty {
-            zigzagPath.move(to: points[0])
-            for point in points.dropFirst() {
-                zigzagPath.addLine(to: point)
-            }
-            zigzagPath.closeSubpath()
-        }
-
-        return zigzagPath
-    }
-
     private func loadStyles() {
         isLoading = true
         loadError = nil
@@ -375,6 +336,30 @@ struct StyleSelectorModal: View {
 
             var categories: [String: [Style]] = [:]
 
+            // appMatrix lists each style once per appearance scheme
+            // (ids[0] = scheme 0–4: DAG/NATT/DIM…). Compute which schemes
+            // each style id is defined in.
+            var schemeCoverage: [UInt16: Set<Int>] = [:]
+            for member in members {
+                if let ids = member[0] as? [Int], ids.count >= 2 {
+                    schemeCoverage[UInt16(ids[1]), default: []].insert(ids[0])
+                }
+            }
+            let allSchemes: Set<Int> = [0, 1, 2, 3, 4]
+            // The helicopter renders the iOS USER database in appearance
+            // scheme 2/3/4 (NOT scheme 0 — scheme-0-only styles don't show).
+            // Read each style's colours from that active scheme so the
+            // preview AND the colored-line/fill filter match what the
+            // helicopter actually draws (e.g. 247 LINE WRN 2 is blue there,
+            // not the red it shows in scheme 0). Point symbols are
+            // scheme-independent, so styles with no active-scheme entry
+            // (e.g. scheme-1-only) fall back to their lowest scheme.
+            let activeScheme = 2
+            var repScheme: [UInt16: Int] = [:]
+            for (sid, schemes) in schemeCoverage {
+                repScheme[sid] = schemes.contains(activeScheme) ? activeScheme : (schemes.min() ?? 0)
+            }
+
             for member in members {
                 guard member.count >= 2,
                       let ids = member[0] as? [Int],
@@ -386,6 +371,15 @@ struct StyleSelectorModal: View {
                 }
 
                 let styleId = UInt16(ids[1])
+
+                // Take exactly one entry per style id.
+                guard ids[0] == repScheme[styleId] else { continue }
+                // Scheme coverage drives the geometry filter: line/fill COLOR
+                // is scheme-dependent (only all-5 styles render colored as a
+                // line/area), but a point's symbol renders regardless of
+                // scheme (on-hardware: all 183 glyphs appeared). See
+                // filterStyles().
+                let isAllSchemes = schemeCoverage[styleId] == allSchemes
                 let categoryName = categorizeStyle(styleId: styleId)
 
                 // Extract all style parameters from first rendering state
@@ -405,6 +399,8 @@ struct StyleSelectorModal: View {
                 var textType: String = "eTextOnly"
                 var fontSize: Int = 11
                 var textBold: Bool = false
+                var lineRGBA: [Int]? = nil
+                var fillRGBA: [Int]? = nil
 
                 if info.count >= 3, let renderingData = info[2] as? [[Any]], renderingData.count >= 2 {
 
@@ -428,7 +424,7 @@ struct StyleSelectorModal: View {
                     if let lineStyles = renderingData[1] as? [[Any]], lineStyles.count >= 2 {
                         // Primary line
                         let primaryLine = lineStyles[0]
-                        if let lc = primaryLine[0] as? [Int] { lineColor = arrayToColor(lc) }
+                        if let lc = primaryLine[0] as? [Int] { lineColor = arrayToColor(lc); lineRGBA = lc }
                         if let dash = primaryLine[1] as? [Int], dash.count >= 2 {
                             let dashVal = dash[1]
                             lineDashPattern = UInt16(dashVal & 0xFFFF)
@@ -447,6 +443,7 @@ struct StyleSelectorModal: View {
                     // Extract polygon fill from renderingData[2]
                     if renderingData.count > 2, let fillArray = renderingData[2] as? [[Int]], !fillArray.isEmpty, fillArray[0].count >= 3 {
                         polygonFillColor = arrayToColor(fillArray[0])
+                        fillRGBA = fillArray[0]
                     }
 
                     // Extract text styling from renderingData[3]
@@ -460,6 +457,19 @@ struct StyleSelectorModal: View {
                         if let bold = textStyle[6] as? Bool { textBold = bold }
                     }
                 }
+
+                // Visibility of line/fill (for the geometry filter): a
+                // channel is "colored" when it is opaque-ish and not white.
+                // White-on-white symbol styles and transparent fills are
+                // treated as not contributing a visible line/area.
+                func colored(_ c: [Int]?) -> Bool {
+                    guard let c = c, c.count >= 3 else { return false }
+                    let alpha = c.count >= 4 ? c[3] : 255
+                    guard alpha > 0 else { return false }
+                    return !(c[0] >= 249 && c[1] >= 249 && c[2] >= 249)
+                }
+                let hasColoredLine = colored(lineRGBA)
+                let hasVisibleFill = colored(fillRGBA)
 
                 let styleItem = StyleItem(
                     id: UUID(),
@@ -482,7 +492,10 @@ struct StyleSelectorModal: View {
                     textPosition: textPosition,
                     textType: textType,
                     fontSize: fontSize,
-                    textBold: textBold
+                    textBold: textBold,
+                    hasColoredLine: hasColoredLine,
+                    hasVisibleFill: hasVisibleFill,
+                    isAllSchemes: isAllSchemes
                 )
                 let style = Style(from: styleItem)
 
@@ -505,20 +518,63 @@ struct StyleSelectorModal: View {
         }
     }
 
+    /// Curated style ids for polygons and circles — the subset the user
+    /// kept after reviewing the full polygon catalog rendered on the
+    /// helicopter (32 of 131). Edit this list to re-curate.
+    private static let curatedAreaStyleIds: Set<UInt16> = [
+        37, 38, 39, 40, 41, 42,                          // AREA WRN1–6
+        47, 48, 49, 50, 51, 52,                          // AREA 7–12
+        617, 618,                                        // CTR CTZ, MCTR
+        635, 637,                                        // RESTR UNSPEC, RUNWAY TAXIWAY
+        798, 799,                                        // KOSIF RESTR RESTRICTED/VHT
+        961, 962, 964, 965, 967,                         // CONTEXT MENU/HIGHLIGHTED/INTERVIS/MAP BG
+    ]
+
+    /// Lines/polygons/circles show one flat, un-categorised list (sorted by
+    /// style id); points keep the category dropdown.
+    private var usesFlatList: Bool {
+        switch geometry {
+        case .polyline, .polygon, .circle: return true
+        default: return false
+        }
+    }
+
     private func filterStyles() -> [Style] {
-        guard selectedCategoryIndex < categories.count else { return [] }
+        var categoryStyles: [Style]
+        if usesFlatList {
+            categoryStyles = categories.flatMap { $0.styles }
+                .sorted { $0.styleId < $1.styleId }
+        } else {
+            guard selectedCategoryIndex < categories.count else { return [] }
+            categoryStyles = categories[selectedCategoryIndex].styles
+        }
 
-        var categoryStyles = categories[selectedCategoryIndex].styles
-
-        // Filter by geometry type if provided
+        // Filter by geometry type so the picker only offers styles that
+        // actually render for that geometry on the helicopter (see the
+        // test-card findings: symbol styles are white as areas/lines but
+        // show an icon as points; white-on-white styles render as nothing).
         if let geo = geometry {
             switch geo {
             case .point:
-                // For points: only show styles with glyphs
+                // Points render their glyph regardless of appearance scheme
+                // (on-hardware: all glyphs appeared), so any symbol style works.
                 categoryStyles = categoryStyles.filter { $0.symbolId > 0 }
-            case .polyline, .polygon, .circle:
-                // For lines/polygons/circles: only show styles without glyphs
-                categoryStyles = categoryStyles.filter { $0.symbolId <= 0 }
+            case .polyline:
+                // Lines → a visible colored stroke, no glyph (a symbol style
+                // draws an icon at every vertex). Scheme filter intentionally
+                // dropped for now so scheme-limited line styles (e.g.
+                // KRAFTLEDNING) are offered too — pending hardware check of
+                // whether they render.
+                categoryStyles = categoryStyles.filter {
+                    $0.symbolId <= 0 && $0.hasColoredLine
+                }
+            case .polygon, .circle:
+                // Curated area palette — the subset kept after reviewing the
+                // full polygon catalog on the helicopter (see
+                // Self.curatedAreaStyleIds).
+                categoryStyles = categoryStyles.filter {
+                    Self.curatedAreaStyleIds.contains($0.styleId)
+                }
             }
         }
 
@@ -576,35 +632,6 @@ struct StyleSelectorModal: View {
             return "📍 Other"
         }
     }
-
-    private func dashPatternToDashArray(_ pattern: UInt16) -> [CGFloat] {
-        if pattern == 0xFFFF {
-            return []
-        }
-        var dashes: [CGFloat] = []
-        var currentDash: CGFloat = 0
-        var isDash = (pattern & 0x8000) != 0
-
-        for i in (0..<16).reversed() {
-            let bit = (pattern >> i) & 1
-            let isBitSet = bit != 0
-
-            if isBitSet == isDash {
-                currentDash += 1
-            } else {
-                if currentDash > 0 {
-                    dashes.append(currentDash)
-                }
-                isDash = isBitSet
-                currentDash = 1
-            }
-        }
-        if currentDash > 0 {
-            dashes.append(currentDash)
-        }
-
-        return dashes.isEmpty ? [] : dashes
-    }
 }
 
 // MARK: - Data Models
@@ -638,6 +665,13 @@ struct StyleItem: Identifiable {
     let textType: String        // eTextOnly, eTextRectangle, eTextPolygon
     let fontSize: Int
     let textBold: Bool
+    // Geometry suitability (computed from raw appMatrix colors): whether the
+    // style draws a visible (non-white, opaque) line / polygon fill.
+    var hasColoredLine: Bool = false
+    var hasVisibleFill: Bool = false
+    // True if the style is defined in all five appearance schemes. Required
+    // for line/area COLOR to render; point symbols render regardless.
+    var isAllSchemes: Bool = false
 }
 
 // MARK: - Style Row View
@@ -675,35 +709,6 @@ struct StyleRow: View {
         .padding(.vertical, 8)
         .background(isSelected ? Color.accentColor.opacity(0.1) : Color.clear)
     }
-
-    private func dashPatternToDashArray(_ pattern: UInt16) -> [CGFloat] {
-        if pattern == 0xFFFF {
-            return []
-        }
-        var dashes: [CGFloat] = []
-        var currentDash: CGFloat = 0
-        var isDash = (pattern & 0x8000) != 0
-
-        for i in (0..<16).reversed() {
-            let bit = (pattern >> i) & 1
-            let isBitSet = bit != 0
-
-            if isBitSet == isDash {
-                currentDash += 1
-            } else {
-                if currentDash > 0 {
-                    dashes.append(currentDash)
-                }
-                isDash = isBitSet
-                currentDash = 1
-            }
-        }
-        if currentDash > 0 {
-            dashes.append(currentDash)
-        }
-
-        return dashes.count <= 2 && dashes.allSatisfy({ $0 > 14 }) ? [] : dashes
-    }
 }
 
 // MARK: - Line Preview Component
@@ -714,80 +719,36 @@ struct LinePreviewView: View {
     let weight: Int
     let outlineColor: Color?
     let outlineWeight: Int
+    /// True for the perpendicular-tick (power-line) decoration.
     var isZigzag: Bool = false
 
     var body: some View {
         Canvas { context, size in
             let strokeWidth = CGFloat(max(1, weight))
+            let centerY = size.height / 2
+            let ends = [CGPoint(x: 0, y: centerY), CGPoint(x: size.width, y: centerY)]
 
-            // Draw outline first (only if weight > 0)
-            if let outlineColor = outlineColor, outlineWeight > 0 {
-                let outlineStrokeWidth = CGFloat(outlineWeight)
-                let outlinePath = createLinePath(size: size, isZigzag: isZigzag)
-                context.stroke(outlinePath, with: .color(outlineColor), style: StrokeStyle(lineWidth: outlineStrokeWidth))
-            }
-
-            // Draw main line with dash pattern
-            let linePath = createLinePath(size: size, isZigzag: isZigzag)
-
-            let dashStyle = StrokeStyle(
-                lineWidth: strokeWidth,
-                lineCap: .round,
-                lineJoin: .round,
-                dash: dashPatternToDashArray(dashPattern)
-            )
-            context.stroke(linePath, with: .color(color), style: dashStyle)
-        }
-    }
-
-    private func createLinePath(size: CGSize, isZigzag: Bool) -> Path {
-        var path = Path()
-        let centerY = size.height / 2
-        let zigzagAmplitude = size.height / 4
-        let segments = 4
-        let segmentWidth = size.width / CGFloat(segments)
-
-        if isZigzag {
-            path.move(to: CGPoint(x: 0, y: centerY))
-            for i in 1...segments {
-                let x = segmentWidth * CGFloat(i)
-                let offset = (i % 2 == 0) ? zigzagAmplitude : -zigzagAmplitude
-                path.addLine(to: CGPoint(x: x, y: centerY + offset))
-            }
-        } else {
-            path.move(to: CGPoint(x: 0, y: centerY))
-            path.addLine(to: CGPoint(x: size.width, y: centerY))
-        }
-        return path
-    }
-
-    private func dashPatternToDashArray(_ pattern: UInt16) -> [CGFloat] {
-        if pattern == 0xFFFF {
-            return []
-        }
-        var dashes: [CGFloat] = []
-        var currentDash: CGFloat = 0
-        var isDash = (pattern & 0x8000) != 0
-
-        for i in (0..<16).reversed() {
-            let bit = (pattern >> i) & 1
-            let isBitSet = bit != 0
-
-            if isBitSet == isDash {
-                currentDash += 1
-            } else {
-                if currentDash > 0 {
-                    dashes.append(currentDash)
+            if isZigzag {
+                // Power-line symbol: solid line with perpendicular ticks.
+                let ticks = tickedLinePath(points: ends, closed: false)
+                if let outlineColor = outlineColor, outlineWeight > 0 {
+                    context.stroke(ticks, with: .color(outlineColor),
+                                   style: StrokeStyle(lineWidth: CGFloat(outlineWeight), lineCap: .round))
                 }
-                isDash = isBitSet
-                currentDash = 1
+                context.stroke(ticks, with: .color(color),
+                               style: StrokeStyle(lineWidth: strokeWidth, lineCap: .round))
+            } else {
+                var path = Path()
+                path.move(to: ends[0]); path.addLine(to: ends[1])
+                if let outlineColor = outlineColor, outlineWeight > 0 {
+                    context.stroke(path, with: .color(outlineColor),
+                                   style: StrokeStyle(lineWidth: CGFloat(outlineWeight)))
+                }
+                context.stroke(path, with: .color(color),
+                               style: StrokeStyle(lineWidth: strokeWidth, lineCap: .butt,
+                                                  dash: euronavDashArray(dashPattern)))
             }
         }
-        if currentDash > 0 {
-            dashes.append(currentDash)
-        }
-
-        return dashes.count <= 2 && dashes.allSatisfy({ $0 > 14 }) ? [] : dashes
     }
 }
 
@@ -806,127 +767,24 @@ struct PolygonPreviewView: View {
         Canvas { context, size in
             let rect = CGRect(x: 4, y: 4, width: size.width - 8, height: size.height - 8)
             let path = Path(roundedRect: rect, cornerRadius: 3)
+            let ticks = tickedLinePath(points: rectPerimeterPoints(rect), closed: true)
 
-            // Fill polygon
             context.fill(path, with: .color(fillColor))
 
-            // Draw main line stroke first
             if let lineColor = lineColor, weight > 0 {
-                let strokeWidth = CGFloat(max(1, weight))
-                let isZigzag = dashPattern == 49344
-                let pathToStroke = isZigzag ? createZigzagPath(for: path, size: size) : path
-                let dashStyle = StrokeStyle(
-                    lineWidth: strokeWidth,
-                    lineCap: .round,
-                    lineJoin: .round,
-                    dash: isZigzag ? [] : dashPatternToDashArray(dashPattern)
-                )
-                context.stroke(pathToStroke, with: .color(lineColor), style: dashStyle)
+                let isTick = isTickDashPattern(dashPattern)
+                context.stroke(isTick ? ticks : path, with: .color(lineColor),
+                               style: StrokeStyle(lineWidth: CGFloat(max(1, weight)), lineCap: .round, lineJoin: .round,
+                                                  dash: isTick ? [] : euronavDashArray(dashPattern)))
             }
 
-            // Draw outline on top (should be thicker to cover main line)
             if let outlineColor = outlineColor, outlineWeight > 0 {
-                let outlineStrokeWidth = CGFloat(outlineWeight)
-                let isZigzag = outlineDashPattern == 49344
-                let pathToStroke = isZigzag ? createZigzagPath(for: path, size: size) : path
-                let dashStyle = StrokeStyle(
-                    lineWidth: outlineStrokeWidth,
-                    lineCap: .round,
-                    lineJoin: .round,
-                    dash: isZigzag ? [] : dashPatternToDashArray(outlineDashPattern)
-                )
-                context.stroke(pathToStroke, with: .color(outlineColor), style: dashStyle)
+                let isTick = isTickDashPattern(outlineDashPattern)
+                context.stroke(isTick ? ticks : path, with: .color(outlineColor),
+                               style: StrokeStyle(lineWidth: CGFloat(outlineWeight), lineCap: .round, lineJoin: .round,
+                                                  dash: isTick ? [] : euronavDashArray(outlineDashPattern)))
             }
         }
-    }
-
-    private func createZigzagPath(for basePath: Path, size: CGSize, amplitude: CGFloat = 5) -> Path {
-        // Create zigzag around rectangle perimeter
-        let inset: CGFloat = 4
-        let topLeft = CGPoint(x: inset, y: inset)
-        let topRight = CGPoint(x: size.width - inset, y: inset)
-        let bottomRight = CGPoint(x: size.width - inset, y: size.height - inset)
-        let bottomLeft = CGPoint(x: inset, y: size.height - inset)
-
-        var points: [CGPoint] = []
-        let stepSize: CGFloat = 8
-        var isInset = false
-
-        // Top edge (left to right)
-        var x = topLeft.x
-        while x <= topRight.x {
-            let y = topLeft.y + (isInset ? -amplitude : amplitude)
-            points.append(CGPoint(x: x, y: min(y, topLeft.y + amplitude)))
-            x += stepSize
-            isInset.toggle()
-        }
-
-        // Right edge (top to bottom)
-        var y = topRight.y + stepSize
-        while y <= bottomRight.y {
-            let xOffset = isInset ? amplitude : -amplitude
-            points.append(CGPoint(x: topRight.x + xOffset, y: y))
-            y += stepSize
-            isInset.toggle()
-        }
-
-        // Bottom edge (right to left)
-        x = bottomRight.x - stepSize
-        while x >= bottomLeft.x {
-            let yOffset = isInset ? amplitude : -amplitude
-            points.append(CGPoint(x: x, y: bottomRight.y + yOffset))
-            x -= stepSize
-            isInset.toggle()
-        }
-
-        // Left edge (bottom to top)
-        y = bottomLeft.y - stepSize
-        while y >= topLeft.y {
-            let xOffset = isInset ? -amplitude : amplitude
-            points.append(CGPoint(x: bottomLeft.x + xOffset, y: y))
-            y -= stepSize
-            isInset.toggle()
-        }
-
-        var zigzagPath = Path()
-        if !points.isEmpty {
-            zigzagPath.move(to: points[0])
-            for point in points.dropFirst() {
-                zigzagPath.addLine(to: point)
-            }
-            zigzagPath.closeSubpath()
-        }
-
-        return zigzagPath
-    }
-
-    private func dashPatternToDashArray(_ pattern: UInt16) -> [CGFloat] {
-        if pattern == 0xFFFF {
-            return []
-        }
-        var dashes: [CGFloat] = []
-        var currentDash: CGFloat = 0
-        var isDash = (pattern & 0x8000) != 0
-
-        for i in (0..<16).reversed() {
-            let bit = (pattern >> i) & 1
-            let isBitSet = bit != 0
-
-            if isBitSet == isDash {
-                currentDash += 1
-            } else {
-                if currentDash > 0 {
-                    dashes.append(currentDash)
-                }
-                isDash = isBitSet
-                currentDash = 1
-            }
-        }
-        if currentDash > 0 {
-            dashes.append(currentDash)
-        }
-
-        return dashes.count <= 2 && dashes.allSatisfy({ $0 > 14 }) ? [] : dashes
     }
 }
 

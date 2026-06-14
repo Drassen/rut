@@ -220,6 +220,11 @@ struct VectorStyle: Codable, Equatable {
     var iconScale: Double    = 1.0
     /// Point-only: Euronav glyph symbol ID (0 = use pointIcon instead)
     var euronaveSymbolId: Int = 0
+    /// Line/polygon: 16-bit EuroNav line-stipple from the chosen style, used
+    /// to render dashes on the map. nil/0xFFFF = solid. (Optional so old
+    /// saved data decodes unchanged.) Tick patterns can't be drawn on a
+    /// MapKit polyline, so those render solid on the map.
+    var lineDashPattern: UInt16? = nil
 }
 
 // MARK: - VectorShape

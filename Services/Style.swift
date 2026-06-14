@@ -24,6 +24,9 @@ struct Style: Identifiable {
     let textType: String        // eTextOnly, eTextRectangle, eTextPolygon
     let fontSize: Int
     let textBold: Bool
+    let hasColoredLine: Bool
+    let hasVisibleFill: Bool
+    let isAllSchemes: Bool
 
     init(from styleItem: StyleItem) {
         self.id = styleItem.id
@@ -47,6 +50,9 @@ struct Style: Identifiable {
         self.textType = styleItem.textType
         self.fontSize = styleItem.fontSize
         self.textBold = styleItem.textBold
+        self.hasColoredLine = styleItem.hasColoredLine
+        self.hasVisibleFill = styleItem.hasVisibleFill
+        self.isAllSchemes = styleItem.isAllSchemes
     }
 
     // Create preview view for a specific geometry type
@@ -62,28 +68,24 @@ struct Style: Identifiable {
             .frame(width: 32, height: 32)
             .cornerRadius(4)
         } else if case .polyline = geometry, let lineColor = lineColor {
-            // Show line preview for polylines (zigzag if pattern indicates)
+            // Show line preview for polylines (ticks / dashes per pattern)
             Canvas { context, size in
-                var path = Path()
                 let centerY = size.height / 2
-                let isZigzag = lineDashPattern == 49344 || outlineDashPattern == 49344
-
-                if isZigzag {
-                    path.move(to: CGPoint(x: 2, y: centerY))
-                    let segments = 3
-                    let segmentWidth = (size.width - 4) / CGFloat(segments)
-                    let zigzagAmplitude = size.height / 3
-                    for i in 1...segments {
-                        let x = 2 + segmentWidth * CGFloat(i)
-                        let offset = (i % 2 == 0) ? zigzagAmplitude : -zigzagAmplitude
-                        path.addLine(to: CGPoint(x: x, y: centerY + offset))
-                    }
-                } else {
-                    path.move(to: CGPoint(x: 2, y: centerY))
-                    path.addLine(to: CGPoint(x: size.width - 2, y: centerY))
-                }
+                let ends = [CGPoint(x: 2, y: centerY), CGPoint(x: size.width - 2, y: centerY)]
                 let strokeWidth = CGFloat(max(1, lineWeight))
-                context.stroke(path, with: .color(lineColor), style: StrokeStyle(lineWidth: strokeWidth))
+                let isTick = isTickDashPattern(lineDashPattern) || isTickDashPattern(outlineDashPattern)
+                if isTick {
+                    // Power-line symbol: solid line with perpendicular ticks.
+                    let path = tickedLinePath(points: ends, closed: false)
+                    context.stroke(path, with: .color(lineColor),
+                                   style: StrokeStyle(lineWidth: strokeWidth, lineCap: .round))
+                } else {
+                    var path = Path()
+                    path.move(to: ends[0]); path.addLine(to: ends[1])
+                    let dash = euronavDashArray(lineDashPattern == 65535 ? outlineDashPattern : lineDashPattern)
+                    context.stroke(path, with: .color(lineColor),
+                                   style: StrokeStyle(lineWidth: strokeWidth, lineCap: .butt, dash: dash))
+                }
             }
             .frame(width: 32, height: 32)
         } else {
@@ -97,29 +99,20 @@ struct Style: Identifiable {
                     let minDim = min(size.width, size.height)
                     let circleRect = CGRect(x: (size.width - minDim) / 2, y: (size.height - minDim) / 2, width: minDim, height: minDim)
                     let circlePath = Path(ellipseIn: circleRect)
+                    let circleTicks = tickedLinePath(points: ellipsePerimeterPoints(in: circleRect), closed: true)
                     if let lineColor = lineColor, lineWeight > 0 {
                         let strokeWidth = CGFloat(max(1, lineWeight))
-                        let isZigzag = lineDashPattern == 49344
-                        let pathToStroke = isZigzag ? createZigzagPath(for: circlePath, size: size) : circlePath
-                        let dashStyle = StrokeStyle(
-                            lineWidth: strokeWidth,
-                            lineCap: .round,
-                            lineJoin: .round,
-                            dash: isZigzag ? [] : dashPatternToDashArray(lineDashPattern)
-                        )
-                        context.stroke(pathToStroke, with: .color(lineColor), style: dashStyle)
+                        let isTick = isTickDashPattern(lineDashPattern)
+                        context.stroke(isTick ? circleTicks : circlePath, with: .color(lineColor),
+                                       style: StrokeStyle(lineWidth: strokeWidth, lineCap: .round, lineJoin: .round,
+                                                          dash: isTick ? [] : dashPatternToDashArray(lineDashPattern)))
                     }
                     if let outlineColor = outlineColor, outlineWeight > 0 {
                         let outlineStrokeWidth = CGFloat(outlineWeight)
-                        let isZigzag = outlineDashPattern == 49344
-                        let pathToStroke = isZigzag ? createZigzagPath(for: circlePath, size: size) : circlePath
-                        let dashStyle = StrokeStyle(
-                            lineWidth: outlineStrokeWidth,
-                            lineCap: .round,
-                            lineJoin: .round,
-                            dash: isZigzag ? [] : dashPatternToDashArray(outlineDashPattern)
-                        )
-                        context.stroke(pathToStroke, with: .color(outlineColor), style: dashStyle)
+                        let isTick = isTickDashPattern(outlineDashPattern)
+                        context.stroke(isTick ? circleTicks : circlePath, with: .color(outlineColor),
+                                       style: StrokeStyle(lineWidth: outlineStrokeWidth, lineCap: .round, lineJoin: .round,
+                                                          dash: isTick ? [] : dashPatternToDashArray(outlineDashPattern)))
                     }
                 } else {
                     // Draw polygon/rectangle
@@ -127,30 +120,21 @@ struct Style: Identifiable {
                         context.fill(path, with: .color(fillColor))
                     }
 
+                    let rectTicks = tickedLinePath(points: rectPerimeterPoints(rect), closed: true)
                     if let lineColor = lineColor, lineWeight > 0 {
                         let strokeWidth = CGFloat(max(1, lineWeight))
-                        let isZigzag = lineDashPattern == 49344
-                        let pathToStroke = isZigzag ? createZigzagPath(for: path, size: size) : path
-                        let dashStyle = StrokeStyle(
-                            lineWidth: strokeWidth,
-                            lineCap: .round,
-                            lineJoin: .round,
-                            dash: isZigzag ? [] : dashPatternToDashArray(lineDashPattern)
-                        )
-                        context.stroke(pathToStroke, with: .color(lineColor), style: dashStyle)
+                        let isTick = isTickDashPattern(lineDashPattern)
+                        context.stroke(isTick ? rectTicks : path, with: .color(lineColor),
+                                       style: StrokeStyle(lineWidth: strokeWidth, lineCap: .round, lineJoin: .round,
+                                                          dash: isTick ? [] : dashPatternToDashArray(lineDashPattern)))
                     }
 
                     if let outlineColor = outlineColor, outlineWeight > 0 {
                         let outlineStrokeWidth = CGFloat(outlineWeight)
-                        let isZigzag = outlineDashPattern == 49344
-                        let pathToStroke = isZigzag ? createZigzagPath(for: path, size: size) : path
-                        let dashStyle = StrokeStyle(
-                            lineWidth: outlineStrokeWidth,
-                            lineCap: .round,
-                            lineJoin: .round,
-                            dash: isZigzag ? [] : dashPatternToDashArray(outlineDashPattern)
-                        )
-                        context.stroke(pathToStroke, with: .color(outlineColor), style: dashStyle)
+                        let isTick = isTickDashPattern(outlineDashPattern)
+                        context.stroke(isTick ? rectTicks : path, with: .color(outlineColor),
+                                       style: StrokeStyle(lineWidth: outlineStrokeWidth, lineCap: .round, lineJoin: .round,
+                                                          dash: isTick ? [] : dashPatternToDashArray(outlineDashPattern)))
                     }
                 }
             }
@@ -160,99 +144,92 @@ struct Style: Identifiable {
         }
     }
 
-    private func createZigzagPath(for basePath: Path, size: CGSize, amplitude: CGFloat = 3) -> Path {
-        // Create zigzag around rectangle perimeter
-        let inset: CGFloat = 2
-        let topLeft = CGPoint(x: inset, y: inset)
-        let topRight = CGPoint(x: size.width - inset, y: inset)
-        let bottomRight = CGPoint(x: size.width - inset, y: size.height - inset)
-        let bottomLeft = CGPoint(x: inset, y: size.height - inset)
-
-        var points: [CGPoint] = []
-        let stepSize: CGFloat = 5
-        var isInset = false
-
-        // Top edge (left to right)
-        var x = topLeft.x
-        while x <= topRight.x {
-            let y = topLeft.y + (isInset ? -amplitude : amplitude)
-            points.append(CGPoint(x: x, y: min(y, topLeft.y + amplitude)))
-            x += stepSize
-            isInset.toggle()
-        }
-
-        // Right edge (top to bottom)
-        var y = topRight.y + stepSize
-        while y <= bottomRight.y {
-            let xOffset = isInset ? amplitude : -amplitude
-            points.append(CGPoint(x: topRight.x + xOffset, y: y))
-            y += stepSize
-            isInset.toggle()
-        }
-
-        // Bottom edge (right to left)
-        x = bottomRight.x - stepSize
-        while x >= bottomLeft.x {
-            let yOffset = isInset ? amplitude : -amplitude
-            points.append(CGPoint(x: x, y: bottomRight.y + yOffset))
-            x -= stepSize
-            isInset.toggle()
-        }
-
-        // Left edge (bottom to top)
-        y = bottomLeft.y - stepSize
-        while y >= topLeft.y {
-            let xOffset = isInset ? -amplitude : amplitude
-            points.append(CGPoint(x: bottomLeft.x + xOffset, y: y))
-            y -= stepSize
-            isInset.toggle()
-        }
-
-        var zigzagPath = Path()
-        if !points.isEmpty {
-            zigzagPath.move(to: points[0])
-            for point in points.dropFirst() {
-                zigzagPath.addLine(to: point)
-            }
-            zigzagPath.closeSubpath()
-        }
-
-        return zigzagPath
-    }
-
     private func dashPatternToDashArray(_ pattern: UInt16) -> [CGFloat] {
-        if pattern == 65535 {
-            return []  // Solid line
-        }
-        if pattern == 0 {
-            return []  // Solid line
-        }
-
-        var dashes: [CGFloat] = []
-        var bitPattern = pattern
-        var dashLength = 0
-        var isGap = false
-
-        for _ in 0..<16 {
-            let bit = bitPattern & 0x0001
-            if bit == 0x0001 {
-                dashLength += 1
-            } else {
-                if dashLength > 0 {
-                    dashes.append(CGFloat(dashLength))
-                    dashLength = 0
-                    isGap = true
-                } else if isGap {
-                    isGap = false
-                }
-            }
-            bitPattern >>= 1
-        }
-
-        if dashLength > 0 {
-            dashes.append(CGFloat(dashLength))
-        }
-
-        return dashes.isEmpty ? [] : dashes
+        return euronavDashArray(pattern)
     }
+}
+
+// MARK: - Line decoration helpers (shared across style previews)
+
+/// Dash codes the helicopter renders as short perpendicular tick marks across
+/// the line (the power-line / FIR cartographic symbol) — not a dashed or
+/// zigzag line. Verified on hardware for KRAFTLEDNING (0xC0C0 / 0xC060).
+func isTickDashPattern(_ pattern: UInt16) -> Bool {
+    pattern == 49344 || pattern == 49248   // 0xC0C0, 0xC060
+}
+
+/// Path = the polyline through `points` plus short perpendicular tick marks at
+/// regular intervals (the power-line symbol). Stroke it solid.
+func tickedLinePath(points: [CGPoint], closed: Bool,
+                    spacing: CGFloat = 7, tickLength: CGFloat = 6) -> Path {
+    var path = Path()
+    guard points.count >= 2 else { return path }
+    path.move(to: points[0])
+    for pt in points.dropFirst() { path.addLine(to: pt) }
+    if closed { path.closeSubpath() }
+
+    var verts = points
+    if closed { verts.append(points[0]) }
+    var carry = spacing / 2
+    for i in 0..<(verts.count - 1) {
+        let a = verts[i], b = verts[i + 1]
+        let dx = b.x - a.x, dy = b.y - a.y
+        let len = (dx * dx + dy * dy).squareRoot()
+        if len == 0 { continue }
+        let ux = dx / len, uy = dy / len      // along
+        let nx = -uy, ny = ux                 // perpendicular
+        var d = carry
+        while d <= len {
+            let cx = a.x + ux * d, cy = a.y + uy * d
+            path.move(to: CGPoint(x: cx - nx * tickLength / 2, y: cy - ny * tickLength / 2))
+            path.addLine(to: CGPoint(x: cx + nx * tickLength / 2, y: cy + ny * tickLength / 2))
+            d += spacing
+        }
+        carry = d - len
+    }
+    return path
+}
+
+/// Points sampled around an ellipse perimeter (for ticked circle borders).
+func ellipsePerimeterPoints(in rect: CGRect, count: Int = 40) -> [CGPoint] {
+    guard count > 2 else { return [] }
+    let cx = rect.midX, cy = rect.midY
+    let rx = rect.width / 2, ry = rect.height / 2
+    return (0..<count).map { i in
+        let a = 2 * CGFloat.pi * CGFloat(i) / CGFloat(count)
+        return CGPoint(x: cx + rx * cos(a), y: cy + ry * sin(a))
+    }
+}
+
+/// The four corners of a rectangle (for ticked polygon borders).
+func rectPerimeterPoints(_ rect: CGRect) -> [CGPoint] {
+    [CGPoint(x: rect.minX, y: rect.minY), CGPoint(x: rect.maxX, y: rect.minY),
+     CGPoint(x: rect.maxX, y: rect.maxY), CGPoint(x: rect.minX, y: rect.maxY)]
+}
+
+/// EuroNav 16-bit line-stipple bitmask → CoreGraphics dash array.
+///
+/// The pattern is a repeating 16-pixel stipple, bit = 1 → ink, 0 → gap
+/// (read LSB-first along the line). Returns alternating run lengths
+/// [dash, gap, dash, gap, …] starting with a dash; [] for a solid line.
+/// Records BOTH ink and gap run lengths (so e.g. 0xFF00 = dash 8 / gap 8,
+/// and uneven patterns keep their real gaps).
+func euronavDashArray(_ pattern: UInt16) -> [CGFloat] {
+    if pattern == 0 || pattern == 0xFFFF { return [] }   // solid
+    var bits = (0..<16).map { (pattern >> $0) & 1 == 1 }
+    // Rotate so the array begins with an ink run (CG dash arrays start "on").
+    if let firstInk = bits.firstIndex(of: true) {
+        bits = Array(bits[firstInk...] + bits[..<firstInk])
+    }
+    var runs: [CGFloat] = []
+    var current = bits[0]
+    var count = 0
+    for b in bits {
+        if b == current { count += 1 }
+        else { runs.append(CGFloat(count)); current = b; count = 1 }
+    }
+    runs.append(CGFloat(count))
+    // If it ends on an ink run, that run wraps into the leading ink run.
+    if runs.count % 2 == 1 { runs[0] += runs.removeLast() }
+    return runs
 }

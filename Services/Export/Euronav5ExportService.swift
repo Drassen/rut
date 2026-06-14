@@ -64,26 +64,29 @@ struct Euronav5ExportService {
         switch shape.geometry {
         case .point(let lat, let lon):
             guard let center = microdegrees(lat: lat, lon: lon) else { return nil }
+            // A point is a placed object and the planner always assigns it an
+            // object template; an empty TYPE point never renders. Fixed to the
+            // "POI" template for now (matches APPERANCE 408 default).
             return Euronav5Encoder.Figure(
-                kind: .point, name: shape.name, type: type, points: [center],
+                kind: .point, name: shape.name, type: "POI", points: [center],
                 rangeLethalMeters: meters(shape.dmgRangeLethalMeters),
                 rangeDetectionMeters: meters(shape.dmgRangeDetectionMeters),
                 elevationMeters: elevationMeters(shape),
                 appearanceOverride: appearance(for: shape, kind: .point))
 
         case .circle(let lat, let lon, let radiusMeters):
-            guard let center = microdegrees(lat: lat, lon: lon),
+            guard microdegrees(lat: lat, lon: lon) != nil,
                   radiusMeters >= 0.5 else { return nil }
-            // The planner's circle tool always writes a zone TYPE — every
-            // reference circle is NAVIGATIONALZONE. A circle with empty
-            // TYPE is an unobserved combination, so mimic the planner
-            // exactly when the user hasn't chosen a zone type.
-            let circleType = type.isEmpty ? "NAVIGATIONALZONE" : type
+            // A single-record circle (RANGEDETECTION radius) does not draw a
+            // ring on the helicopter, so tessellate the circle into a polygon
+            // ring and use the proven polygon rendering instead.
+            let ring = circleRing(lat: lat, lon: lon, radiusMeters: radiusMeters,
+                                  segments: 48)
+            guard ring.count >= 3 else { return nil }
             return Euronav5Encoder.Figure(
-                kind: .circle, name: shape.name, type: circleType, points: [center],
-                radiusMeters: Int32(radiusMeters.rounded()),
+                kind: .polygon, name: shape.name, type: type, points: ring,
                 elevationMeters: elevationMeters(shape),
-                appearanceOverride: appearance(for: shape, kind: .circle))
+                appearanceOverride: appearance(for: shape, kind: .polygon))
 
         case .polyline(let coordinates):
             guard let points = microdegrees(coordinates: coordinates) else { return nil }
@@ -153,6 +156,25 @@ struct Euronav5ExportService {
     private func meters(_ value: Double?) -> Int32 {
         guard let value, value.isFinite, value >= 1 else { return 0 }
         return Int32(value.rounded())
+    }
+
+    /// Tessellate a geographic circle into a polygon ring of `segments`
+    /// vertices (without the closing repeat — the encoder adds it).
+    private func circleRing(lat: Double, lon: Double, radiusMeters: Double,
+                            segments: Int) -> [(Int32, Int32)] {
+        let mPerDegLat = 111_320.0
+        let mPerDegLon = 111_320.0 * cos(lat * .pi / 180)
+        guard mPerDegLon > 1 else { return [] }   // avoid the poles
+        var ring: [(Int32, Int32)] = []
+        ring.reserveCapacity(segments)
+        for i in 0..<segments {
+            let a = 2 * Double.pi * Double(i) / Double(segments)
+            let dLat = (radiusMeters * cos(a)) / mPerDegLat
+            let dLon = (radiusMeters * sin(a)) / mPerDegLon
+            ring.append((Euronav5Encoder.microdegrees(lat + dLat),
+                         Euronav5Encoder.microdegrees(lon + dLon)))
+        }
+        return ring
     }
 
     private func microdegrees(lat: Double, lon: Double) -> (Int32, Int32)? {

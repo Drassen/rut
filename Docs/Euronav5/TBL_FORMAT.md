@@ -112,7 +112,7 @@ coordinates.
 |-------|---------|
 | Polyline, n points | n records |
 | Polygon, n distinct vertices | n + 1 records — **first vertex repeated as the last record** |
-| Circle | 1 record: center coordinates + RANGEDETECTION = radius (m) |
+| Circle | 1 record: center + RANGEDETECTION = radius (m) — **but draws no ring on the helicopter; the iOS app tessellates circles to polygons instead, see EXPORT_GUIDE.md** |
 
 There is no separate "figure header" record and no point index — the old
 documentation's header/point model was wrong.

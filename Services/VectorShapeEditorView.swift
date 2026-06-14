@@ -261,6 +261,13 @@ struct VectorShapeEditorView: View {
         updated.style.pointIcon   = pointIcon
         updated.style.iconScale   = iconScale
         updated.style.euronaveSymbolId = selectedStyle?.symbolId ?? 0
+        // Carry the chosen style's line decoration so the map can dash it
+        // (the line dash if patterned, else the outline's).
+        if let s = selectedStyle {
+            let line = UInt16(s.lineDashPattern)
+            let outline = UInt16(s.outlineDashPattern)
+            updated.style.lineDashPattern = (line != 0xFFFF && line != 0) ? line : outline
+        }
         updated.dmgCategory = dmgCategory
         updated.dmgAreaType = dmgAreaType
         updated.dmgStyleClass = dmgStyleClass

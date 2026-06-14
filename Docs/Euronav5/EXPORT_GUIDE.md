@@ -59,6 +59,17 @@ values are not reused — production shows such gaps).
 Consistent in every reference figure. (Styles 801 FMISSION, 804 FSAR,
 805 FWARNING exist in appMatrix but no set exercises them.)
 
+**Appearance schemes — why a styled object can render white.** The
+appMatrix `scheme` index (0–4) selects a style's look per lighting mode
+(DAG/NATT/DIM0/DIM25/DIM50). A style id only renders in the schemes it is
+defined for; in any other scheme the object falls back to plain white.
+The helicopter rendered an exported USER layer using scheme 1, so a
+scheme-0-only style (e.g. 524 OVNINGSSEKTOR, 534 KRAFTLEDNING RÖD) came out
+white even though the user picked a colored style. Pick styles present in
+**all five schemes** (272 of them) to render in every lighting mode. Full
+detail and the scheme-by-scheme breakdown: APPMATRIX_SYM.md → "Appearance
+schemes".
+
 **Rendering caveats (decoded from appMatrix):** the F-zone styles are
 muted by design — thin colored outline (800 red, 802 olive, 804 lilac,
 805 blue, 806 khaki) with an opaque white polygon fill. 803 FOPERATION
@@ -121,7 +132,16 @@ whole file:
 
 * polyline → one record per vertex
 * polygon → one record per distinct vertex **+ repeat of the first vertex**
-* circle → one record, center coords, `RANGEDETECTION = radius_m`
+* circle → see note below
+
+**Circles do not render natively.** A single-record circle with
+`RANGEDETECTION = radius_m` (the planner's c1 encoding) draws **no ring**
+on the helicopter at any radius — confirmed by on-hardware testing of a
+dedicated circle card (radii 100 m–8 km, both range fields, with
+intervisibility/THREAT RANGES enabled: nothing appeared). The iOS app
+therefore **tessellates circles into polygon rings** (48 vertices) and
+exports them as ordinary polygons, which render reliably. RANGEDETECTION
+is left 0; the radius lives in the vertex geometry.
 
 Coordinates: `round(degrees × 1_000_000)` as i32 LE. All records carry the
 figure's shared fields (TBL_FORMAT.md record table).
