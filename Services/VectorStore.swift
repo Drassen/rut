@@ -318,6 +318,9 @@ final class VectorStore: ObservableObject {
     /// Separate @Published so the map can gate airspace rendering without
     /// going through layers (which re-renders user shapes too).
     @Published var airspaceVisible: Bool = true
+    /// Mirrors each airspace zone-type sub-layer's isVisible flag, so the map
+    /// can gate rendering per zone type (CTR/ATZ/RSTA/DNGA). Defaults to visible.
+    @Published var airspaceTypeVisible: [AirspaceZone.ZoneType: Bool] = [:]
     @Published var corridorWidth: Double = 1000
 
     // Drag state is panel-local — NOT @Published to avoid triggering map re-renders on every finger move
@@ -332,6 +335,13 @@ final class VectorStore: ObservableObject {
     let drawing = DrawingStateMachine()
 
     private static let airspaceSystemLayerId = UUID(uuidString: "AAAAAAAA-AAAA-AAAA-AAAA-AAAAAAAAAAAA")!
+    /// Stable per-type sub-layer IDs so visibility toggles survive re-syncs.
+    private static let airspaceTypeLayerIds: [AirspaceZone.ZoneType: UUID] = [
+        .ctr:  UUID(uuidString: "AAAAAAAA-AAAA-AAAA-AAAA-000000000001")!,
+        .atz:  UUID(uuidString: "AAAAAAAA-AAAA-AAAA-AAAA-000000000002")!,
+        .rsta: UUID(uuidString: "AAAAAAAA-AAAA-AAAA-AAAA-000000000003")!,
+        .dnga: UUID(uuidString: "AAAAAAAA-AAAA-AAAA-AAAA-000000000004")!,
+    ]
     private var cancellables = Set<AnyCancellable>()
 
     init() {
@@ -365,6 +375,10 @@ final class VectorStore: ObservableObject {
         if id == Self.airspaceSystemLayerId {
             airspaceVisible = findLayer(id: id)?.isVisible ?? airspaceVisible
         }
+        // Airspace zone-type sub-layer toggled → mirror into the per-type map.
+        if let zoneType = Self.airspaceTypeLayerIds.first(where: { $0.value == id })?.key {
+            airspaceTypeVisible[zoneType] = findLayer(id: id)?.isVisible ?? true
+        }
     }
 
     func toggleLayerExpanded(id: UUID) {
@@ -392,7 +406,21 @@ final class VectorStore: ObservableObject {
     }
 
     func setActiveLayer(_ id: UUID) {
+        // System layers (e.g. LFV Luftrum) are read-only — they can be
+        // expanded and hidden but never selected as the active draw target.
+        guard !layerIsSystem(id: id) else { return }
         activeLayerId = id
+    }
+
+    /// Total shapes across all non-system layers, recursing into sub-layers.
+    func userShapeCount() -> Int {
+        func count(_ layers: [VectorLayer]) -> Int {
+            layers.reduce(0) { acc, layer in
+                guard !layer.isSystem else { return acc }
+                return acc + layer.shapes.count + count(layer.children)
+            }
+        }
+        return count(layers)
     }
 
     /// Returns true if the layer (or any ancestor) has isSystem = true.
@@ -746,7 +774,13 @@ final class VectorStore: ObservableObject {
         let children: [VectorLayer] = typeOrder.compactMap { zoneType in
             let count = zones.filter { $0.type == zoneType }.count
             guard count > 0 else { return nil }
-            return VectorLayer(name: "\(typeNames[zoneType]!) (\(count))", isSystem: true, isExpanded: false)
+            let typeId = Self.airspaceTypeLayerIds[zoneType]!
+            // Preserve a previously-toggled visibility for this type across re-syncs.
+            let wasTypeVisible = existing?.children.first(where: { $0.id == typeId })?.isVisible ?? true
+            var child = VectorLayer(id: typeId, name: "\(typeNames[zoneType]!) (\(count))",
+                                    isSystem: true, isExpanded: false)
+            child.isVisible = wasTypeVisible
+            return child
         }
 
         var systemLayer = VectorLayer(id: systemId, name: "LFV Luftrum", isSystem: true)
@@ -760,6 +794,12 @@ final class VectorStore: ObservableObject {
             layers.insert(systemLayer, at: 0)
         }
         airspaceVisible = wasVisible
+        // Rebuild the per-type visibility mirror the map reads.
+        var typeVisible: [AirspaceZone.ZoneType: Bool] = [:]
+        for (zoneType, typeId) in Self.airspaceTypeLayerIds {
+            typeVisible[zoneType] = children.first(where: { $0.id == typeId })?.isVisible ?? true
+        }
+        airspaceTypeVisible = typeVisible
     }
 
     // MARK: - Map rendering helpers

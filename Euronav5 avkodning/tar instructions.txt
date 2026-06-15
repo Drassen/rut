@@ -1,0 +1,1 @@
+tar --format=gnutar --uid 0 --gid 0 --uname root --gname 0 -cf - db | gzip -9 -c > FileTran.tgz

@@ -27,29 +27,34 @@ struct VectorLayerRowView: View {
                 }
             } label: {
                 Image(systemName: "chevron.right")
-                    .font(.system(size: 10, weight: .semibold))
+                    .font(.system(size: 15, weight: .semibold))
                     .foregroundColor(dimColor)
                     .rotationEffect(.degrees(layer.isExpanded ? 90 : 0))
-                    .frame(width: 14)
+                    .frame(width: 21, height: 28)
+                    .contentShape(Rectangle())
             }
             .buttonStyle(.plain)
 
             // Visibility eye
             Button { vectorStore.toggleLayerVisibility(id: layer.id) } label: {
                 Image(systemName: layer.isVisible ? "eye" : "eye.slash")
-                    .font(.system(size: 12))
+                    .font(.system(size: 18))
                     .foregroundColor(layer.isVisible ? dimColor : RutTheme.textMuted)
+                    .frame(width: 28, height: 28)
+                    .contentShape(Rectangle())
             }
             .buttonStyle(.plain)
 
-            // Folder / lock icon
-            Image(systemName: layer.isSystem ? "lock.fill" : "folder.fill")
-                .font(.system(size: 12))
-                .foregroundColor(RutTheme.textMuted)
+            // Lock icon (system layers only)
+            if layer.isSystem {
+                Image(systemName: "lock.fill")
+                    .font(.system(size: 12))
+                    .foregroundColor(RutTheme.textMuted)
+            }
 
             // Name
             Text(layer.name)
-                .font(.system(size: 13, weight: .medium))
+                .font(.system(size: 15, weight: .medium))
                 .foregroundColor(nameColor)
                 .lineLimit(1)
 
@@ -61,17 +66,22 @@ struct VectorLayerRowView: View {
                     vectorStore.deleteLayer(id: layer.id)
                 } label: {
                     Image(systemName: "trash")
-                        .font(.system(size: 11))
+                        .font(.system(size: 16))
                         .foregroundColor(RutTheme.textMuted)
+                        .frame(width: 28, height: 28)
+                        .contentShape(Rectangle())
                 }
                 .buttonStyle(.plain)
             }
         }
         .padding(.horizontal, 8)
-        .padding(.vertical, 9)
+        .padding(.vertical, 13)
         .background(showAmberBg ? RutTheme.amber.opacity(0.15) : Color.clear)
         .contentShape(Rectangle())
         .onTapGesture {
+            // System layers are read-only: tapping the row must not select it
+            // as the active draw target (use the chevron/eye to expand/hide).
+            guard !layer.isSystem else { return }
             vectorStore.activeShapeId = nil
             vectorStore.activeShapeLayerId = nil
             vectorStore.isEditingShape = false
@@ -110,30 +120,32 @@ struct VectorShapeRowView: View {
                 vectorStore.updateShape(updated, in: layerId)
             } label: {
                 Image(systemName: shape.isVisible ? "eye" : "eye.slash")
-                    .font(.system(size: 11))
+                    .font(.system(size: 16))
                     .foregroundColor(shape.isVisible ? dimColor : RutTheme.textMuted)
+                    .frame(width: 28, height: 28)
+                    .contentShape(Rectangle())
             }
             .buttonStyle(.plain)
 
             let iconColor = Color(hex: shape.style.strokeColor)
 
             if case .point = shape.geometry {
-                VectorPointIconView(icon: shape.style.pointIcon, color: iconColor, size: 13)
+                VectorPointIconView(icon: shape.style.pointIcon, color: iconColor, size: 16)
             } else {
                 Image(systemName: shapeIcon(shape.geometry))
-                    .font(.system(size: 11))
+                    .font(.system(size: 14))
                     .foregroundColor(iconColor)
             }
 
             Text(shape.name)
-                .font(.system(size: 12))
+                .font(.system(size: 14))
                 .foregroundColor(nameColor)
                 .lineLimit(1)
 
             Spacer(minLength: 4)
         }
         .padding(.horizontal, 8)
-        .padding(.vertical, 4)
+        .padding(.vertical, 8)
         .background(isSelected ? RutTheme.amber.opacity(0.15) : Color.clear)
         .contentShape(Rectangle())
         .onTapGesture {

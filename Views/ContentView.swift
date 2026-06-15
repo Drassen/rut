@@ -91,6 +91,8 @@ struct ContentView: View {
     @State private var showKMLImportModeDialog = false
     @State private var showLayerPanel = false
     @State private var selectedTab: AppMode = .navigation
+    /// Measured bottom safe-area inset, used to reclaim half of it under the toolbar.
+    @State private var bottomSafeInset: CGFloat = 0
 
     private var appVersion: String {
         Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "—"
@@ -105,6 +107,13 @@ struct ContentView: View {
                     tabSelector
                     mainView
                 }
+                .background(GeometryReader { proxy in
+                    Color.clear
+                        .onAppear { bottomSafeInset = proxy.safeAreaInsets.bottom }
+                        .onChange(of: proxy.safeAreaInsets.bottom) { _, new in
+                            bottomSafeInset = new
+                        }
+                })
             }
         }
         .onChange(of: selectedTab) { oldValue, newValue in
@@ -359,7 +368,7 @@ struct ContentView: View {
                 let uAp = navStore.document.userAirports.count
                 let uNv = navStore.document.userNavaids.count
                 let uWp = navStore.document.userWaypoints.count
-                let uSh = core.vectorStore.layers.filter { !$0.isSystem }.reduce(0) { $0 + $1.shapes.count }
+                let uSh = core.vectorStore.userShapeCount()
 
                 if uAp > 0 { StatBadge(icon: "airplane", count: uAp, label: "Apt") }
                 if uNv > 0 { StatBadge(icon: "antenna.radiowaves.left.and.right", count: uNv, label: "Nav") }
@@ -384,8 +393,7 @@ struct ContentView: View {
                 .buttonStyle(RutSecondaryButtonStyle())
             }
             .padding(.horizontal, 14)
-            .padding(.top, 4)
-            .padding(.bottom, 8)
+            .padding(.vertical, 8)
             .background(RutTheme.surface)
 
             if !navStore.routes.isEmpty {
@@ -426,9 +434,13 @@ struct ContentView: View {
                     .foregroundColor(RutTheme.textMuted)
             }
             .padding(.horizontal, 14)
-            .padding(.vertical, 12)
+            .padding(.top, 12)
+            .padding(.bottom, 6)
             .background(RutTheme.surface)
         }
+        // Let the bar surface reach down into half the bottom safe area,
+        // halving the empty gap below it.
+        .padding(.bottom, -bottomSafeInset / 2)
     }
 
     // MARK: - Vector top bar
@@ -436,6 +448,9 @@ struct ContentView: View {
     private var vectorTopBar: some View {
         VStack(spacing: 0) {
             HStack(spacing: 8) {
+                let uSh = core.vectorStore.userShapeCount()
+                if uSh > 0 { StatBadge(icon: "triangle", count: uSh, label: "Shp") }
+
                 Spacer()
 
                 Button { lastImporter = .importing; activeImporter = .importing } label: {
@@ -461,6 +476,9 @@ struct ContentView: View {
         VectorToolbar()
             .environmentObject(core.vectorStore)
             .environmentObject(toastManager)
+            // Let the toolbar surface reach down into half the bottom safe area,
+            // halving the empty gap below it.
+            .padding(.bottom, -bottomSafeInset / 2)
     }
 
     private var divider: some View {
@@ -761,6 +779,7 @@ private struct SettingsView: View {
     @State private var isSelectingDefaultFile = false
     @State private var currentName: String? = DefaultPresetService.shared.defaultFileName
     @AppStorage("autoRenumberWaypoints") private var autoRenumberWaypoints: Bool = true
+    @AppStorage("autoLoadLFVLayer") private var autoLoadLFVLayer: Bool = true
 
     var body: some View {
         NavigationStack {
@@ -769,6 +788,12 @@ private struct SettingsView: View {
                     Toggle("Automatically re-name and re-number waypoints", isOn: $autoRenumberWaypoints)
                 } footer: {
                     Text("When enabled, waypoints are renamed and renumbered in route order whenever their type changes.")
+                }
+
+                Section {
+                    Toggle("Auto-load LFV vector layer", isOn: $autoLoadLFVLayer)
+                } footer: {
+                    Text("When enabled, the LFV airspace (luftrum) vector layer is fetched and shown automatically at startup.")
                 }
 
                 Section("Default airports & navaids") {

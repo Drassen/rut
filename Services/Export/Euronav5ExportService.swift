@@ -24,12 +24,14 @@ struct Euronav5ExportService {
         }
     }
 
-    /// Export all visible shapes of the given layers into one Euronav5
-    /// layer file (plus its three index files). Returns relative card
-    /// paths mapped to file contents; empty if there is nothing to export.
+    /// Export all visible shapes of the given layers into a complete
+    /// EuroNav5 "UpdateMedia" card: the USER layer file (+ its three index
+    /// files), the generic ENMedia.ini / User4.create.sql, the empty support
+    /// folders, and a FileTran.tgz snapshot of db/. Empty card if there is
+    /// nothing to export. See `Euronav5CardWriter` for the layout.
     func exportEuronav5Card(vectorLayers: [VectorLayer],
                             to layer: Euronav5Layer,
-                            date: Date = Date()) -> [String: Data] {
+                            date: Date = Date()) -> Euronav5CardWriter.Card {
         var shapes: [VectorShape] = []
         for vectorLayer in vectorLayers {
             collectShapesFlat(from: vectorLayer, into: &shapes)
@@ -41,16 +43,17 @@ struct Euronav5ExportService {
         guard let files = Euronav5Encoder.exportLayer(
             figures: figures, objectIds: objectIds,
             ts: Euronav5Encoder.Timestamp(date: date)) else {
-            return [:]
+            return Euronav5CardWriter.Card(files: [:], directories: [])
         }
 
         let base = "db/SQL/USER\(layer.rawValue + 1)"
-        return [
+        let userFiles: [String: Data] = [
             "\(base).tbl": files.tbl,
             "\(base)-ID.idx": files.idIdx,
             "\(base)-LN.idx": files.lnIdx,
             "\(base)-OI.idx": files.oiIdx,
         ]
+        return Euronav5CardWriter.buildCard(userFiles: userFiles, date: date)
     }
 
     // MARK: - VectorShape -> Figure mapping

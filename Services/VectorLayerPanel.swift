@@ -120,7 +120,7 @@ struct VectorLayerPanel: View {
     // MARK: - Layer reorder gesture (uses flat layer index)
 
     private func reorderGesture(layerId: UUID, flatIndex: Int, totalCount: Int) -> some Gesture {
-        let rowHeight: CGFloat = 37
+        let rowHeight: CGFloat = 55
         return LongPressGesture(minimumDuration: 0.4)
             .sequenced(before: DragGesture(minimumDistance: 4, coordinateSpace: .global))
             .onChanged { value in
@@ -161,7 +161,7 @@ struct VectorLayerPanel: View {
 
     private func shapeReorderGesture(shapeId: UUID, layerId: UUID,
                                       panelIndex: Int, totalCount: Int) -> some Gesture {
-        let rowHeight: CGFloat = 33
+        let rowHeight: CGFloat = 44
         return LongPressGesture(minimumDuration: 0.4)
             .sequenced(before: DragGesture(minimumDistance: 4, coordinateSpace: .global))
             .onChanged { value in

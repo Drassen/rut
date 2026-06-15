@@ -47,6 +47,7 @@ struct RutMapView: View {
     @EnvironmentObject var vectorStore: VectorStore
     @EnvironmentObject var core: CoreServices
     @StateObject private var airspaceService = AirspaceService.shared
+    @AppStorage("autoLoadLFVLayer") private var autoLoadLFVLayer: Bool = true
 
     var onPointTap: ((RouteMapPoint) -> Void)? = nil
     var onMapLongPress: ((CLLocationCoordinate2D) -> Void)? = nil
@@ -178,6 +179,7 @@ struct RutMapView: View {
                         DispatchQueue.main.async { fixAnnotationZOrder() }
                     }
                     .task {
+                        guard autoLoadLFVLayer else { return }
                         await airspaceService.fetchAllZones()
                         vectorStore.syncAirspaceSystemLayer(zones: airspaceService.zones)
                     }
@@ -442,7 +444,9 @@ struct RutMapView: View {
     // MARK: - 0a. Airspace content
     @MapContentBuilder
     private func airspaceContent() -> some MapContent {
-        ForEach(airspaceService.zones) { zone in
+        ForEach(airspaceService.zones.filter {
+            vectorStore.airspaceTypeVisible[$0.type] ?? true
+        }) { zone in
             MapPolygon(coordinates: zone.coordinates)
                 .foregroundStyle(zone.type.fillColor)
                 .stroke(zone.type.strokeColor, lineWidth: 1.5)

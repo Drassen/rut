@@ -29,9 +29,13 @@ struct VectorToolbar: View {
     @State private var showExportDialog = false
     @State private var exportFormat: VectorExportFormat = .kmz
     @State private var showEuronav5FolderPicker = false
-    @State private var pendingEuronav5Files: [String: Data]? = nil
+    @State private var pendingEuronav5Files: Euronav5CardWriter.Card? = nil
     @State private var showEuronav5ExportCompleteAlert = false
     @State private var exportContainer: ExportContainer? = nil
+    /// Fixed height for tool buttons so they match the export button.
+    private let toolButtonHeight: CGFloat = 46
+    /// Fixed width so all tool buttons are equally wide.
+    private let toolButtonWidth: CGFloat = 64
 
     var body: some View {
         VStack(spacing: 0) {
@@ -157,7 +161,8 @@ struct VectorToolbar: View {
                 }
             }
             .padding(.horizontal, 14)
-            .padding(.vertical, 12)
+            .padding(.top, 12)
+            .padding(.bottom, 6)
             .background(RutTheme.surface)
         }
         .alert("Shape Name", isPresented: $showNewShapeNameAlert) {
@@ -364,14 +369,14 @@ struct VectorToolbar: View {
         } label: {
             VStack(spacing: 2) {
                 Image(systemName: icon)
-                    .font(.system(size: 13, weight: isActive ? .bold : .regular))
+                    .font(.system(size: 16, weight: isActive ? .bold : .regular))
                 Text(label)
-                    .font(.system(size: 9, weight: isActive ? .semibold : .regular))
+                    .font(.system(size: 11, weight: isActive ? .semibold : .regular))
             }
             .foregroundColor(isActive ? .black : RutTheme.text)
-            .frame(minWidth: 54)
             .padding(.horizontal, 8)
             .padding(.vertical, 5)
+            .frame(width: toolButtonWidth, height: toolButtonHeight)
             .background(isActive ? RutTheme.amber : RutTheme.surface2)
             .clipShape(RoundedRectangle(cornerRadius: 6))
             .overlay(RoundedRectangle(cornerRadius: 6).stroke(
@@ -389,15 +394,15 @@ struct VectorToolbar: View {
                 VectorPointIconView(
                     icon: .circle,
                     color: isActive ? .black : RutTheme.text,
-                    size: 13
+                    size: 16
                 )
                 Text("Point")
-                    .font(.system(size: 9, weight: isActive ? .semibold : .regular))
+                    .font(.system(size: 11, weight: isActive ? .semibold : .regular))
             }
             .foregroundColor(isActive ? .black : RutTheme.text)
-            .frame(minWidth: 54)
             .padding(.horizontal, 8)
             .padding(.vertical, 5)
+            .frame(width: toolButtonWidth, height: toolButtonHeight)
             .background(isActive ? RutTheme.amber : RutTheme.surface2)
             .clipShape(RoundedRectangle(cornerRadius: 6))
             .overlay(RoundedRectangle(cornerRadius: 6).stroke(
@@ -431,13 +436,14 @@ struct VectorToolbar: View {
                     ctx.stroke(path, with: .color(isActive ? .black : RutTheme.text),
                                style: StrokeStyle(lineWidth: 1.6, lineCap: .round, lineJoin: .round))
                 }
-                .frame(width: 20, height: 18)
+                .frame(width: 24, height: 21)
                 Text("Corridor")
-                    .font(.system(size: 9, weight: isActive ? .semibold : .regular))
+                    .font(.system(size: 11, weight: isActive ? .semibold : .regular))
             }
             .foregroundColor(isActive ? .black : RutTheme.text)
             .padding(.horizontal, 8)
             .padding(.vertical, 5)
+            .frame(width: toolButtonWidth, height: toolButtonHeight)
             .background(isActive ? RutTheme.amber : RutTheme.surface2)
             .clipShape(RoundedRectangle(cornerRadius: 6))
             .overlay(RoundedRectangle(cornerRadius: 6).stroke(
@@ -506,8 +512,8 @@ struct VectorToolbar: View {
                 filename = outputName + ".zip"
             case .dmg:
                 let service = Euronav5ExportService()
-                let files = service.exportEuronav5Card(vectorLayers: layersToExport, to: .three)
-                pendingEuronav5Files = files
+                let card = service.exportEuronav5Card(vectorLayers: layersToExport, to: .three)
+                pendingEuronav5Files = card
                 showEuronav5FolderPicker = true
                 return
             case .geojson:
@@ -549,22 +555,24 @@ struct VectorToolbar: View {
     }
 
     private func writeEuronav5CardStructure(to folderURL: URL) {
-        guard let files = pendingEuronav5Files else { return }
+        guard let card = pendingEuronav5Files, !card.isEmpty else { return }
         do {
             let secured = folderURL.startAccessingSecurityScopedResource()
             defer { if secured { folderURL.stopAccessingSecurityScopedResource() } }
 
+            // Replace any existing db folder so stale layers don't linger.
             let dbFolder = folderURL.appendingPathComponent("db")
-
-            // Remove db folder if it exists
             if FileManager.default.fileExists(atPath: dbFolder.path) {
                 try FileManager.default.removeItem(at: dbFolder)
             }
 
-            let sqlFolder = dbFolder.appendingPathComponent("SQL")
-            try FileManager.default.createDirectory(at: sqlFolder, withIntermediateDirectories: true)
+            // Create the empty support folders (db/log, db/settings, ...).
+            for relDir in card.directories {
+                let dir = folderURL.appendingPathComponent(relDir)
+                try FileManager.default.createDirectory(at: dir, withIntermediateDirectories: true)
+            }
 
-            for (path, data) in files {
+            for (path, data) in card.files {
                 let fullPath = folderURL.appendingPathComponent(path)
                 let dir = fullPath.deletingLastPathComponent()
                 try FileManager.default.createDirectory(at: dir, withIntermediateDirectories: true)
@@ -800,7 +808,7 @@ struct VectorExportButton: View {
     @State private var exportFormat: VectorExportFormat = .kmz
     @State private var showExportDialog = false
     @State private var showEuronav5FolderPicker = false
-    @State private var pendingEuronav5Files: [String: Data]? = nil
+    @State private var pendingEuronav5Files: Euronav5CardWriter.Card? = nil
     @State private var showEuronav5ExportCompleteAlert = false
 
     var body: some View {
@@ -894,8 +902,8 @@ struct VectorExportButton: View {
                 filename = outputName + ".zip"
             case .dmg:
                 let service = Euronav5ExportService()
-                let files = service.exportEuronav5Card(vectorLayers: layersToExport, to: .three)
-                pendingEuronav5Files = files
+                let card = service.exportEuronav5Card(vectorLayers: layersToExport, to: .three)
+                pendingEuronav5Files = card
                 showEuronav5FolderPicker = true
                 return
             case .geojson:
@@ -939,23 +947,25 @@ struct VectorExportButton: View {
     // MARK: - Euronav5 Card Export
 
     private func writeEuronav5CardStructure(to folderURL: URL) {
-        guard let files = pendingEuronav5Files else { return }
+        guard let card = pendingEuronav5Files, !card.isEmpty else { return }
         do {
             let secured = folderURL.startAccessingSecurityScopedResource()
             defer { if secured { folderURL.stopAccessingSecurityScopedResource() } }
 
+            // Replace any existing db folder so stale layers don't linger.
             let dbFolder = folderURL.appendingPathComponent("db")
-
-            // Remove db folder if it exists
             if FileManager.default.fileExists(atPath: dbFolder.path) {
                 try FileManager.default.removeItem(at: dbFolder)
             }
 
-            let sqlFolder = dbFolder.appendingPathComponent("SQL")
-            try FileManager.default.createDirectory(at: sqlFolder, withIntermediateDirectories: true)
+            // Create the empty support folders (db/log, db/settings, ...).
+            for relDir in card.directories {
+                let dir = folderURL.appendingPathComponent(relDir)
+                try FileManager.default.createDirectory(at: dir, withIntermediateDirectories: true)
+            }
 
             // Write all files
-            for (path, data) in files {
+            for (path, data) in card.files {
                 let fullPath = folderURL.appendingPathComponent(path)
                 let dir = fullPath.deletingLastPathComponent()
                 try FileManager.default.createDirectory(at: dir, withIntermediateDirectories: true)
