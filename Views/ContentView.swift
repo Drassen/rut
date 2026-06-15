@@ -35,6 +35,10 @@ struct ExportContainer: Identifiable {
     let urls: [URL]
 }
 
+enum ExportError: Error {
+    case nothingToExport
+}
+
 // MARK: - Stat Badge
 
 private struct StatBadge: View {
@@ -76,7 +80,6 @@ struct ContentView: View {
     @State private var activeImporter: FileImporterKind? = nil
     @State private var lastImporter: FileImporterKind? = nil  // retains kind through dismiss
     @State private var showSettingsSheet = false
-    @State private var showA109ExportCompleteAlert = false
     @State private var exportContainer: ExportContainer?
     @State private var showA109MissingDataAlert = false
     @State private var showDatabase = false
@@ -114,6 +117,8 @@ struct ContentView: View {
                             bottomSafeInset = new
                         }
                 })
+
+                ExportProgressOverlay()
             }
         }
         .onChange(of: selectedTab) { oldValue, newValue in
@@ -165,11 +170,6 @@ struct ContentView: View {
                 }
             }
             Button("Cancel", role: .cancel) { }
-        }
-        .alert("A109 Export Complete", isPresented: $showA109ExportCompleteAlert) {
-            Button("OK") { }
-        } message: {
-            Text("Remove the PCMCIA card.")
         }
         .sheet(isPresented: $showSettingsSheet) {
             SettingsView()
@@ -595,6 +595,21 @@ struct ContentView: View {
         }
     }
 
+    /// Routes an export error to the right UI: validation issues get the
+    /// detailed alert, "nothing to export" is a quiet info toast, the rest
+    /// surface as an error toast.
+    private func handleExportFailure(_ error: Error) {
+        switch error {
+        case let ve as ExportValidationError:
+            showExportValidationAlert(ve)
+        case ExportError.nothingToExport:
+            toastManager.show(message: "Nothing to export.", kind: .info)
+        default:
+            ErrorLogger.shared.logError(error)
+            toastManager.show(message: error.localizedDescription)
+        }
+    }
+
     // MARK: - Export Logic
 
     private func canExport() -> Bool {
@@ -652,27 +667,39 @@ struct ContentView: View {
         guard let exporter = CoreServices.shared.exporter(withId: exporterId) else {
             toastManager.show(message: "Exporter for '\(exporterId)' not found."); return
         }
+        // Sync vector layers from UI to document before export
+        if exportFormat == .rut {
+            navStore.document.vectorLayers = core.vectorStore.layers.filter { !$0.isSystem }
+        }
+        // No progress spinner here: these formats are saved through the document
+        // picker, which is itself the "where to save" UI. The encode is quick,
+        // so run it inline and present the picker.
         do {
-            // Sync vector layers from UI to document before export
-            if exportFormat == .rut {
-                navStore.document.vectorLayers = core.vectorStore.layers.filter { !$0.isSystem }
-            }
             let files = try exporter.export(document: navStore.document, routes: navStore.routes)
-            guard !files.isEmpty else { toastManager.show(message: "Nothing to export.", kind: .info); return }
-            let tempDir = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
-            try FileManager.default.createDirectory(at: tempDir, withIntermediateDirectories: true)
-            var urls: [URL] = []
-            for file in files {
-                let url = tempDir.appendingPathComponent(file.filename)
-                try file.data.write(to: url, options: .atomic)
-                urls.append(url)
-            }
-            DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) { self.exportContainer = ExportContainer(urls: urls) }
-        } catch let ve as ExportValidationError {
-            showExportValidationAlert(ve)
+            guard !files.isEmpty else { throw ExportError.nothingToExport }
+            presentExportSheet(try writeTempFiles(files))
         } catch {
-            ErrorLogger.shared.logError(error)
-            toastManager.show(message: error.localizedDescription)
+            handleExportFailure(error)
+        }
+    }
+
+    /// Writes exported files to a unique temp directory and returns their URLs.
+    private func writeTempFiles(_ files: [ExportedFile]) throws -> [URL] {
+        let tempDir = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
+        try FileManager.default.createDirectory(at: tempDir, withIntermediateDirectories: true)
+        return try files.map { file in
+            let url = tempDir.appendingPathComponent(file.filename)
+            try file.data.write(to: url, options: .atomic)
+            return url
+        }
+    }
+
+    /// Presents the document-export sheet after the export-format dialog
+    /// dismisses. Presenting a UIDocumentPicker in the same render pass as
+    /// another transition leaves the picker unresponsive.
+    private func presentExportSheet(_ urls: [URL]) {
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
+            self.exportContainer = ExportContainer(urls: urls)
         }
     }
 
@@ -689,19 +716,28 @@ struct ContentView: View {
         guard let exporter = CoreServices.shared.exporter(withId: "a109") else {
             toastManager.show(message: "A109 Exporter not available."); return
         }
-        do {
-            let files = try exporter.export(document: navStore.document, routes: navStore.routes)
-            guard !files.isEmpty else { toastManager.show(message: "Nothing to export.", kind: .info); return }
+        let doc = navStore.document
+        let routes = navStore.routes
+        toastManager.runExport("Writing card…") { () -> Void in
+            // Hold the security scope for the whole operation. The work runs on
+            // a background thread, so the folder isn't accessible unless we keep
+            // access open across the writes AND the dot-file cleanup that
+            // enumerates the directory afterwards.
+            let secured = folderURL.startAccessingSecurityScopedResource()
+            defer { if secured { folderURL.stopAccessingSecurityScopedResource() } }
+
+            let files = try exporter.export(document: doc, routes: routes)
+            guard !files.isEmpty else { throw ExportError.nothingToExport }
             for file in files {
                 try writePCMCIAFile(file.data, filename: file.filename, to: folderURL)
             }
             try cleanupDotFiles(in: folderURL)
-            showA109ExportCompleteAlert = true
-        } catch let ve as ExportValidationError {
-            showExportValidationAlert(ve)
-        } catch {
-            ErrorLogger.shared.logError(error)
-            toastManager.show(message: "Export failed: \(error.localizedDescription)")
+        } onSuccess: { _ in
+            toastManager.exportCompletion = ExportCompletion(
+                title: "A109 Export Complete",
+                message: "Remove the PCMCIA card.")
+        } onFailure: { error in
+            handleExportFailure(error)
         }
     }
 
@@ -721,28 +757,19 @@ struct ContentView: View {
         guard let exporter = CoreServices.shared.exporter(withId: id) else {
             toastManager.show(message: "KML exporter '\(id)' not found."); return
         }
+        let routesForExport: [Route]
+        if id == "kml-route", let activeId = navStore.activeRouteId,
+           let active = navStore.document.routes.first(where: { $0.id == activeId }) {
+            routesForExport = [active]
+        } else {
+            routesForExport = navStore.routes
+        }
         do {
-            let routesForExport: [Route]
-            if id == "kml-route", let activeId = navStore.activeRouteId,
-               let active = navStore.document.routes.first(where: { $0.id == activeId }) {
-                routesForExport = [active]
-            } else {
-                routesForExport = navStore.routes
-            }
             let files = try exporter.export(document: navStore.document, routes: routesForExport)
-            guard !files.isEmpty else { toastManager.show(message: "Nothing to export.", kind: .info); return }
-            let tempDir = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
-            try FileManager.default.createDirectory(at: tempDir, withIntermediateDirectories: true)
-            var urls: [URL] = []
-            for file in files {
-                let url = tempDir.appendingPathComponent(file.filename)
-                try file.data.write(to: url, options: .atomic)
-                urls.append(url)
-            }
-            DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) { self.exportContainer = ExportContainer(urls: urls) }
+            guard !files.isEmpty else { throw ExportError.nothingToExport }
+            presentExportSheet(try writeTempFiles(files))
         } catch {
-            ErrorLogger.shared.logError(error)
-            toastManager.show(message: error.localizedDescription)
+            handleExportFailure(error)
         }
     }
 
