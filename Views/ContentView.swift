@@ -35,8 +35,18 @@ struct ExportContainer: Identifiable {
     let urls: [URL]
 }
 
-enum ExportError: Error {
+enum ExportError: Error, LocalizedError {
     case nothingToExport
+    case flushFailed(String)
+
+    var errorDescription: String? {
+        switch self {
+        case .nothingToExport:
+            return "Nothing to export."
+        case .flushFailed(let detail):
+            return "Export ERROR: \(detail) ; Try exporting again."
+        }
+    }
 }
 
 // MARK: - Stat Badge
@@ -732,6 +742,25 @@ struct ContentView: View {
                 try writePCMCIAFile(file.data, filename: file.filename, to: folderURL)
             }
             try cleanupDotFiles(in: folderURL)
+            // Flush the volume's own metadata (FAT + directory entries) to the
+            // card. Per-file F_FULLFSYNC commits each file's data, but on msdosfs
+            // the FAT lives in volume-level buffers; sync() pushes those out and
+            // the directory F_FULLFSYNC forces the device cache to permanent
+            // storage. Runs after the dot-file cleanup so its directory changes
+            // are flushed too. Throws on failure → completion dialog never shows.
+            try self.flushVolume(at: folderURL)
+            // Read every file back from the card and byte-compare to what we
+            // wrote. Catches truncation / partial / corrupted writes at the
+            // filesystem level before telling the pilot the card is ready.
+            // (Reads go through the OS cache, so this does not catch the
+            // FAT1/device-cache divergence — that needs an eject.)
+            for file in files {
+                let onCard = try Data(contentsOf: folderURL.appendingPathComponent(file.filename))
+                guard onCard == file.data else {
+                    throw ExportError.flushFailed(
+                        "\(file.filename) read-back mismatch (\(onCard.count)/\(file.data.count) B)")
+                }
+            }
         } onSuccess: { _ in
             toastManager.exportCompletion = ExportCompletion(
                 title: "A109 Export Complete",
@@ -741,7 +770,13 @@ struct ContentView: View {
         }
     }
 
-    /// Writes a file to PCMCIA card with proper buffering (fsync) to prevent FAT corruption
+    /// Writes a file to the PCMCIA card and forces it to physical media.
+    ///
+    /// Uses `F_FULLFSYNC` rather than `fsync()`: on Darwin `fsync()` only pushes
+    /// to the drive's cache, while `F_FULLFSYNC` asks the drive to flush that
+    /// cache to permanent storage — required for a removable card the user pulls
+    /// immediately afterwards. Any failure is thrown so the "Export Complete"
+    /// dialog never appears for an incomplete write.
     private func writePCMCIAFile(_ data: Data, filename: String, to folderURL: URL) throws {
         let secured = folderURL.startAccessingSecurityScopedResource()
         defer { if secured { folderURL.stopAccessingSecurityScopedResource() } }
@@ -749,8 +784,36 @@ struct ContentView: View {
         let dest = folderURL.appendingPathComponent(filename)
         try data.write(to: dest, options: Data.WritingOptions.atomic)
         dest.cleanAppleAttributes()
+
         let fd = Darwin.open(dest.path, O_RDONLY)
-        if fd >= 0 { Darwin.fsync(fd); Darwin.close(fd) }
+        guard fd >= 0 else {
+            throw ExportError.flushFailed("could not open \(filename) (errno \(errno))")
+        }
+        defer { Darwin.close(fd) }
+        if fcntl(fd, F_FULLFSYNC) == -1 {
+            throw ExportError.flushFailed("F_FULLFSYNC failed for \(filename) (errno \(errno))")
+        }
+    }
+
+    /// Forces the volume's filesystem metadata (FAT table + directory entries)
+    /// out to the physical card after all files are written. `sync()` schedules
+    /// all dirty buffers (including the device-vnode FAT blocks that per-file
+    /// fsync does not cover); the directory `F_FULLFSYNC` then forces the drive
+    /// cache to permanent storage. Throws on failure.
+    private func flushVolume(at folderURL: URL) throws {
+        let secured = folderURL.startAccessingSecurityScopedResource()
+        defer { if secured { folderURL.stopAccessingSecurityScopedResource() } }
+
+        Darwin.sync()
+
+        let dfd = Darwin.open(folderURL.path, O_RDONLY)
+        guard dfd >= 0 else {
+            throw ExportError.flushFailed("could not open card directory (errno \(errno))")
+        }
+        defer { Darwin.close(dfd) }
+        if fcntl(dfd, F_FULLFSYNC) == -1 {
+            throw ExportError.flushFailed("directory F_FULLFSYNC failed (errno \(errno))")
+        }
     }
 
     private func executeKMLExport(id: String) {
