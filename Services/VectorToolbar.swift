@@ -563,23 +563,17 @@ struct VectorToolbar: View {
             let secured = folderURL.startAccessingSecurityScopedResource()
             defer { if secured { folderURL.stopAccessingSecurityScopedResource() } }
 
-            // Replace any existing db folder so stale layers don't linger.
-            let dbFolder = folderURL.appendingPathComponent("db")
-            if FileManager.default.fileExists(atPath: dbFolder.path) {
-                try FileManager.default.removeItem(at: dbFolder)
+            // Write only the root files the card needs — FileTran.tgz (which
+            // already contains a full snapshot of db/) and the ENMedia.ini
+            // descriptor. Skip writing the loose db/ tree.
+            guard let tgz = card.files["FileTran.tgz"] else {
+                throw ExportError.nothingToExport
             }
-
-            // Create the empty support folders (db/log, db/settings, ...).
-            for relDir in card.directories {
-                let dir = folderURL.appendingPathComponent(relDir)
-                try FileManager.default.createDirectory(at: dir, withIntermediateDirectories: true)
-            }
-
-            for (path, data) in card.files {
-                let fullPath = folderURL.appendingPathComponent(path)
-                let dir = fullPath.deletingLastPathComponent()
-                try FileManager.default.createDirectory(at: dir, withIntermediateDirectories: true)
-                try data.write(to: fullPath, options: .atomic)
+            try tgz.write(to: folderURL.appendingPathComponent("FileTran.tgz"),
+                          options: .atomic)
+            if let ini = card.files["ENMedia.ini"] {
+                try ini.write(to: folderURL.appendingPathComponent("ENMedia.ini"),
+                              options: .atomic)
             }
 
             let dsStorePath = folderURL.appendingPathComponent(".DS_Store").path
@@ -588,7 +582,7 @@ struct VectorToolbar: View {
             self.pendingEuronav5Files = nil
             self.toastManager.exportCompletion = ExportCompletion(
                 title: "Export Complete",
-                message: "PCMCIA card with vector data exported successfully. You can now remove the card.")
+                message: "FileTran.tgz and ENMedia.ini exported successfully. You can now remove the card.")
         } onFailure: { error in
             self.toastManager.show(message: "Export failed: \(error.localizedDescription)")
             self.pendingEuronav5Files = nil
