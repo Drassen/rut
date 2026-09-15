@@ -102,7 +102,9 @@ final class ToastManager: ObservableObject {
         }
         
         dismissWorkItem = workItem
-        DispatchQueue.main.asyncAfter(deadline: .now() + 2.0, execute: workItem)
+        // Errors carry longer text and must be readable before they disappear
+        let visibleFor: TimeInterval = toast.level == .error ? 5.0 : 2.0
+        DispatchQueue.main.asyncAfter(deadline: .now() + visibleFor, execute: workItem)
     }
 
     func show(_ message: String) { show(.info(message)) }

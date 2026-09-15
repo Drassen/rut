@@ -166,7 +166,7 @@ struct RouteEditorView: View {
         case .userWaypoint:
             let wp = navStore.document.userWaypoints.first { $0.id == ref.refId }
             let sub = wp.flatMap { $0.type != .custom ? $0.type.rawValue : nil }
-            return PointDisplayInfo(icon: "mappin.and.ellipse", color: RutTheme.textDim, subtitle: sub)
+            return PointDisplayInfo(icon: "mappin.circle", color: RutTheme.textDim, subtitle: sub)
         }
     }
 }
@@ -220,7 +220,7 @@ struct AddRoutePointSheet: View {
             ForEach(PickerTab.allCases) { t in
                 let icon: String = {
                     switch t {
-                    case .waypoints: return "mappin.and.ellipse"
+                    case .waypoints: return "mappin.circle"
                     case .airports:  return "airplane"
                     case .navaids:   return "antenna.radiowaves.left.and.right"
                     }
@@ -298,7 +298,7 @@ struct AddRoutePointSheet: View {
         return List {
             ForEach(items) { wp in
                 addRow(
-                    icon: "mappin.and.ellipse", iconColor: RutTheme.textDim,
+                    icon: "mappin.circle", iconColor: RutTheme.textDim,
                     id: wp.id,
                     name: wp.name != wp.id && !wp.name.isEmpty ? wp.name : nil,
                     badge: wp.type != .custom ? wp.type.rawValue : nil,

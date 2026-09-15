@@ -24,7 +24,10 @@ struct VectorLayerPanel: View {
             panelHeader
             Rectangle().fill(RutTheme.border).frame(height: 1)
             ScrollView {
-                LazyVStack(alignment: .leading, spacing: 0) {
+                // VStack, not LazyVStack: each layer (with all its shape rows) is a single
+                // child, so laziness saved nothing but made ScrollView estimate the content
+                // height wrongly (≈11000 vs real ≈4200 pt), making the scroll indicator jump.
+                VStack(alignment: .leading, spacing: 0) {
                     let layerEntries = vectorStore.flatLayerEntries()
                     let panelEntries = vectorStore.flatPanelEntries()
 
@@ -76,6 +79,12 @@ struct VectorLayerPanel: View {
         let isShapeDropTarget = draggingShapeId != nil
                                 && dragShapeTargetIndex == layerPanelIdx
 
+        // The reorder gesture blocks ScrollView panning on the row it is attached to,
+        // so only attach it to the selected layer — the only one it can move anyway.
+        let canReorderLayer = !entry.layer.isSystem
+                              && vectorStore.activeLayerId == entry.layer.id
+                              && vectorStore.activeShapeId == nil
+
         VStack(spacing: 0) {
             if isLayerDropTarget && !dropInto {
                 Rectangle().fill(RutTheme.amber).frame(height: 2)
@@ -85,8 +94,8 @@ struct VectorLayerPanel: View {
                 .opacity(draggingLayerId == entry.layer.id ? 0.4 : 1.0)
                 .overlay(dropInto ? RoundedRectangle(cornerRadius: 4)
                     .stroke(RutTheme.amber, lineWidth: 2) : nil)
-                .simultaneousGesture(entry.layer.isSystem ? nil : reorderGesture(
-                    layerId: entry.layer.id, flatIndex: layerFlatIndex, totalCount: layerCount))
+                .simultaneousGesture(canReorderLayer ? reorderGesture(
+                    layerId: entry.layer.id, flatIndex: layerFlatIndex, totalCount: layerCount) : nil)
 
             // Shape drop indicator below layer header (= first child position)
             if isShapeDropTarget {
@@ -104,12 +113,13 @@ struct VectorLayerPanel: View {
                            dragShapeTargetIndex == panelIdx {
                             Rectangle().fill(RutTheme.amber).frame(height: 2)
                         }
+                        // Same as layers: gesture only on the selected shape so other rows scroll
                         VectorShapeRowView(shape: shape, layerId: layerId, depth: entry.depth)
                             .environmentObject(vectorStore)
                             .opacity(draggingShapeId == shape.id ? 0.4 : 1.0)
-                            .simultaneousGesture(shapeReorderGesture(
+                            .simultaneousGesture(vectorStore.activeShapeId == shape.id ? shapeReorderGesture(
                                 shapeId: shape.id, layerId: layerId,
-                                panelIndex: panelIdx, totalCount: panelEntries.count))
+                                panelIndex: panelIdx, totalCount: panelEntries.count) : nil)
                     }
                 }
             }

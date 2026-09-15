@@ -263,6 +263,37 @@ struct VectorLayer: Identifiable, Codable {
     var children: [VectorLayer] = []
 }
 
+// MARK: - Content comparison (import de-duplication)
+
+extension VectorShape {
+    /// True if name, geometry and style are identical. Ids, visibility and export
+    /// metadata are ignored, so a re-imported copy of the same shape matches.
+    func hasSameContent(as other: VectorShape) -> Bool {
+        name == other.name && style == other.style && geometry.isEqual(to: other.geometry)
+    }
+}
+
+extension VectorGeometry {
+    func isEqual(to other: VectorGeometry, tolerance: Double = 1e-9) -> Bool {
+        func eq(_ a: Double, _ b: Double) -> Bool { abs(a - b) <= tolerance }
+        func eqCoords(_ a: [[Double]], _ b: [[Double]]) -> Bool {
+            a.count == b.count && zip(a, b).allSatisfy { p, q in
+                p.count == q.count && zip(p, q).allSatisfy { eq($0, $1) }
+            }
+        }
+        switch (self, other) {
+        case let (.point(lat1, lon1), .point(lat2, lon2)):
+            return eq(lat1, lat2) && eq(lon1, lon2)
+        case let (.polyline(c1), .polyline(c2)), let (.polygon(c1), .polygon(c2)):
+            return eqCoords(c1, c2)
+        case let (.circle(lat1, lon1, r1), .circle(lat2, lon2, r2)):
+            return eq(lat1, lat2) && eq(lon1, lon2) && eq(r1, r2)
+        default:
+            return false
+        }
+    }
+}
+
 // MARK: - Color + Hex
 
 extension Color {

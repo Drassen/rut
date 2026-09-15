@@ -509,11 +509,16 @@ struct RutMapView: View {
         ForEach(Array(navStore.document.userWaypoints.enumerated()), id: \.offset) { index, wp in
             if !activeRouteIDs.contains(wp.id) && !inactiveRouteIDs.contains(wp.id) {
                 Annotation("wpt-\(index)-\(wp.id)", coordinate: displayCoordinate(for: wp.coordinate)) {
-                    let bg = isZero(wp.coordinate) ? Color.red : colorWpt
+                    let fg = isZero(wp.coordinate) ? Color.red : colorWpt
 
+                    // Same symbol as in the database list: a ring with a pin inside
                     ZStack {
-                        Circle().fill(bg)
-                        Text("W").font(.system(size: 12, weight: .bold)).foregroundColor(.black)
+                        Circle().fill(Color.black.opacity(0.45))   // contrast on satellite imagery
+                        Image(systemName: "mappin.circle")
+                            .resizable()
+                            .scaledToFit()
+                            .fontWeight(.semibold)
+                            .foregroundColor(fg)
                     }
                     .frame(width: 26, height: 26)
                     .overlay(alignment: .top) {
@@ -521,6 +526,7 @@ struct RutMapView: View {
                             .font(.caption2)
                             .padding(2)
                             .background(Color.white.opacity(0.8))
+                            .foregroundColor(Color.black.opacity(0.8))
                             .cornerRadius(4)
                             .fixedSize()
                             .offset(y: 30)

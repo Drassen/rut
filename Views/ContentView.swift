@@ -102,6 +102,7 @@ struct ContentView: View {
     @State private var showAddPointTypeMenu = false
     @State private var pendingKMLURLs: [URL] = []
     @State private var showKMLImportModeDialog = false
+    @State private var showKMLPointKindDialog = false
     @State private var showLayerPanel = false
     @State private var selectedTab: AppMode = .navigation
     /// Measured bottom safe-area inset, used to reclaim half of it under the toolbar.
@@ -154,14 +155,12 @@ struct ContentView: View {
             MultiFileExportController(fileURLs: container.urls) { _ in }
         }
         .onOpenURL { url in importURLs([url]) }
-        .confirmationDialog("Add Point", isPresented: $showAddPointTypeMenu, titleVisibility: .visible) {
-            Button("Airport") {
-                let ap = UserAirport(id: "", name: "", latitude: longPressLat, longitude: longPressLon, elevation: 0)
-                editorSheet = EditorWrapper(mode: .airport(ap), isNew: true)
-            }
-            Button("Navaid") {
-                let nv = UserNavaid(id: "", name: "", latitude: longPressLat, longitude: longPressLon, elevation: 0, magneticVariation: 0, frequency: 0)
-                editorSheet = EditorWrapper(mode: .navaid(nv), isNew: true)
+        .confirmationDialog("Add Point?", isPresented: $showAddPointTypeMenu, titleVisibility: .visible) {
+            Button("Add Point") {
+                // Starts as a waypoint (next free WPTnn on save); the editor's WPT/NAV/APT
+                // picker changes the type before saving
+                let wp = UserWaypoint(id: "", name: "", type: .wpt, latitude: longPressLat, longitude: longPressLon, elevation: 0)
+                editorSheet = EditorWrapper(mode: .waypoint(wp), isNew: true)
             }
             Button("Cancel", role: .cancel) { }
         }
@@ -191,17 +190,14 @@ struct ContentView: View {
             NavigationStack {
                 List {
                     Section {
-                        Text("These records could not be parsed and were skipped:")
-                            .font(.subheadline)
-                            .foregroundStyle(.secondary)
-                    }
-                    ForEach(Array(toastManager.importWarnings.enumerated()), id: \.offset) { idx, warning in
-                        Section("Record \(idx + 1)") {
-                            Text(warning)
+                        ForEach(Array(toastManager.importWarnings.enumerated()), id: \.offset) { _, line in
+                            Text(line)
                                 .font(.system(.footnote, design: .monospaced))
                                 .foregroundStyle(.primary)
                                 .textSelection(.enabled)
                         }
+                    } header: {
+                        Text("Failed or skipped during import, with reason")
                     }
                 }
                 .navigationTitle(toastManager.importWarningTitle)
@@ -236,15 +232,39 @@ struct ContentView: View {
             lastImporter = nil
         }
         .confirmationDialog("Import KML/KMZ as…", isPresented: $showKMLImportModeDialog, titleVisibility: .visible) {
+            // Capture the URLs before clearing: the Task body runs after this
+            // closure returns and would otherwise read the already-emptied state.
             Button("Vector Layers") {
-                Task { await CoreServices.shared.importDocuments(from: pendingKMLURLs, kmlAsVector: true) }
+                let urls = pendingKMLURLs
                 pendingKMLURLs = []
+                Task { await CoreServices.shared.importDocuments(from: urls, kmlAsVector: true) }
             }
             Button("Navigation Data") {
-                Task { await CoreServices.shared.importDocuments(from: pendingKMLURLs, kmlAsVector: false) }
-                pendingKMLURLs = []
+                let urls = pendingKMLURLs
+                let hasStandalonePoints = urls.contains { url in
+                    let secured = url.startAccessingSecurityScopedResource()
+                    defer { if secured { url.stopAccessingSecurityScopedResource() } }
+                    return KMLImportService.standalonePointCount(url: url) > 0
+                }
+                if hasStandalonePoints {
+                    // Keep pendingKMLURLs; present after this dialog has dismissed
+                    DispatchQueue.main.async { showKMLPointKindDialog = true }
+                } else {
+                    pendingKMLURLs = []
+                    Task { await CoreServices.shared.importDocuments(from: urls, kmlAsVector: false) }
+                }
             }
             Button("Cancel", role: .cancel) { pendingKMLURLs = [] }
+        } message: {
+            Text("Navigation Data ignores polygons and other shapes.")
+        }
+        .confirmationDialog("Import standalone points as…", isPresented: $showKMLPointKindDialog, titleVisibility: .visible) {
+            Button("Waypoints") { importPendingKML(standalonePointKind: .waypoint) }
+            Button("Navaids")   { importPendingKML(standalonePointKind: .navaid) }
+            Button("Airports")  { importPendingKML(standalonePointKind: .airport) }
+            Button("Cancel", role: .cancel) { pendingKMLURLs = [] }
+        } message: {
+            Text("Points that are not part of a route or in an Airports/Navaids folder.")
         }
         .alert("Incomplete Data", isPresented: $showA109MissingDataAlert) {
             Button("Cancel", role: .cancel) { }
@@ -382,7 +402,7 @@ struct ContentView: View {
 
                 if uAp > 0 { StatBadge(icon: "airplane", count: uAp, label: "Apt") }
                 if uNv > 0 { StatBadge(icon: "antenna.radiowaves.left.and.right", count: uNv, label: "Nav") }
-                if uWp > 0 { StatBadge(icon: "mappin.and.ellipse", count: uWp, label: "Wpt") }
+                if uWp > 0 { StatBadge(icon: "mappin.circle", count: uWp, label: "Wpt") }
                 if uSh > 0 { StatBadge(icon: "triangle", count: uSh, label: "Shp") }
 
                 Spacer()
@@ -548,21 +568,17 @@ struct ContentView: View {
 
         guard !kmlURLs.isEmpty else { return }
 
-        // Check if any file contains non-nav data (polygons etc.)
-        let hasNonNav = kmlURLs.contains { url in
-            let secured = url.startAccessingSecurityScopedResource()
-            defer { if secured { url.stopAccessingSecurityScopedResource() } }
-            return KMZImportService.containsNonNavData(url: url)
-        }
+        // Always let the user choose; navigation import skips polygons
+        pendingKMLURLs = kmlURLs
+        showKMLImportModeDialog = true
+    }
 
-        if hasNonNav {
-            // Force vector, no dialog
-            toastManager.show(message: "File contains non-navigation data (polygons etc.) — importing as vector layers.", kind: .info)
-            Task { await CoreServices.shared.importDocuments(from: kmlURLs, kmlAsVector: true) }
-        } else {
-            // Only points/lines — let the user choose
-            pendingKMLURLs = kmlURLs
-            showKMLImportModeDialog = true
+    private func importPendingKML(standalonePointKind: KMLImportService.StandalonePointKind) {
+        let urls = pendingKMLURLs
+        pendingKMLURLs = []
+        Task {
+            await CoreServices.shared.importDocuments(from: urls, kmlAsVector: false,
+                                                      standalonePointKind: standalonePointKind)
         }
     }
 

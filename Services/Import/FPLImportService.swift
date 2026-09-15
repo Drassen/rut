@@ -16,9 +16,10 @@ class FPLImportService: NSObject, RouteImporting, XMLParserDelegate {
     private var tempType = ""
     
     // Lagring (Separerad User / System)
-    private var importedSystemAirports: [String: JepAirport] = [:]
-    private var importedSystemNavaids: [String: JepNavaid] = [:]
-    private var importedUserWaypoints: [String: UserWaypoint] = [:]
+    // Insertion-ordered so imported points keep the file's order
+    private var importedSystemAirports = InsertionOrderedDictionary<JepAirport>()
+    private var importedSystemNavaids = InsertionOrderedDictionary<JepNavaid>()
+    private var importedUserWaypoints = InsertionOrderedDictionary<UserWaypoint>()
     
     private var routeSequenceIDs: [String] = []
     private var idRenamingMap: [String: String] = [:]
@@ -28,9 +29,9 @@ class FPLImportService: NSObject, RouteImporting, XMLParserDelegate {
     
     func importDocument(from url: URL) throws -> NavigationDocument {
         // Nollställ
-        importedSystemAirports = [:]
-        importedSystemNavaids = [:]
-        importedUserWaypoints = [:]
+        importedSystemAirports = .init()
+        importedSystemNavaids = .init()
+        importedUserWaypoints = .init()
         routeSequenceIDs = []
         idRenamingMap = [:]
         wptCounter = 1

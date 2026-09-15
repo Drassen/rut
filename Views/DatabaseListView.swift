@@ -11,7 +11,7 @@ enum DatabaseTab: String, CaseIterable, Identifiable {
     var icon: String {
         switch self {
         case .routes:    return "map"
-        case .waypoints: return "mappin.and.ellipse"
+        case .waypoints: return "mappin.circle"
         case .airports:  return "airplane"
         case .navaids:   return "antenna.radiowaves.left.and.right"
         }
@@ -25,6 +25,24 @@ enum DatabaseTab: String, CaseIterable, Identifiable {
         case .navaids:   return RutTheme.green
         }
     }
+
+    /// The user point kind listed in this tab (nil for routes).
+    var pointKind: NavigationStore.UserPointKind? {
+        switch self {
+        case .routes:    return nil
+        case .waypoints: return .waypoint
+        case .airports:  return .airport
+        case .navaids:   return .navaid
+        }
+    }
+
+    init(pointKind: NavigationStore.UserPointKind) {
+        switch pointKind {
+        case .waypoint: self = .waypoints
+        case .airport:  self = .airports
+        case .navaid:   self = .navaids
+        }
+    }
 }
 
 struct DatabaseListView: View {
@@ -35,6 +53,31 @@ struct DatabaseListView: View {
     @State private var itemToAdd: PointEditorView.EditMode?
     @State private var showNewRouteAlert = false
     @State private var newRouteName = ""
+
+    // Massändring av punkttyp
+    @State private var isSelecting = false
+    @State private var selection = Set<String>()
+    @State private var pendingConversion: PendingConversion?
+    @State private var conversionReport: ConversionReport?
+    @State private var pendingDelete: PendingDelete?
+
+    struct PendingDelete {
+        let kind: NavigationStore.UserPointKind
+        let ids: Set<String>
+        let message: String
+    }
+
+    struct PendingConversion {
+        let from: NavigationStore.UserPointKind
+        let to: NavigationStore.UserPointKind
+        let conversions: [NavigationStore.PointConversion]
+        let notes: [String]
+    }
+
+    struct ConversionReport: Identifiable {
+        let id = UUID()
+        let lines: [String]
+    }
 
     var body: some View {
         NavigationStack {
@@ -59,7 +102,12 @@ struct DatabaseListView: View {
                     case .navaids:   navaidList
                     }
                 }
+                .environment(\.editMode, .constant(isSelecting ? .active : .inactive))
                 .background(RutTheme.bg)
+
+                if isSelecting, let kind = selectedTab.pointKind {
+                    selectionBar(kind: kind)
+                }
             }
             .navigationTitle("User Database")
             .navigationBarTitleDisplayMode(.inline)
@@ -68,13 +116,37 @@ struct DatabaseListView: View {
                     Button("Close") { dismiss() }
                         .foregroundColor(RutTheme.textDim)
                 }
-                ToolbarItem(placement: .primaryAction) {
-                    Button { startAddItem() } label: {
-                        Image(systemName: "plus")
-                            .fontWeight(.semibold)
-                            .foregroundColor(RutTheme.amber)
+                // Separate items (not a ToolbarItemGroup): on iOS 26+ a group is drawn as
+                // one shared glass capsule, which made Select and + look like one control.
+                if selectedTab.pointKind != nil {
+                    ToolbarItem(placement: .primaryAction) {
+                        Button {
+                            isSelecting.toggle()
+                            selection = []
+                        } label: {
+                            Label(isSelecting ? "Done" : "Select",
+                                  systemImage: isSelecting ? "checkmark" : "checklist")
+                                .labelStyle(.titleAndIcon)
+                                .foregroundColor(RutTheme.amber)
+                        }
                     }
                 }
+                if #available(iOS 26.0, *) {
+                    ToolbarSpacer(.fixed, placement: .primaryAction)
+                }
+                if !isSelecting {
+                    ToolbarItem(placement: .primaryAction) {
+                        Button { startAddItem() } label: {
+                            Image(systemName: "plus")
+                                .fontWeight(.semibold)
+                                .foregroundColor(RutTheme.amber)
+                        }
+                    }
+                }
+            }
+            .onChange(of: selectedTab) { _, _ in
+                isSelecting = false
+                selection = []
             }
             .sheet(item: Binding(
                 get: { itemToAdd.map { Wrapper(mode: $0) } },
@@ -85,8 +157,46 @@ struct DatabaseListView: View {
                 }
                 .tint(RutTheme.amber)
             }
+            .alert(
+                pendingConversion.map { "Convert \($0.conversions.count) \($0.from.label.lowercased())(s) to \($0.to.label.lowercased())s?" } ?? "",
+                isPresented: Binding(
+                    get: { pendingConversion != nil },
+                    set: { if !$0 { pendingConversion = nil } }
+                ),
+                presenting: pendingConversion
+            ) { pending in
+                Button("Convert") { applyConversion(pending) }
+                Button("Cancel", role: .cancel) { }
+            } message: { pending in
+                Text(pending.notes.isEmpty
+                     ? "IDs, names and positions are kept."
+                     : pending.notes.joined(separator: "\n"))
+            }
         }
         .tint(RutTheme.amber)
+        .sheet(item: $conversionReport) { report in
+            NavigationStack {
+                List {
+                    Section {
+                        ForEach(Array(report.lines.enumerated()), id: \.offset) { _, line in
+                            Text(line)
+                                .font(.system(.footnote, design: .monospaced))
+                                .textSelection(.enabled)
+                        }
+                    } header: {
+                        Text("Nothing was converted")
+                    }
+                }
+                .navigationTitle("Cannot convert")
+                .navigationBarTitleDisplayMode(.inline)
+                .toolbar {
+                    ToolbarItem(placement: .confirmationAction) {
+                        Button("Done") { conversionReport = nil }
+                    }
+                }
+            }
+            .tint(RutTheme.amber)
+        }
         .alert("New Route", isPresented: $showNewRouteAlert) {
             TextField("Route name", text: $newRouteName)
                 .autocorrectionDisabled()
@@ -129,6 +239,113 @@ struct DatabaseListView: View {
         }
     }
 
+    // MARK: - Selection bar (mass conversion)
+
+    private func selectionBar(kind: NavigationStore.UserPointKind) -> some View {
+        let allIds = pointIds(kind)
+        let allSelected = !allIds.isEmpty && selection.count == allIds.count
+        return HStack(spacing: 16) {
+            Button(allSelected ? "Deselect All" : "Select All") {
+                selection = allSelected ? [] : Set(allIds)
+            }
+            .disabled(allIds.isEmpty)
+
+            Spacer()
+
+            Text("\(selection.count) selected")
+                .font(.footnote)
+                .foregroundColor(RutTheme.textDim)
+
+            Spacer()
+
+            Menu {
+                ForEach(NavigationStore.UserPointKind.allCases.filter { $0 != kind }) { target in
+                    Button("Convert to \(target.label)s") { prepareConversion(from: kind, to: target) }
+                }
+            } label: {
+                Label("Convert", systemImage: "arrow.triangle.2.circlepath")
+            }
+            .disabled(selection.isEmpty)
+
+            Button(role: .destructive) {
+                prepareDelete(kind: kind)
+            } label: {
+                Label("Delete", systemImage: "trash")
+                    .foregroundColor(selection.isEmpty ? RutTheme.textMuted : RutTheme.danger)
+            }
+            .disabled(selection.isEmpty)
+        }
+        .padding(.horizontal, 16)
+        .padding(.vertical, 12)
+        .background(RutTheme.surface)
+        .overlay(alignment: .top) {
+            Rectangle().fill(RutTheme.border).frame(height: 1)
+        }
+        // Attached here, not next to the conversion alert: two alerts on one view can clash
+        .alert(
+            pendingDelete.map { "Delete \($0.ids.count) \($0.kind.label.lowercased())(s)?" } ?? "",
+            isPresented: Binding(
+                get: { pendingDelete != nil },
+                set: { if !$0 { pendingDelete = nil } }
+            ),
+            presenting: pendingDelete
+        ) { pending in
+            Button("Delete", role: .destructive) {
+                navStore.deletePoints(kind: pending.kind, ids: pending.ids)
+                isSelecting = false
+                selection = []
+            }
+            Button("Cancel", role: .cancel) { }
+        } message: { pending in
+            Text(pending.message)
+        }
+    }
+
+    private func prepareDelete(kind: NavigationStore.UserPointKind) {
+        let ids = selection
+        let routeNames = Set(ids.flatMap { navStore.routesUsing(kind: kind, id: $0) }.map { $0.route.name }).sorted()
+        var message = "This cannot be undone."
+        if !routeNames.isEmpty {
+            let shown = routeNames.prefix(5).joined(separator: ", ") + (routeNames.count > 5 ? ", …" : "")
+            message = "They are removed from \(routeNames.count) route(s) (\(shown)). " + message
+        }
+        pendingDelete = PendingDelete(kind: kind, ids: ids, message: message)
+    }
+
+    private func pointIds(_ kind: NavigationStore.UserPointKind) -> [String] {
+        switch kind {
+        case .waypoint: return navStore.document.userWaypoints.map { $0.id }
+        case .navaid:   return navStore.document.userNavaids.map { $0.id }
+        case .airport:  return navStore.document.userAirports.map { $0.id }
+        }
+    }
+
+    /// Validates the whole batch first; if anything fails the reasons are listed and nothing
+    /// changes. Otherwise asks for confirmation with a summary of what the conversion changes.
+    private func prepareConversion(from: NavigationStore.UserPointKind, to: NavigationStore.UserPointKind) {
+        let ids = selection.sorted { $0.localizedStandardCompare($1) == .orderedAscending }
+        let conversions = navStore.conversions(of: ids, from: from, to: to)
+        let problems = navStore.validateConversions(conversions)
+        guard problems.isEmpty else {
+            conversionReport = ConversionReport(lines: problems)
+            return
+        }
+        pendingConversion = PendingConversion(from: from, to: to, conversions: conversions,
+                                              notes: navStore.conversionNotes(conversions))
+    }
+
+    private func applyConversion(_ pending: PendingConversion) {
+        // convertPoints validates again and changes nothing if anything fails
+        let problems = navStore.convertPoints(pending.conversions)
+        guard problems.isEmpty else {
+            conversionReport = ConversionReport(lines: problems)
+            return
+        }
+        isSelecting = false
+        selection = []
+        selectedTab = DatabaseTab(pointKind: pending.to)
+    }
+
     // MARK: - Lists
 
     private var routeList: some View {
@@ -165,12 +382,12 @@ struct DatabaseListView: View {
     }
 
     private var waypointList: some View {
-        List {
+        List(selection: $selection) {
             ForEach(navStore.document.userWaypoints.sorted { $0.id < $1.id }) { wp in
                 NavigationLink(destination: PointEditorView(mode: .waypoint(wp), isNew: false)) {
                     HStack(spacing: 12) {
-                        Image(systemName: "mappin.and.ellipse")
-                            .font(.system(size: 13))
+                        Image(systemName: "mappin.circle")
+                            .font(.system(size: 15))
                             .foregroundColor(RutTheme.textDim)
                             .frame(width: 22)
 
@@ -208,7 +425,7 @@ struct DatabaseListView: View {
     }
 
     private var airportList: some View {
-        List {
+        List(selection: $selection) {
             ForEach(navStore.document.userAirports.sorted { $0.id < $1.id }) { ap in
                 NavigationLink(destination: PointEditorView(mode: .airport(ap), isNew: false)) {
                     HStack(spacing: 12) {
@@ -238,7 +455,7 @@ struct DatabaseListView: View {
     }
 
     private var navaidList: some View {
-        List {
+        List(selection: $selection) {
             ForEach(navStore.document.userNavaids.sorted { $0.id < $1.id }) { nv in
                 NavigationLink(destination: PointEditorView(mode: .navaid(nv), isNew: false)) {
                     HStack(spacing: 12) {

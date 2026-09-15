@@ -744,16 +744,48 @@ final class VectorStore: ObservableObject {
     }
 
     /// Merges user layers from an imported document into the existing layer list.
-    /// Existing layers are preserved; incoming layers are appended if no layer
-    /// with the same name already exists. System layers are kept at the top.
-    func syncFromDocument(_ doc: NavigationDocument) {
-        let systemLayers = layers.filter { $0.isSystem }
-        let existingUserLayers = layers.filter { !$0.isSystem }
-        let incoming = doc.vectorLayers.filter { !$0.isSystem }
-        let newLayers = incoming.filter { inLayer in
-            !existingUserLayers.contains(where: { $0.name == inLayer.name })
+    /// Layers are matched by name (recursively for sub-layers). Within a matched layer
+    /// only shapes that differ from the existing ones are added; unmatched layers are
+    /// appended. System layers keep their position. Returns the number of shapes added.
+    /// Skipped shapes are appended to `skipped` with the reason.
+    @discardableResult
+    func syncFromDocument(_ doc: NavigationDocument, skipped: inout [String]) -> Int {
+        var merged = layers
+        var added = 0
+        for incoming in doc.vectorLayers where !incoming.isSystem {
+            added += Self.mergeLayer(incoming, into: &merged, skipped: &skipped)
         }
-        layers = systemLayers + existingUserLayers + newLayers
+        layers = merged
+        return added
+    }
+
+    /// Merges `incoming` into the user layer with the same name in `layers`, or appends it.
+    /// Shapes identical to ones already in the matched layer are skipped and reported in
+    /// `skipped`. Returns the number of shapes added.
+    static func mergeLayer(_ incoming: VectorLayer, into layers: inout [VectorLayer],
+                           skipped: inout [String]) -> Int {
+        guard let idx = layers.firstIndex(where: { !$0.isSystem && $0.name == incoming.name }) else {
+            layers.append(incoming)
+            return shapeCount(incoming)
+        }
+        let existingShapes = layers[idx].shapes
+        var added = 0
+        for shape in incoming.shapes {
+            if existingShapes.contains(where: { $0.hasSameContent(as: shape) }) {
+                skipped.append("Shape \(shape.name) (layer \(incoming.name)): identical shape already exists")
+            } else {
+                layers[idx].shapes.append(shape)
+                added += 1
+            }
+        }
+        for child in incoming.children {
+            added += mergeLayer(child, into: &layers[idx].children, skipped: &skipped)
+        }
+        return added
+    }
+
+    private static func shapeCount(_ layer: VectorLayer) -> Int {
+        layer.shapes.count + layer.children.reduce(0) { $0 + shapeCount($1) }
     }
 
     // MARK: - Airspace system layer

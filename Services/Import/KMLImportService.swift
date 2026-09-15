@@ -8,6 +8,15 @@ class KMLImportService: NSObject, RouteImporting, XMLParserDelegate {
 
     let supportedExtensions = ["kml"]
 
+    /// What standalone points (not part of a route, not in an Airports/Navaids folder) become.
+    enum StandalonePointKind { case waypoint, navaid, airport }
+    private let standalonePointKind: StandalonePointKind
+
+    init(standalonePointKind: StandalonePointKind = .waypoint) {
+        self.standalonePointKind = standalonePointKind
+        super.init()
+    }
+
     // --- Parse state ---
     private var currentElement = ""
     private var currentChars = ""
@@ -22,30 +31,27 @@ class KMLImportService: NSObject, RouteImporting, XMLParserDelegate {
     private var tempName = ""
     private var tempCoordinates = ""
 
+    // Geometry the current Placemark contains. Unlike inPoint/inLineString this is
+    // not cleared when the geometry element closes, so it is still valid at </Placemark>.
+    private enum PlacemarkGeometry { case none, point, lineString, other }
+    private var placemarkGeometry: PlacemarkGeometry = .none
+
     private var documentName = ""
 
     // Folder-based collections
-    private var importedAirports: [String: UserAirport] = [:]
-    private var importedNavaids: [String: UserNavaid] = [:]
-    private var importedWaypoints: [String: UserWaypoint] = [:]
+    // Insertion-ordered so imported points keep the file's order
+    private var importedAirports = InsertionOrderedDictionary<UserAirport>()
+    private var importedNavaids = InsertionOrderedDictionary<UserNavaid>()
+    private var importedWaypoints = InsertionOrderedDictionary<UserWaypoint>()
 
     // Top-level (route) collections
     private var topLevelPoints: [(name: String, lat: Double, lon: Double, ele: Double)] = []
     private var topLevelLineString: [(lat: Double, lon: Double)] = []
 
     private var wptCounter = 1
+    private var standaloneCount = 0
 
     func importDocument(from url: URL) throws -> NavigationDocument {
-        // Reset state
-        currentElement = ""; currentChars = ""
-        currentFolderName = ""; inFolder = false
-        inPlacemark = false; inPoint = false; inLineString = false; inCoordinates = false
-        tempName = ""; tempCoordinates = ""
-        documentName = url.deletingPathExtension().lastPathComponent
-        importedAirports = [:]; importedNavaids = [:]; importedWaypoints = [:]
-        topLevelPoints = []; topLevelLineString = []
-        wptCounter = 1
-
         // 1. Read file (robust, same pattern as FPLImportService)
         var contentString = ""
         do {
@@ -55,6 +61,44 @@ class KMLImportService: NSObject, RouteImporting, XMLParserDelegate {
             contentString = (try? String(contentsOf: url, encoding: .utf8))
                 ?? ((try? String(contentsOf: url, encoding: .isoLatin1)) ?? "")
         }
+        return try importDocument(kmlString: contentString,
+                                  documentName: url.deletingPathExtension().lastPathComponent)
+    }
+
+    /// Parses KML that is already in memory, e.g. doc.kml extracted from a KMZ archive.
+    func importDocument(kmlData: Data, documentName: String) throws -> NavigationDocument {
+        let contentString = String(data: kmlData, encoding: .utf8)
+            ?? String(data: kmlData, encoding: .isoLatin1) ?? ""
+        return try importDocument(kmlString: contentString, documentName: documentName)
+    }
+
+    /// Number of standalone points in a .kml or .kmz file (0 if it can't be read).
+    static func standalonePointCount(url: URL) -> Int {
+        let data: Data?
+        if url.pathExtension.lowercased() == "kmz" {
+            data = (try? Data(contentsOf: url)).flatMap { try? KMZImportService.extractFirstKML(from: $0) }
+        } else {
+            data = try? Data(contentsOf: url)
+        }
+        guard let data else { return 0 }
+        let service = KMLImportService()
+        guard (try? service.importDocument(kmlData: data, documentName: "")) != nil else { return 0 }
+        return service.standaloneCount
+    }
+
+    private func importDocument(kmlString: String, documentName name: String) throws -> NavigationDocument {
+        // Reset state
+        currentElement = ""; currentChars = ""
+        currentFolderName = ""; inFolder = false
+        inPlacemark = false; inPoint = false; inLineString = false; inCoordinates = false
+        tempName = ""; tempCoordinates = ""
+        documentName = name
+        importedAirports = .init(); importedNavaids = .init(); importedWaypoints = .init()
+        topLevelPoints = []; topLevelLineString = []
+        wptCounter = 1
+        standaloneCount = 0
+
+        var contentString = kmlString
 
         guard !contentString.isEmpty else {
             throw RutError.importFailed("Could not read KML file content.")
@@ -141,10 +185,15 @@ class KMLImportService: NSObject, RouteImporting, XMLParserDelegate {
             tempCoordinates = ""
             inPoint = false
             inLineString = false
+            placemarkGeometry = .none
         case "Point":
             inPoint = true
+            placemarkGeometry = .point
         case "LineString":
             inLineString = true
+            placemarkGeometry = .lineString
+        case "Polygon", "LinearRing":
+            placemarkGeometry = .other
         case "coordinates":
             inCoordinates = true
             tempCoordinates = ""
@@ -208,7 +257,7 @@ class KMLImportService: NSObject, RouteImporting, XMLParserDelegate {
     private func handlePlacemarkEnd() {
         let coords = tempCoordinates.trimmingCharacters(in: .whitespacesAndNewlines)
 
-        if inPoint || (!coords.isEmpty && !inLineString) {
+        if placemarkGeometry == .point {
             // Single coordinate: lon,lat,alt
             if let (lat, lon, ele) = parseSingleCoord(coords) {
                 if inFolder {
@@ -224,15 +273,29 @@ class KMLImportService: NSObject, RouteImporting, XMLParserDelegate {
                                             magneticVariation: 0, frequency: 0)
                         importedNavaids[tempName] = nv
                     } else {
-                        let wp = makeOrReuseWaypoint(name: tempName, lat: lat, lon: lon, ele: ele)
-                        _ = wp // already stored in importedWaypoints
+                        // Standalone point: not in a route and not in an Airports/Navaids folder
+                        standaloneCount += 1
+                        switch standalonePointKind {
+                        case .waypoint:
+                            makeOrReuseWaypoint(name: tempName, lat: lat, lon: lon, ele: ele)
+                        case .navaid:
+                            let pointId = tempName.isEmpty ? nextWptName() : tempName
+                            importedNavaids[pointId] = UserNavaid(id: pointId, name: pointId,
+                                                                  latitude: lat, longitude: lon, elevation: ele,
+                                                                  magneticVariation: 0, frequency: 0)
+                        case .airport:
+                            let pointId = tempName.isEmpty ? nextWptName() : tempName
+                            importedAirports[pointId] = UserAirport(id: pointId, name: pointId,
+                                                                    latitude: lat, longitude: lon, elevation: ele,
+                                                                    magneticVariation: 0)
+                        }
                     }
                 } else {
                     // Top-level Point → potential route waypoint
                     topLevelPoints.append((name: tempName, lat: lat, lon: lon, ele: ele))
                 }
             }
-        } else if inLineString || coords.contains(" ") {
+        } else if placemarkGeometry == .lineString {
             // Multiple coordinates (LineString)
             if !inFolder && topLevelLineString.isEmpty {
                 topLevelLineString = parseMultiCoord(coords)

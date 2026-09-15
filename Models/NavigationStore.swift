@@ -24,88 +24,127 @@ final class NavigationStore: ObservableObject {
 
     // MARK: - Merge / delete
 
-    func addOrMerge(document newDoc: NavigationDocument) {
-        var incoming = newDoc
+    /// What a merge actually added, plus every item that was skipped and why.
+    struct MergeResult {
+        var routes = 0
+        var airports = 0
+        var navaids = 0
+        var waypoints = 0
+        var skipped: [String] = []
+        var total: Int { routes + airports + navaids + waypoints }
+    }
+
+    /// Merges an imported document into the current one. Only data that differs from what
+    /// already exists is added; everything skipped is listed in the result with the reason.
+    /// - Routes identical to an existing route (same name, same points) are skipped.
+    /// - Airports/navaids whose ID already exists are skipped; routes use the existing point.
+    /// - Waypoints identical to an existing waypoint are skipped and routes reuse the existing
+    ///   one. A differing waypoint whose ID is taken gets a unique ID.
+    /// - Waypoints used only by skipped routes are not imported.
+    @discardableResult
+    func addOrMerge(document newDoc: NavigationDocument) -> MergeResult {
+        let incoming = newDoc
         var merged = document
+        var result = MergeResult()
 
-        // 1. Normalisera IDs
-        normalizeImportedRouteIds(&incoming, existingRoutes: merged.routes)
-        normalizeImportedWaypointIds(&incoming, existingWaypoints: merged.userWaypoints)
-
-        // Håller koll på vilka User Waypoints som faktiskt behövs
-        var idsToImport = Set<String>()
-
-        // --- HJÄLPFUNKTION: Hämta koordinat ---
-        func getCoordinate(for ref: RoutePointRef, in doc: NavigationDocument) -> CLLocationCoordinate2D? {
+        func coordinate(of ref: RoutePointRef, in doc: NavigationDocument) -> CLLocationCoordinate2D? {
             switch ref.kind {
-            case .userWaypoint: return doc.userWaypoints.first { $0.id == ref.refId }?.coordinate
-            case .userAirport:  return doc.userAirports.first { $0.id == ref.refId }?.coordinate
-            case .userNavaid:   return doc.userNavaids.first { $0.id == ref.refId }?.coordinate
+            case .userWaypoint:  return doc.userWaypoints.first { $0.id == ref.refId }?.coordinate
+            case .userAirport:   return doc.userAirports.first { $0.id == ref.refId }?.coordinate
+            case .userNavaid:    return doc.userNavaids.first { $0.id == ref.refId }?.coordinate
             case .systemAirport: return doc.systemAirports.first { $0.id == ref.refId }?.coordinate
             case .systemNavaid:  return doc.systemNavaids.first { $0.id == ref.refId }?.coordinate
             }
         }
 
-        // --- 2. DUBBLETTKONTROLL RUTTER ---
-        var newRouteIds: [UUID] = []
-
+        // --- 1. ROUTES: skip those identical to an existing route ---
+        // Incoming refs may point at points already in the app (A109 ROUTE.P01), so they are
+        // resolved in the incoming document first and in the existing one otherwise.
+        var newRoutes: [Route] = []
         for route in incoming.routes {
+            let rawName = route.name.isEmpty ? route.routeId : route.name
             let isDuplicate = merged.routes.contains { existing in
-                if existing.name.caseInsensitiveCompare(route.name) != .orderedSame { return false }
-                if existing.pointRefs.count != route.pointRefs.count { return false }
-
-                for (i, p1) in existing.pointRefs.enumerated() {
-                    let p2 = route.pointRefs[i]
-                    if p1.kind != p2.kind { return false }
-                    if p1.refId == p2.refId { continue }
-
-                    guard let c1 = getCoordinate(for: p1, in: merged),
-                          let c2 = getCoordinate(for: p2, in: incoming) else { return false }
-
-                    if abs(c1.latitude - c2.latitude) > 0.00001 || abs(c1.longitude - c2.longitude) > 0.00001 {
-                        return false
-                    }
+                guard Self.routeName(existing.name, matchesImported: rawName),
+                      existing.pointRefs.count == route.pointRefs.count else { return false }
+                return zip(existing.pointRefs, route.pointRefs).allSatisfy { e, i in
+                    guard e.kind == i.kind,
+                          let c1 = coordinate(of: e, in: merged),
+                          let c2 = coordinate(of: i, in: incoming) ?? coordinate(of: i, in: merged)
+                    else { return false }
+                    return Self.sameCoordinate(c1, c2)
                 }
-                return true
             }
-
-            if !isDuplicate {
-                merged.routes.append(route)
-                newRouteIds.append(route.id)
-                // Spara waypoints som denna rutt behöver
-                let wpIds = route.pointRefs.filter { $0.kind == .userWaypoint }.map { $0.refId }
-                idsToImport.formUnion(wpIds)
+            if isDuplicate {
+                result.skipped.append("Route \(rawName): identical route already exists")
             } else {
-                print("Skipping duplicate route: \(route.name)")
+                newRoutes.append(route)
             }
         }
+        let waypointsInRoutes    = Set(incoming.routes.flatMap { Self.waypointIds(in: $0) })
+        let waypointsInNewRoutes = Set(newRoutes.flatMap { Self.waypointIds(in: $0) })
 
-        // --- 3. IMPORTERA PUNKTER ---
-
-        // A. User Waypoints (Strikt filtrering)
-        // Om filen innehöll rutter, importera bara waypoints som hör till de nya rutterna.
-        // Om filen INTE hade rutter (t.ex. en ren waypoint-lista), importera alla.
-        let hasRoutes = !incoming.routes.isEmpty
-        
-        for wp in incoming.userWaypoints {
-            let isNeeded = !hasRoutes || idsToImport.contains(wp.id)
-            
-            if isNeeded && !merged.userWaypoints.contains(where: { $0.id == wp.id }) {
-                merged.userWaypoints.append(wp)
-            }
-        }
-        
-        // B. Airports & Navaids (Lös filtrering)
-        // Dessa importeras ALLTID om de inte finns, oavsett om en rutt använder dem eller inte.
-        // Detta fixar buggen att flygplatser inte importerades.
-        
+        // --- 2. AIRPORTS & NAVAIDS: the ID is the identity; an existing ID is never imported again ---
         for ap in incoming.userAirports {
-            if !merged.userAirports.contains(where: { $0.id == ap.id }) { merged.userAirports.append(ap) }
+            if let existing = merged.userAirports.first(where: { $0.id == ap.id }) {
+                result.skipped.append(Self.sameAirport(existing, ap)
+                    ? "Airport \(ap.id): identical airport already exists"
+                    : "Airport \(ap.id): an airport with the same ID but different data already exists")
+            } else {
+                merged.userAirports.append(ap)
+                result.airports += 1
+            }
         }
         for nv in incoming.userNavaids {
-            if !merged.userNavaids.contains(where: { $0.id == nv.id }) { merged.userNavaids.append(nv) }
+            if let existing = merged.userNavaids.first(where: { $0.id == nv.id }) {
+                result.skipped.append(Self.sameNavaid(existing, nv)
+                    ? "Navaid \(nv.id): identical navaid already exists"
+                    : "Navaid \(nv.id): a navaid with the same ID but different data already exists")
+            } else {
+                merged.userNavaids.append(nv)
+                result.navaids += 1
+            }
         }
-        
+
+        // --- 3. WAYPOINTS: needed if used by a new route, or standalone (used by no route) ---
+        var waypointIdMap: [String: String] = [:]
+        var usedWaypointIds = Set(merged.userWaypoints.map { $0.id })
+        for wp in incoming.userWaypoints {
+            guard !waypointsInRoutes.contains(wp.id) || waypointsInNewRoutes.contains(wp.id) else { continue }
+
+            if let existing = merged.userWaypoints.first(where: { Self.sameWaypoint($0, wp) }) {
+                waypointIdMap[wp.id] = existing.id
+                result.skipped.append("Waypoint \(wp.name): identical waypoint already exists")
+                continue
+            }
+            var newWp = wp
+            if usedWaypointIds.contains(wp.id) {
+                newWp.id = makeUniqueWaypointId(preferred: wp.id, used: usedWaypointIds)
+                waypointIdMap[wp.id] = newWp.id
+            }
+            usedWaypointIds.insert(newWp.id)
+            merged.userWaypoints.append(newWp)
+            result.waypoints += 1
+        }
+
+        // --- 4. NEW ROUTES: remap waypoint refs, give unique names/IDs, append ---
+        var routesDoc = NavigationDocument()
+        routesDoc.routes = newRoutes.map { route in
+            var r = route
+            r.pointRefs = r.pointRefs.map { ref in
+                var ref = ref
+                if ref.kind == .userWaypoint, let id = waypointIdMap[ref.refId] { ref.refId = id }
+                return ref
+            }
+            return r
+        }
+        normalizeImportedRouteIds(&routesDoc, existingRoutes: merged.routes)
+        var newRouteIds: [UUID] = []
+        for route in routesDoc.routes {
+            merged.routes.append(route)
+            newRouteIds.append(route.id)
+            result.routes += 1
+        }
+
         // System points
         for ap in incoming.systemAirports {
             if !merged.systemAirports.contains(where: { $0.id == ap.id }) { merged.systemAirports.append(ap) }
@@ -114,8 +153,7 @@ final class NavigationStore: ObservableObject {
             if !merged.systemNavaids.contains(where: { $0.id == nv.id }) { merged.systemNavaids.append(nv) }
         }
 
-        // --- 4. IMPORTERA VEKTORER ---
-        // Merge vector layers (avoid duplicates by name)
+        // --- 5. VECTORS (document copy; the map uses VectorStore, merged separately) ---
         for layer in incoming.vectorLayers where !layer.isSystem {
             if !merged.vectorLayers.contains(where: { $0.name == layer.name }) {
                 merged.vectorLayers.append(layer)
@@ -131,20 +169,309 @@ final class NavigationStore: ObservableObject {
         if activeRouteId == nil, let first = merged.routes.first {
             activeRouteId = first.id
         }
+        return result
+    }
+
+    // MARK: - Point type conversion
+
+    /// User point categories that can be converted into each other.
+    enum UserPointKind: String, CaseIterable, Identifiable {
+        case waypoint = "WPT", navaid = "NAV", airport = "APT"
+        var id: Self { self }
+        var label: String {
+            switch self {
+            case .waypoint: return "Waypoint"
+            case .navaid:   return "Navaid"
+            case .airport:  return "Airport"
+            }
+        }
+        var routeKind: RoutePointKind {
+            switch self {
+            case .waypoint: return .userWaypoint
+            case .navaid:   return .userNavaid
+            case .airport:  return .userAirport
+            }
+        }
+    }
+
+    /// A109 PCMCIA limit: AIRPORT.P01, NAVAID.P01 and WAYPOINT.P01 hold at most 100 records each.
+    static let maxPointsPerKind = 100
+
+    /// A user point in its converted form.
+    enum UserPoint {
+        case waypoint(UserWaypoint)
+        case navaid(UserNavaid)
+        case airport(UserAirport)
+
+        var kind: UserPointKind {
+            switch self {
+            case .waypoint: return .waypoint
+            case .navaid:   return .navaid
+            case .airport:  return .airport
+            }
+        }
+        var id: String {
+            switch self {
+            case .waypoint(let wp): return wp.id
+            case .navaid(let nv):   return nv.id
+            case .airport(let ap):  return ap.id
+            }
+        }
+    }
+
+    struct PointConversion {
+        let fromKind: UserPointKind
+        let fromId: String
+        let target: UserPoint
+    }
+
+    private func pointIds(_ kind: UserPointKind) -> [String] {
+        switch kind {
+        case .waypoint: return document.userWaypoints.map { $0.id }
+        case .navaid:   return document.userNavaids.map { $0.id }
+        case .airport:  return document.userAirports.map { $0.id }
+        }
+    }
+
+    /// Routes that reference a user point. `isEndpoint` is true when the point is the route's
+    /// first or last point, which A109 exports as the logistic start/destination if it is an airport.
+    func routesUsing(kind: UserPointKind, id: String) -> [(route: Route, isEndpoint: Bool)] {
+        document.routes.compactMap { route in
+            let positions = route.pointRefs.indices.filter {
+                route.pointRefs[$0].kind == kind.routeKind && route.pointRefs[$0].refId == id
+            }
+            guard !positions.isEmpty else { return nil }
+            let last = route.pointRefs.count - 1
+            return (route, positions.contains { $0 == 0 || $0 == last })
+        }
+    }
+
+    /// Checks every conversion against the state after the whole batch, before anything is
+    /// changed. Returns all reasons the batch can't be done; empty means it can.
+    func validateConversions(_ conversions: [PointConversion]) -> [String] {
+        var problems: [String] = []
+        var ids: [UserPointKind: Set<String>] = [:]
+        var counts: [UserPointKind: Int] = [:]
+        for kind in UserPointKind.allCases {
+            let current = pointIds(kind)
+            ids[kind] = Set(current)
+            counts[kind] = current.count
+        }
+        let countsBefore = counts
+
+        for c in conversions {
+            let label = "\(c.fromKind.label) \(c.fromId)"
+            let to = c.target.kind
+            guard ids[c.fromKind, default: []].contains(c.fromId) else {
+                problems.append("\(label): point not found")
+                continue
+            }
+            guard to != c.fromKind else {
+                problems.append("\(label): is already a \(to.label.lowercased())")
+                continue
+            }
+            // The source leaves its list, which frees its ID there
+            ids[c.fromKind, default: []].remove(c.fromId)
+            counts[c.fromKind, default: 0] -= 1
+
+            let newId = c.target.id
+            if newId.isEmpty || newId != NavigationStore.sanitizedName(newId, maxLength: 5) {
+                problems.append("\(label): ID \"\(newId)\" must be 1–5 characters (A–Z, 0–9, -)")
+            } else if ids[to, default: []].contains(newId) {
+                problems.append("\(label): a \(to.label.lowercased()) with ID \(newId) already exists")
+            }
+            ids[to, default: []].insert(newId)
+            counts[to, default: 0] += 1
+        }
+
+        // Only kinds that grow can break the limit
+        for kind in UserPointKind.allCases {
+            let after = counts[kind] ?? 0
+            if after > Self.maxPointsPerKind && after > (countsBefore[kind] ?? 0) {
+                problems.append("\(kind.label)s: \(after) after conversion – A109 allows at most \(Self.maxPointsPerKind)")
+            }
+        }
+        return problems
+    }
+
+    /// Converts user points between waypoint, navaid and airport. The whole batch is validated
+    /// first; if anything fails, nothing is changed and the reasons are returned. Route
+    /// references are rewritten to the new kind and ID, so routes keep their points.
+    @discardableResult
+    func convertPoints(_ conversions: [PointConversion]) -> [String] {
+        let problems = validateConversions(conversions)
+        guard problems.isEmpty else { return problems }
+
+        var doc = document
+        for c in conversions {
+            switch c.fromKind {
+            case .waypoint: doc.userWaypoints.removeAll { $0.id == c.fromId }
+            case .navaid:   doc.userNavaids.removeAll { $0.id == c.fromId }
+            case .airport:  doc.userAirports.removeAll { $0.id == c.fromId }
+            }
+            switch c.target {
+            case .waypoint(let wp): doc.userWaypoints.append(wp)
+            case .navaid(let nv):   doc.userNavaids.append(nv)
+            case .airport(let ap):  doc.userAirports.append(ap)
+            }
+            for r in doc.routes.indices {
+                for p in doc.routes[r].pointRefs.indices
+                where doc.routes[r].pointRefs[p].kind == c.fromKind.routeKind
+                   && doc.routes[r].pointRefs[p].refId == c.fromId {
+                    doc.routes[r].pointRefs[p].kind = c.target.kind.routeKind
+                    doc.routes[r].pointRefs[p].refId = c.target.id
+                }
+            }
+        }
+        // Single assignment: the document is never observed half-converted
+        document = doc
+        return []
+    }
+
+    /// Builds conversions that turn existing user points of one kind into another. ID, name,
+    /// position and elevation are kept, plus magnetic variation where the target kind has it.
+    /// Converted waypoints get the CUSTOM type so their ID/name is not renumbered.
+    func conversions(of ids: [String], from: UserPointKind, to: UserPointKind) -> [PointConversion] {
+        ids.compactMap { id in
+            let name: String, lat: Double, lon: Double, elev: Double, magVar: Double
+            switch from {
+            case .waypoint:
+                guard let wp = document.userWaypoints.first(where: { $0.id == id }) else { return nil }
+                (name, lat, lon, elev, magVar) = (wp.name, wp.latitude, wp.longitude, wp.elevation, 0)
+            case .navaid:
+                guard let nv = document.userNavaids.first(where: { $0.id == id }) else { return nil }
+                (name, lat, lon, elev, magVar) = (nv.name, nv.latitude, nv.longitude, nv.elevation, nv.magneticVariation)
+            case .airport:
+                guard let ap = document.userAirports.first(where: { $0.id == id }) else { return nil }
+                (name, lat, lon, elev, magVar) = (ap.name, ap.latitude, ap.longitude, ap.elevation, ap.magneticVariation)
+            }
+            let finalName = name.isEmpty ? id : name
+            let target: UserPoint
+            switch to {
+            case .waypoint:
+                target = .waypoint(UserWaypoint(id: id, name: finalName, type: .custom,
+                                                latitude: lat, longitude: lon, elevation: elev))
+            case .navaid:
+                target = .navaid(UserNavaid(id: id, name: finalName, latitude: lat, longitude: lon,
+                                            elevation: elev, magneticVariation: magVar, frequency: 0))
+            case .airport:
+                target = .airport(UserAirport(id: id, name: finalName, latitude: lat, longitude: lon,
+                                              elevation: elev, magneticVariation: magVar))
+            }
+            return PointConversion(fromKind: from, fromId: id, target: target)
+        }
+    }
+
+    /// Summary of what a batch of conversions changes, shown for confirmation before converting.
+    func conversionNotes(_ conversions: [PointConversion]) -> [String] {
+        var routeNames = Set<String>()
+        var endpointChanges = 0, frequencyLost = 0, magVarLost = 0, a109DataLost = 0
+        for c in conversions {
+            let to = c.target.kind
+            for use in routesUsing(kind: c.fromKind, id: c.fromId) {
+                routeNames.insert(use.route.name)
+                if use.isEndpoint && (c.fromKind == .airport || to == .airport) { endpointChanges += 1 }
+            }
+            switch c.fromKind {
+            case .navaid:
+                guard let nv = document.userNavaids.first(where: { $0.id == c.fromId }) else { continue }
+                if nv.frequency != 0 { frequencyLost += 1 }
+                if to == .waypoint && nv.magneticVariation != 0 { magVarLost += 1 }
+            case .airport:
+                guard let ap = document.userAirports.first(where: { $0.id == c.fromId }) else { continue }
+                if !ap.usage.isEmpty || !ap.longestRunway.isEmpty || !ap.rawUnknown1.isEmpty { a109DataLost += 1 }
+                if to == .waypoint && ap.magneticVariation != 0 { magVarLost += 1 }
+            case .waypoint:
+                break
+            }
+        }
+
+        var notes: [String] = []
+        if !routeNames.isEmpty {
+            let sorted = routeNames.sorted()
+            let shown = sorted.prefix(5).joined(separator: ", ") + (sorted.count > 5 ? ", …" : "")
+            notes.append("Used in \(sorted.count) route(s) (\(shown)); the routes keep their points.")
+        }
+        if endpointChanges > 0 {
+            notes.append("\(endpointChanges) route start/destination point(s) change whether they are a logistic airport on A109 export.")
+        }
+        if frequencyLost > 0 { notes.append("Frequency is removed from \(frequencyLost) navaid(s).") }
+        if magVarLost > 0 { notes.append("Magnetic variation is removed from \(magVarLost) point(s).") }
+        if a109DataLost > 0 { notes.append("A109 airport data (usage, runway) is removed from \(a109DataLost) airport(s).") }
+        return notes
+    }
+
+    /// Deletes several user points of one kind in a single change and removes them from every
+    /// route that uses them. Route references are matched on kind and ID, so a waypoint and an
+    /// airport that share an ID are not confused.
+    func deletePoints(kind: UserPointKind, ids: Set<String>) {
+        var doc = document
+        switch kind {
+        case .waypoint: doc.userWaypoints.removeAll { ids.contains($0.id) }
+        case .navaid:   doc.userNavaids.removeAll { ids.contains($0.id) }
+        case .airport:  doc.userAirports.removeAll { ids.contains($0.id) }
+        }
+        for r in doc.routes.indices {
+            doc.routes[r].pointRefs.removeAll { $0.kind == kind.routeKind && ids.contains($0.refId) }
+        }
+        document = doc
+    }
+
+    // MARK: - Merge comparison helpers
+
+    private static let coordinateTolerance = 1e-5   // degrees (~1 m)
+
+    private static func sameCoordinate(_ a: CLLocationCoordinate2D, _ b: CLLocationCoordinate2D) -> Bool {
+        abs(a.latitude - b.latitude) <= coordinateTolerance && abs(a.longitude - b.longitude) <= coordinateTolerance
+    }
+
+    private static func sameAirport(_ a: UserAirport, _ b: UserAirport) -> Bool {
+        a.id == b.id && a.name == b.name && sameCoordinate(a.coordinate, b.coordinate)
+            && abs(a.elevation - b.elevation) <= 0.5 && abs(a.magneticVariation - b.magneticVariation) <= 0.01
+    }
+
+    private static func sameNavaid(_ a: UserNavaid, _ b: UserNavaid) -> Bool {
+        a.id == b.id && a.name == b.name && sameCoordinate(a.coordinate, b.coordinate)
+            && abs(a.elevation - b.elevation) <= 0.5 && abs(a.magneticVariation - b.magneticVariation) <= 0.01
+            && abs(a.frequency - b.frequency) <= 0.001
+    }
+
+    /// Managed waypoint types (WPT, IP, …) get their IDs/names regenerated when routes are
+    /// renumbered, so only CUSTOM waypoints are compared by name.
+    private static func sameWaypoint(_ a: UserWaypoint, _ b: UserWaypoint) -> Bool {
+        a.type == b.type && sameCoordinate(a.coordinate, b.coordinate)
+            && abs(a.elevation - b.elevation) <= 0.5
+            && (a.type != .custom || a.name == b.name)
+    }
+
+    private static func waypointIds(in route: Route) -> [String] {
+        route.pointRefs.filter { $0.kind == .userWaypoint }.map { $0.refId }
+    }
+
+    /// True if an existing (normalized) route name corresponds to an imported raw name,
+    /// including the "-N" suffix added on import when the name was already taken.
+    private static func routeName(_ existing: String, matchesImported raw: String) -> Bool {
+        let sanitized = sanitizedName(raw, maxLength: 10)
+        let base = sanitized.isEmpty ? "ROUTE" : sanitized
+        if existing == base { return true }
+        guard let suffix = existing.range(of: "-\\d+$", options: .regularExpression) else { return false }
+        let stem = existing[..<suffix.lowerBound]
+        return !stem.isEmpty && base.hasPrefix(stem)
     }
 
     func deleteRoute(_ route: Route) {
-            let idsInDeletedRoute = Set(route.pointRefs.map { $0.refId })
+            // Only waypoints are cleaned up: those this route used as waypoints and no remaining
+            // route uses. Airports and navaids are always kept, and nothing that wasn't in the
+            // route is touched (refs are matched on kind, so a same-ID airport is not affected).
+            func waypointIds(in routes: [Route]) -> Set<String> {
+                Set(routes.flatMap { $0.pointRefs.filter { $0.kind == .userWaypoint }.map { $0.refId } })
+            }
+            let waypointIdsInDeletedRoute = waypointIds(in: [route])
             document.routes.removeAll { $0.id == route.id }
-            let idsInRemainingRoutes = Set(document.routes.flatMap { $0.pointRefs.map { $0.refId } })
-            let idsToRemove = idsInDeletedRoute.subtracting(idsInRemainingRoutes)
+            let waypointIdsToRemove = waypointIdsInDeletedRoute.subtracting(waypointIds(in: document.routes))
 
-            if !idsToRemove.isEmpty {
-                document.userWaypoints.removeAll { idsToRemove.contains($0.id) }
-                document.userAirports.removeAll { idsToRemove.contains($0.id) }
-                document.userNavaids.removeAll { idsToRemove.contains($0.id) }
-                document.systemAirports.removeAll { idsToRemove.contains($0.id) }
-                document.systemNavaids.removeAll { idsToRemove.contains($0.id) }
+            if !waypointIdsToRemove.isEmpty {
+                document.userWaypoints.removeAll { waypointIdsToRemove.contains($0.id) }
             }
 
             if activeRouteId == route.id {
@@ -537,7 +864,6 @@ final class NavigationStore: ObservableObject {
             doc.routes[i] = r
         }
     }
-    private func normalizeImportedWaypointIds(_ doc: inout NavigationDocument, existingWaypoints: [UserWaypoint]) { var used = Set(existingWaypoints.map{$0.id}); var m=[String:String](); for i in doc.userWaypoints.indices { var wp=doc.userWaypoints[i]; let p=wp.id; if used.contains(p) { let n=makeUniqueWaypointId(preferred: p, used: used); m[p]=n; wp.id=n }; used.insert(wp.id); doc.userWaypoints[i]=wp }; if !m.isEmpty { for ri in doc.routes.indices { for pi in doc.routes[ri].pointRefs.indices { var ref=doc.routes[ri].pointRefs[pi]; if ref.kind == .userWaypoint, let n=m[ref.refId] { ref.refId=n; doc.routes[ri].pointRefs[pi]=ref } } } } }
     private func makeRouteIdBase(from rawName: String) -> String { let s=NavigationStore.sanitizedName(rawName, maxLength: 15); return s.isEmpty ? "ROUTE" : String(s.prefix(8)) }
     private func makeUniqueRouteName(base: String, used: Set<String>) -> String {
         if !used.contains(base) { return base }
@@ -568,11 +894,13 @@ final class NavigationStore: ObservableObject {
     func createUserNavaid(_ nv: UserNavaid) { if document.userNavaids.contains(where: { $0.id == nv.id }) { var u=nv; u.id=makeUniqueWaypointId(preferred: nv.id, used: Set(document.userNavaids.map{$0.id})); document.userNavaids.append(u) } else { document.userNavaids.append(nv) } }
     func createUserWaypoint(_ wp: UserWaypoint) { if document.userWaypoints.contains(where: { $0.id == wp.id }) { var u=wp; u.id=makeUniqueWaypointId(preferred: wp.id, used: Set(document.userWaypoints.map{$0.id})); document.userWaypoints.append(u) } else { document.userWaypoints.append(wp) } }
     
-    func deleteUserAirport(withID id: String) { document.userAirports.removeAll { $0.id == id }; cleanupReferences(for: id) }
-    func deleteUserNavaid(withID id: String) { document.userNavaids.removeAll { $0.id == id }; cleanupReferences(for: id) }
-    func deleteUserWaypoint(withID id: String) { document.userWaypoints.removeAll { $0.id == id }; cleanupReferences(for: id) }
+    func deleteUserAirport(withID id: String) { document.userAirports.removeAll { $0.id == id }; cleanupReferences(for: id, kind: .userAirport) }
+    func deleteUserNavaid(withID id: String) { document.userNavaids.removeAll { $0.id == id }; cleanupReferences(for: id, kind: .userNavaid) }
+    func deleteUserWaypoint(withID id: String) { document.userWaypoints.removeAll { $0.id == id }; cleanupReferences(for: id, kind: .userWaypoint) }
     
-    private func cleanupReferences(for id: String) { for i in document.routes.indices { document.routes[i].pointRefs.removeAll { $0.refId == id } } }
+    /// Removes route references to a deleted point. Matches kind as well as ID: a waypoint and
+    /// an airport may share an ID (e.g. "ESSA"), and deleting one must not remove the other.
+    private func cleanupReferences(for id: String, kind: RoutePointKind) { for i in document.routes.indices { document.routes[i].pointRefs.removeAll { $0.kind == kind && $0.refId == id } } }
     
     static func looksLikeAirportId(_ value: String) -> Bool { return value.count == 4 && value.first == "E" && value.allSatisfy { $0.isLetter || $0.isNumber } }
     static func sanitizedName(_ raw: String, maxLength: Int) -> String { let allowed = CharacterSet(charactersIn: "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789-"); let filtered = raw.uppercased().unicodeScalars.filter { allowed.contains($0) }; return String(String.UnicodeScalarView(filtered).prefix(maxLength)) }

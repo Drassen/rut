@@ -16,8 +16,8 @@ class GPXImportService: NSObject, RouteImporting, XMLParserDelegate {
     private var tempName = ""
     private var tempEle: Double?
 
-    // Deduplication: name → UserWaypoint
-    private var waypointsByName: [String: UserWaypoint] = [:]
+    // Deduplication: name → UserWaypoint (insertion-ordered so points keep the file's order)
+    private var waypointsByName = InsertionOrderedDictionary<UserWaypoint>()
     private var wptCounter = 1
 
     // Parsed routes (rte and trk both produce a Route)
@@ -36,7 +36,7 @@ class GPXImportService: NSObject, RouteImporting, XMLParserDelegate {
         // Reset state
         currentElement = ""; currentChars = ""
         tempLat = nil; tempLon = nil; tempName = ""; tempEle = nil
-        waypointsByName = [:]
+        waypointsByName = .init()
         wptCounter = 1
         routes = []
         currentRouteName = url.deletingPathExtension().lastPathComponent

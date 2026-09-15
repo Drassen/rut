@@ -18,81 +18,83 @@ final class KMZImportService: NSObject, RouteImporting, XMLParserDelegate {
         return doc
     }
 
-    // MARK: - Non-nav content detection
-
-    /// Returns true if the KML/KMZ file contains geometry that can't be
-    /// represented as navigation data (polygons, circles etc.).
-    static func containsNonNavData(url: URL) -> Bool {
-        let ext = url.pathExtension.lowercased()
-        let text: String
-        if ext == "kml" {
-            text = (try? String(contentsOf: url, encoding: .utf8)) ?? ""
-        } else {
-            // KMZ: extract KML first, then scan
-            guard let zipData = try? Data(contentsOf: url),
-                  let kmlData = try? extractFirstKML(from: zipData) else { return false }
-            text = String(data: kmlData, encoding: .utf8) ?? ""
-        }
-        // Polygon is the key non-nav element; skip LineString/Point which map to routes
-        return text.range(of: "<Polygon", options: [.caseInsensitive]) != nil
-    }
-
     // MARK: - ZIP extraction
 
+    /// Entry sizes are read from the central directory, not the local file header:
+    /// when general-purpose flag bit 3 (data descriptor) is set — as in KMZ files
+    /// written by ArcGIS Earth and other streaming zip writers — the local header
+    /// stores 0 for both sizes and the real values follow the compressed data.
     static func extractFirstKML(from zipData: Data) throws -> Data {
-        var offset = 0
         let bytes = zipData
 
-        while offset + 30 <= bytes.count {
-            // Look for local file header signature PK\x03\x04
-            guard bytes[offset] == 0x50 && bytes[offset+1] == 0x4B &&
-                  bytes[offset+2] == 0x03 && bytes[offset+3] == 0x04 else {
-                offset += 1
-                continue
-            }
+        guard let eocd = findEndOfCentralDirectory(bytes) else {
+            throw RutError.importFailed("KMZ: not a valid ZIP archive")
+        }
+        let entryCount = Int(read16LE(bytes, at: eocd + 10))
+        var offset     = Int(read32LE(bytes, at: eocd + 16))
 
-            let method          = read16LE(bytes, at: offset + 8)
-            let compressedSize  = read32LE(bytes, at: offset + 18)
-            let uncompressedSize = read32LE(bytes, at: offset + 22)
-            let fileNameLen     = read16LE(bytes, at: offset + 26)
-            let extraLen        = read16LE(bytes, at: offset + 28)
+        for _ in 0..<entryCount {
+            // Central directory file header signature PK\x01\x02
+            guard offset + 46 <= bytes.count, read32LE(bytes, at: offset) == 0x0201_4B50 else { break }
 
-            let nameStart = offset + 30
-            let nameEnd   = nameStart + Int(fileNameLen)
-            let dataStart = nameEnd   + Int(extraLen)
-            let dataEnd   = dataStart + Int(compressedSize)
+            let method           = read16LE(bytes, at: offset + 10)
+            let compressedSize   = Int(read32LE(bytes, at: offset + 20))
+            let uncompressedSize = Int(read32LE(bytes, at: offset + 24))
+            let fileNameLen      = Int(read16LE(bytes, at: offset + 28))
+            let extraLen         = Int(read16LE(bytes, at: offset + 30))
+            let commentLen       = Int(read16LE(bytes, at: offset + 32))
+            let localOffset      = Int(read32LE(bytes, at: offset + 42))
 
-            guard nameEnd <= bytes.count, dataEnd <= bytes.count else {
-                // Malformed entry — advance past signature
-                offset += 4
-                continue
-            }
-
+            let nameStart = offset + 46
+            let nameEnd   = nameStart + fileNameLen
+            guard nameEnd <= bytes.count else { break }
             let fileName = String(data: bytes[nameStart..<nameEnd], encoding: .utf8) ?? ""
+            offset = nameEnd + extraLen + commentLen
 
-            if fileName.hasSuffix(".kml") || fileName.hasSuffix(".KML") {
-                let entryData = bytes[dataStart..<dataEnd]
-                if method == 0 {
-                    // Stored — no compression
-                    return Data(entryData)
-                } else if method == 8 {
-                    // Deflated
-                    return try rawInflate(Data(entryData), expectedSize: Int(uncompressedSize))
-                } else {
-                    throw RutError.importFailed("Unsupported ZIP compression method \(method) in KMZ")
-                }
+            guard fileName.lowercased().hasSuffix(".kml") else { continue }
+
+            // Local header name/extra lengths may differ from the central directory copy
+            guard localOffset + 30 <= bytes.count, read32LE(bytes, at: localOffset) == 0x0403_4B50 else {
+                throw RutError.importFailed("KMZ: corrupt local header for \(fileName)")
+            }
+            let dataStart = localOffset + 30
+                + Int(read16LE(bytes, at: localOffset + 26))
+                + Int(read16LE(bytes, at: localOffset + 28))
+            let dataEnd = dataStart + compressedSize
+            guard dataEnd <= bytes.count else {
+                throw RutError.importFailed("KMZ: \(fileName) is truncated")
             }
 
-            // Skip to next entry
-            offset = dataEnd
+            let entryData = Data(bytes[dataStart..<dataEnd])
+            switch method {
+            case 0:  return entryData                                             // Stored
+            case 8:  return try rawInflate(entryData, expectedSize: uncompressedSize) // Deflated
+            default: throw RutError.importFailed("Unsupported ZIP compression method \(method) in KMZ")
+            }
         }
 
         throw RutError.importFailed("No KML file found inside KMZ archive")
     }
 
+    /// Scans backwards for the End Of Central Directory signature PK\x05\x06
+    /// (22-byte record followed by an optional comment of up to 65535 bytes).
+    private static func findEndOfCentralDirectory(_ bytes: Data) -> Int? {
+        guard bytes.count >= 22 else { return nil }
+        let lowest = max(0, bytes.count - 22 - 65535)
+        for i in stride(from: bytes.count - 22, through: lowest, by: -1)
+            where read32LE(bytes, at: i) == 0x0605_4B50 {
+            return i
+        }
+        return nil
+    }
+
     private static func rawInflate(_ compressed: Data, expectedSize: Int) throws -> Data {
-        var output = Data(count: max(expectedSize, 1))
+        guard !compressed.isEmpty, expectedSize > 0 else {
+            throw RutError.importFailed("KMZ: empty KML entry")
+        }
+        var output = Data(count: expectedSize)
         var result = Z_OK
+        var produced = 0
 
         compressed.withUnsafeBytes { inBuf in
             output.withUnsafeMutableBytes { outBuf in
@@ -105,14 +107,15 @@ final class KMZImportService: NSObject, RouteImporting, XMLParserDelegate {
                 // windowBits = -15 → raw deflate (no zlib/gzip header)
                 inflateInit2_(&stream, -15, ZLIB_VERSION, Int32(MemoryLayout<z_stream>.size))
                 result = inflate(&stream, Z_FINISH)
+                produced = Int(stream.total_out)
                 inflateEnd(&stream)
             }
         }
 
-        guard result == Z_STREAM_END || result == Z_OK || result == Z_BUF_ERROR else {
+        guard result == Z_STREAM_END else {
             throw RutError.importFailed("KMZ inflate failed (zlib code \(result))")
         }
-        return output
+        return output.prefix(produced)
     }
 
     // MARK: - Little-endian readers
@@ -123,6 +126,28 @@ final class KMZImportService: NSObject, RouteImporting, XMLParserDelegate {
     private static func read32LE(_ data: Data, at offset: Int) -> UInt32 {
         UInt32(data[offset]) | UInt32(data[offset+1]) << 8 |
         UInt32(data[offset+2]) << 16 | UInt32(data[offset+3]) << 24
+    }
+}
+
+// MARK: - KMZNavigationImportService
+// Imports a KMZ as navigation data by running KMLImportService on its doc.kml.
+// Not registered by extension — selected via the "Navigation Data" import choice.
+
+final class KMZNavigationImportService: RouteImporting {
+
+    let supportedExtensions: [String] = []
+    private let standalonePointKind: KMLImportService.StandalonePointKind
+
+    init(standalonePointKind: KMLImportService.StandalonePointKind = .waypoint) {
+        self.standalonePointKind = standalonePointKind
+    }
+
+    func importDocument(from url: URL) throws -> NavigationDocument {
+        let kmlData = try KMZImportService.extractFirstKML(from: Data(contentsOf: url))
+        return try KMLImportService(standalonePointKind: standalonePointKind).importDocument(
+            kmlData: kmlData,
+            documentName: url.deletingPathExtension().lastPathComponent
+        )
     }
 }
 

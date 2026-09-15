@@ -157,16 +157,22 @@ final class CoreServices: ObservableObject {
     // MARK: - Import
 
     @MainActor
-    func importDocuments(from urls: [URL], kmlAsVector: Bool = false) async {
+    func importDocuments(from urls: [URL], kmlAsVector: Bool = false,
+                         standalonePointKind: KMLImportService.StandalonePointKind = .waypoint) async {
         var newDoc = NavigationDocument()
         var importedVectorLayers: [VectorLayer] = []
 
-        var importedVectorShapes = 0
-        var importedRoutePoints = 0
-        var importedAirports = 0
-        var importedNavaids = 0
-        var importedWaypoints = 0
-        var importedRoutesCount = 0
+        // Items found in the files, before skipping data that already exists in the app
+        var foundItems = 0
+
+        // Per-file errors are collected and reported in the final summary toast.
+        // ToastManager shows one message at a time, so a toast shown here would
+        // be overwritten immediately by the summary.
+        var failures: [(file: String, message: String)] = []
+
+        // Skipped items (identical data, ID conflicts) and parse warnings, each with its
+        // reason. Shown together with the failures in a report dialog after the import.
+        var reportLines: [String] = []
 
         for url in urls {
             let originalName = url.lastPathComponent
@@ -176,7 +182,7 @@ final class CoreServices: ObservableObject {
             if url.pathExtension.lowercased() == "zip" {
                 let err = RutError.zipNotSupported
                 ErrorLogger.shared.log(err)
-                toastManager.showError(err)
+                failures.append((originalName, err.localizedDescription))
                 continue
             }
 
@@ -184,7 +190,7 @@ final class CoreServices: ObservableObject {
             guard let baseImporter = importer(for: url) else {
                 let err = RutError.invalidFormat("Unsupported file: \(originalName)")
                 ErrorLogger.shared.log(err)
-                toastManager.showError(err)
+                failures.append((originalName, err.localizedDescription))
                 continue
             }
 
@@ -193,10 +199,10 @@ final class CoreServices: ObservableObject {
                 let tempDir = FileManager.default.temporaryDirectory
                 let localURL = tempDir.appendingPathComponent(originalName)
                 try? FileManager.default.removeItem(at: localURL)
-                
+
                 let secured = url.startAccessingSecurityScopedResource()
                 defer { if secured { url.stopAccessingSecurityScopedResource() } }
-                
+
                 try FileManager.default.copyItem(at: url, to: localURL)
                 defer { try? FileManager.default.removeItem(at: localURL) }
 
@@ -213,97 +219,112 @@ final class CoreServices: ObservableObject {
                     finalImporter = KMLVectorImportService()
                 } else if kmlAsVector && ext == "kmz" {
                     finalImporter = KMZImportService()
+                } else if ext == "kmz" {
+                    finalImporter = KMZNavigationImportService(standalonePointKind: standalonePointKind)
+                } else if ext == "kml" {
+                    finalImporter = KMLImportService(standalonePointKind: standalonePointKind)
                 } else {
                     finalImporter = baseImporter
                 }
-                
-                // For ACO files, capture parse warnings
+
+                let doc: NavigationDocument
                 if let acoImporter = finalImporter as? ACOImportService {
+                    // For ACO files, capture parse warnings
                     let (layer, warnings) = try acoImporter.importLayerWithWarnings(from: localURL)
                     var acoDoc = NavigationDocument()
                     if !layer.shapes.isEmpty { acoDoc.vectorLayers = [layer] }
-                    if !warnings.isEmpty {
-                        await MainActor.run {
-                            toastManager.importWarningTitle = "ACO import: \(warnings.count) record(s) could not be parsed"
-                            toastManager.importWarnings = warnings
-                        }
-                    }
-                    let doc = acoDoc
-                    importedRoutePoints += doc.routes.reduce(0) { $0 + $1.pointRefs.count }
-                    importedRoutesCount += doc.routes.count
-                    importedAirports    += doc.userAirports.count
-                    importedNavaids     += doc.userNavaids.count
-                    importedWaypoints   += doc.userWaypoints.count
-                    for layer in doc.vectorLayers where !layer.isSystem {
-                        if !importedVectorLayers.contains(where: { $0.name == layer.name }) {
-                            importedVectorLayers.append(layer)
-                            importedVectorShapes += layer.shapes.count
-                        }
-                    }
-                    let tmpStore = NavigationStore()
-                    tmpStore.document = newDoc
-                    tmpStore.addOrMerge(document: doc)
-                    newDoc = tmpStore.document
-                    continue
+                    reportLines += warnings.map { "\(originalName): record not imported – \($0)" }
+                    doc = acoDoc
+                } else {
+                    doc = try finalImporter.importDocument(from: localURL)
                 }
 
-                let doc = try finalImporter.importDocument(from: localURL)
+                foundItems += doc.routes.count + doc.userAirports.count
+                            + doc.userNavaids.count + doc.userWaypoints.count
 
-                importedRoutePoints += doc.routes.reduce(0) { $0 + $1.pointRefs.count }
-                importedRoutesCount += doc.routes.count
-                importedAirports += doc.userAirports.count
-                importedNavaids += doc.userNavaids.count
-                importedWaypoints += doc.userWaypoints.count
-
-                // Vi bygger upp en temporär store för att merga filen korrekt
-                // Collect vector layers from each imported file (avoid duplicating by name)
+                // Collect vector layers; same-named layers from several files are merged
                 for layer in doc.vectorLayers where !layer.isSystem {
-                    if !importedVectorLayers.contains(where: { $0.name == layer.name }) {
-                        importedVectorLayers.append(layer)
-                        importedVectorShapes += layer.shapes.count
-                    }
+                    foundItems += VectorStore.mergeLayer(layer, into: &importedVectorLayers, skipped: &reportLines)
                 }
 
+                // Vi bygger upp en temporär store för att merga filerna i samma import korrekt
                 let tmpStore = NavigationStore()
                 tmpStore.document = newDoc
-                tmpStore.addOrMerge(document: doc)
+                reportLines += tmpStore.addOrMerge(document: doc).skipped
                 newDoc = tmpStore.document
-                
+
             } catch {
                 ErrorLogger.shared.log(error)
-                toastManager.showError(error)
+                failures.append((originalName, error.localizedDescription))
             }
         }
 
-        // Merge navigation data into main store
-        navStore.addOrMerge(document: newDoc)
+        // Merge into the main stores. Data identical to existing data is skipped;
+        // the returned counts are what was actually added.
+        let added = navStore.addOrMerge(document: newDoc)
+        reportLines += added.skipped
 
-        // Sync vector layers collected from imported files (e.g. .rut files)
+        var addedShapes = 0
         if !importedVectorLayers.isEmpty {
             var docWithVectors = newDoc
             docWithVectors.vectorLayers = importedVectorLayers
-            vectorStore.syncFromDocument(docWithVectors)
+            addedShapes = vectorStore.syncFromDocument(docWithVectors, skipped: &reportLines)
         }
-        
-        // Tysta varningen om oanvänd variabel med _
-        _ = newDoc.routes.map { $0.id }
-        
+
         navStore.deriveUserAirportsIfNeeded()
 
-        let totalItems = importedRoutePoints + importedAirports + importedNavaids + importedWaypoints + importedRoutesCount + importedVectorShapes
-
-        if totalItems > 0 {
+        var summary: String
+        if added.total + addedShapes > 0 {
             var parts: [String] = []
-            if importedRoutesCount > 0 { parts.append("\(importedRoutesCount) routes") }
-            if importedAirports > 0 { parts.append("\(importedAirports) airports") }
-            if importedNavaids > 0 { parts.append("\(importedNavaids) navaids") }
-            if importedWaypoints > 0 { parts.append("\(importedWaypoints) waypoints") }
-            if importedVectorShapes > 0 { parts.append("\(importedVectorShapes) shapes") }
+            if added.routes > 0 { parts.append("\(added.routes) routes") }
+            if added.airports > 0 { parts.append("\(added.airports) airports") }
+            if added.navaids > 0 { parts.append("\(added.navaids) navaids") }
+            if added.waypoints > 0 { parts.append("\(added.waypoints) waypoints") }
+            if addedShapes > 0 { parts.append("\(addedShapes) shapes") }
 
-            let message = "Imported: " + parts.joined(separator: ", ")
-            toastManager.show(message: message, kind: .info)
+            summary = "Imported: " + parts.joined(separator: ", ")
+        } else if foundItems > 0 {
+            summary = "Nothing new to import – all data already exists."
+        } else if failures.isEmpty {
+            summary = "Import finished but no data found."
         } else {
-            toastManager.show(message: "Import finished but no data found.", kind: .info)
+            summary = ""
+        }
+
+        if failures.isEmpty {
+            toastManager.show(message: summary, kind: .info)
+        } else {
+            let failureText: String
+            if failures.count == 1, let f = failures.first {
+                failureText = "\(f.file): \(f.message)"
+            } else {
+                failureText = "\(failures.count) files failed. \(failures[0].file): \(failures[0].message)"
+            }
+            summary = summary.isEmpty ? "Import failed – \(failureText)" : "\(summary). Failed – \(failureText)"
+            toastManager.show(message: summary, kind: .error)
+        }
+
+        // Every failure and skipped item, with its reason, in a dialog after the import
+        let failureLines = failures.map { "\($0.file): import failed – \($0.message)" }
+        if !failureLines.isEmpty || !reportLines.isEmpty {
+            var titleParts: [String] = []
+            if !failureLines.isEmpty { titleParts.append("\(failureLines.count) failed") }
+            if !reportLines.isEmpty { titleParts.append("\(reportLines.count) skipped") }
+            toastManager.importWarningTitle = "Import report: " + titleParts.joined(separator: ", ")
+            toastManager.importWarnings = failureLines + Self.sortedReportLines(reportLines)
+        }
+    }
+
+    /// Orders report lines by kind (routes, airports, navaids, waypoints, shapes, other)
+    /// and then naturally by name, so "Airport 101" comes before "Airport 304".
+    private static func sortedReportLines(_ lines: [String]) -> [String] {
+        let kindOrder = ["Route ", "Airport ", "Navaid ", "Waypoint ", "Shape "]
+        func rank(_ line: String) -> Int {
+            kindOrder.firstIndex { line.hasPrefix($0) } ?? kindOrder.count
+        }
+        return lines.sorted { a, b in
+            let ra = rank(a), rb = rank(b)
+            return ra != rb ? ra < rb : a.localizedStandardCompare(b) == .orderedAscending
         }
     }
 }
