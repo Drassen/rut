@@ -173,10 +173,6 @@ struct RutMapView: View {
                     }
                     .onAppear {
                         configureInitialCamera()
-                        DispatchQueue.main.async { fixAnnotationZOrder() }
-                    }
-                    .onChange(of: navStore.activeRouteId) { _, _ in
-                        DispatchQueue.main.async { fixAnnotationZOrder() }
                     }
                     .task {
                         guard autoLoadLFVLayer else { return }
@@ -436,6 +432,9 @@ struct RutMapView: View {
                             .clipShape(RoundedRectangle(cornerRadius: 3))
                     }
                 }
+                // Vector points on top while editing vectors, below navigation markers otherwise.
+                .mapAnnotationZ(core.appMode == .vector ? MapAnnotationZ.vectorPointAbove
+                                                        : MapAnnotationZ.vectorPointBelow)
             }
             .annotationTitles(.hidden)
         }
@@ -478,6 +477,7 @@ struct RutMapView: View {
                                                           name: airport.id, indexInRoute: -1, kind: .userAirport))
                             }
                         }
+                        .mapAnnotationZ(MapAnnotationZ.database)
                 }
                 .annotationTitles(.hidden)
             }
@@ -500,6 +500,7 @@ struct RutMapView: View {
                                                           name: navaid.id, indexInRoute: -1, kind: .userNavaid))
                             }
                         }
+                        .mapAnnotationZ(MapAnnotationZ.database)
                 }
                 .annotationTitles(.hidden)
             }
@@ -538,6 +539,7 @@ struct RutMapView: View {
                     .onTapGesture {
                         onPointTap?(RouteMapPoint(coordinate: wp.coordinate, name: wp.id, indexInRoute: -1, kind: .userWaypoint))
                     }
+                    .mapAnnotationZ(MapAnnotationZ.database)
                 }
                 .annotationTitles(.hidden)
             }
@@ -553,6 +555,7 @@ struct RutMapView: View {
                         .onTapGesture {
                             onPointTap?(RouteMapPoint(coordinate: ap.coordinate, name: ap.id, indexInRoute: -1, kind: .systemAirport))
                         }
+                        .mapAnnotationZ(MapAnnotationZ.database)
                 }
                 .annotationTitles(.hidden)
             }
@@ -568,6 +571,7 @@ struct RutMapView: View {
                         .onTapGesture {
                             onPointTap?(RouteMapPoint(coordinate: nv.coordinate, name: nv.id, indexInRoute: -1, kind: .systemNavaid))
                         }
+                        .mapAnnotationZ(MapAnnotationZ.database)
                 }
                 .annotationTitles(.hidden)
             }
@@ -606,6 +610,7 @@ struct RutMapView: View {
                         .onTapGesture {
                             if p.kind == .userWaypoint { onPointTap?(p) }
                         }
+                        .mapAnnotationZ(MapAnnotationZ.inactiveRoute)
                     }
                     .annotationTitles(.hidden)
                 }
@@ -641,6 +646,7 @@ struct RutMapView: View {
                         // Hide while dragging — Canvas overlay renders the live marker instead.
                         .opacity(isDragging ? 0 : vectorDim)
                         .onTapGesture { if core.appMode == .navigation { onPointTap?(p) } }
+                        .mapAnnotationZ(MapAnnotationZ.activeRoute)
                 }
                 .annotationTitles(.hidden)
 
@@ -659,6 +665,7 @@ struct RutMapView: View {
                             .background(colorActive)
                             .foregroundColor(.black)
                             .cornerRadius(4)
+                            .mapAnnotationZ(MapAnnotationZ.activeRoute)
                     }
                     .annotationTitles(.hidden)
                 }
@@ -669,6 +676,7 @@ struct RutMapView: View {
                 Annotation("ghost-insert", coordinate: ghostCoord) {
                     GhostInsertMarkerView(isSnapping: insertSnapRef != nil,
                                          snapId: insertSnapRef?.refId)
+                        .mapAnnotationZ(MapAnnotationZ.insertGhost)
                 }
                 .annotationTitles(.hidden)
             }
@@ -1038,22 +1046,6 @@ struct RutMapView: View {
         findMKMapView()?.isScrollEnabled = enabled
     }
 
-    /// Sets layer.zPosition on MKAnnotationViews based on their title prefix
-    /// ("a-" = active route, "i-" = inactive route). MapKit does not expose
-    /// z-ordering in the SwiftUI API, so we reach into the underlying MKMapView.
-    private func fixAnnotationZOrder() {
-        guard let mapView = findMKMapView() else { return }
-        for annotation in mapView.annotations {
-            guard let view = mapView.view(for: annotation) else { continue }
-            let title = annotation.title ?? nil
-            if title?.hasPrefix("a-") == true || title?.hasPrefix("d-") == true {
-                view.layer.zPosition = 100
-            } else if title?.hasPrefix("i-") == true {
-                view.layer.zPosition = 0
-            }
-        }
-    }
-
     /// Forces MapKit to process pending @MapContentBuilder changes.
     /// Must be called via DispatchQueue.main.async so SwiftUI has already
     /// re-evaluated body and sent updated content to MapKit first.
@@ -1382,6 +1374,14 @@ struct VectorEditingHandles: View {
     let proxy: MapProxy
 
     @State private var draggingEditVertexIndex: Int? = nil
+    @State private var editGestureChecked = false
+    /// Pending long-press on a line segment; inserts a vertex when it fires.
+    @State private var segmentPressTask: Task<Void, Never>? = nil
+
+    /// Same hold time as the route line-insert long press.
+    private let insertPressDuration: Duration = .milliseconds(500)
+    /// Finger movement that cancels a pending segment long press.
+    private let insertPressSlop: CGFloat = 10
 
     var body: some View {
         let verts = vectorStore.editingVertices
@@ -1392,8 +1392,17 @@ struct VectorEditingHandles: View {
                 .gesture(
                     DragGesture(minimumDistance: 0, coordinateSpace: .global)
                         .onChanged { value in
-                            if draggingEditVertexIndex == nil {
-                                draggingEditVertexIndex = nearestEditVertex(to: value.startLocation)
+                            if !editGestureChecked {
+                                editGestureChecked = true
+                                if let idx = nearestEditVertex(to: value.startLocation) {
+                                    draggingEditVertexIndex = idx
+                                } else if let hit = nearestEditSegment(to: value.startLocation) {
+                                    scheduleVertexInsert(hit)
+                                }
+                            }
+                            if segmentPressTask != nil,
+                               hypot(value.translation.width, value.translation.height) > insertPressSlop {
+                                cancelVertexInsert()
                             }
                             if let idx = draggingEditVertexIndex,
                                let coord = proxy.convert(value.location, from: .global) {
@@ -1401,7 +1410,9 @@ struct VectorEditingHandles: View {
                             }
                         }
                         .onEnded { _ in
+                            cancelVertexInsert()
                             draggingEditVertexIndex = nil
+                            editGestureChecked = false
                         }
                 )
 
@@ -1415,8 +1426,7 @@ struct VectorEditingHandles: View {
                             for v in verts.dropFirst() {
                                 if let pt = proxy.convert(v, to: .local) { path.addLine(to: pt) }
                             }
-                            if let found = vectorStore.activeShapeId.flatMap({ vectorStore.findShape(id: $0) }),
-                               case .polygon = found.shape.geometry,
+                            if vectorStore.editingShapeIsPolygon,
                                let closePt = proxy.convert(verts[0], to: .local) {
                                 path.addLine(to: closePt)
                             }
@@ -1446,5 +1456,57 @@ struct VectorEditingHandles: View {
             }
         }
         return best?.index
+    }
+
+    // MARK: Vertex insertion on a line segment
+
+    /// A touch on an outline segment: `insertIndex` is where the new vertex goes,
+    /// `coordinate` the touch projected onto the segment.
+    private struct SegmentHit {
+        let insertIndex: Int
+        let coordinate: CLLocationCoordinate2D
+    }
+
+    /// Nearest polyline/polygon segment within the hit threshold (polygons include
+    /// the closing segment from the last vertex back to the first).
+    private func nearestEditSegment(to point: CGPoint) -> SegmentHit? {
+        guard vectorStore.editingShapeSupportsVertexInsert else { return nil }
+        let verts = vectorStore.editingVertices
+        guard verts.count >= 2 else { return nil }
+        let threshold: CGFloat = 22
+        let segmentCount = vectorStore.editingShapeIsPolygon ? verts.count : verts.count - 1
+
+        var best: (dist: CGFloat, index: Int, point: CGPoint)? = nil
+        for i in 0..<segmentCount {
+            guard let a = proxy.convert(verts[i], to: .global),
+                  let b = proxy.convert(verts[(i + 1) % verts.count], to: .global) else { continue }
+            let dx = b.x - a.x, dy = b.y - a.y
+            let lenSq = dx * dx + dy * dy
+            guard lenSq > 0 else { continue }
+            let t = max(0, min(1, ((point.x - a.x) * dx + (point.y - a.y) * dy) / lenSq))
+            let proj = CGPoint(x: a.x + t * dx, y: a.y + t * dy)
+            let d = hypot(point.x - proj.x, point.y - proj.y)
+            if d < threshold && (best == nil || d < best!.dist) { best = (d, i, proj) }
+        }
+        guard let best, let coord = proxy.convert(best.point, from: .global) else { return nil }
+        return SegmentHit(insertIndex: best.index + 1, coordinate: coord)
+    }
+
+    /// After a long press on a segment, inserts a vertex there and hands it to the drag.
+    private func scheduleVertexInsert(_ hit: SegmentHit) {
+        segmentPressTask?.cancel()
+        segmentPressTask = Task { @MainActor in
+            try? await Task.sleep(for: insertPressDuration)
+            guard !Task.isCancelled else { return }
+            segmentPressTask = nil
+            vectorStore.insertEditVertex(hit.coordinate, at: hit.insertIndex)
+            draggingEditVertexIndex = hit.insertIndex
+            UIImpactFeedbackGenerator(style: .medium).impactOccurred()
+        }
+    }
+
+    private func cancelVertexInsert() {
+        segmentPressTask?.cancel()
+        segmentPressTask = nil
     }
 }

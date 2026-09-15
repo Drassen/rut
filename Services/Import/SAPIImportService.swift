@@ -4,6 +4,10 @@ struct SAPIImportService: RouteImporting {
     let supportedExtensions = ["sapi"]
 
     func importDocument(from url: URL) throws -> NavigationDocument {
+        try importDocumentWithWarnings(from: url).0
+    }
+
+    func importDocumentWithWarnings(from url: URL) throws -> (NavigationDocument, [String]) {
         guard let data = try? Data(contentsOf: url) else {
             throw RutError.importFailed("Could not read SAPI file.")
         }
@@ -23,9 +27,10 @@ struct SAPIImportService: RouteImporting {
 
         // Group shapes by layer_id
         var shapesByLayerId: [String: [VectorShape]] = [:]
+        var warnings: [String] = []
 
         for (index, feature) in features.enumerated() {
-            if let shape = parseFeature(feature, index: index) {
+            if let shape = parseFeature(feature, index: index, warnings: &warnings) {
                 let layerId = (feature["properties"] as? [String: Any])?["layer_id"] as? String ?? "Default"
                 if shapesByLayerId[layerId] == nil {
                     shapesByLayerId[layerId] = []
@@ -50,16 +55,10 @@ struct SAPIImportService: RouteImporting {
 
         var doc = NavigationDocument()
         doc.vectorLayers = [topLayer]
-        return doc
+        return (doc, warnings)
     }
 
-    private func parseFeature(_ feature: [String: Any], index: Int) -> VectorShape? {
-        guard let geometryDict = feature["geometry"] as? [String: Any],
-              let type = geometryDict["type"] as? String
-        else {
-            return nil
-        }
-
+    private func parseFeature(_ feature: [String: Any], index: Int, warnings: inout [String]) -> VectorShape? {
         let properties = feature["properties"] as? [String: Any] ?? [:]
         let name = properties["name"] as? String ?? "Shape \(index + 1)"
 
@@ -85,63 +84,13 @@ struct SAPIImportService: RouteImporting {
         style.strokeWidth = 1.5
         style.opacity = 1.0
 
-        var vectorGeometry: VectorGeometry?
-
-        switch type {
-        case "Point":
-            if let coords = geometryDict["coordinates"] as? [Double], coords.count == 2 {
-                let lon = coords[0], lat = coords[1]
-                // Check if we have a radius to make a circle
-                if let radiusM = properties["radius_m"] as? Double {
-                    vectorGeometry = .circle(lat: lat, lon: lon, radiusMeters: radiusM)
-                } else {
-                    vectorGeometry = .point(lat: lat, lon: lon)
-                }
-            }
-
-        case "LineString":
-            if let coords = geometryDict["coordinates"] as? [[Double]] {
-                let flipped = coords.compactMap { c -> [Double]? in
-                    guard c.count == 2 else { return nil }
-                    return [c[1], c[0]]
-                }
-                if !flipped.isEmpty {
-                    vectorGeometry = .polyline(coordinates: flipped)
-                }
-            }
-
-        case "Polygon":
-            if let rings = geometryDict["coordinates"] as? [[[Double]]], !rings.isEmpty {
-                let outerRing = rings[0]
-                let flipped = outerRing.compactMap { c -> [Double]? in
-                    guard c.count == 2 else { return nil }
-                    return [c[1], c[0]]
-                }
-                if !flipped.isEmpty {
-                    vectorGeometry = .polygon(coordinates: flipped)
-                }
-            }
-
-        case "MultiPolygon":
-            if let polygons = geometryDict["coordinates"] as? [[[[Double]]]], !polygons.isEmpty {
-                let rings = polygons[0]
-                if !rings.isEmpty {
-                    let outerRing = rings[0]
-                    let flipped = outerRing.compactMap { c -> [Double]? in
-                        guard c.count == 2 else { return nil }
-                        return [c[1], c[0]]
-                    }
-                    if !flipped.isEmpty {
-                        vectorGeometry = .polygon(coordinates: flipped)
-                    }
-                }
-            }
-
-        default:
+        // A Point with radius_m is a circle
+        let label = "Feature \(index + 1) '\(name)'"
+        guard let geom = GeoJSONGeometryReader.read(feature["geometry"], label: label,
+                                                    pointRadiusM: properties["radius_m"] as? Double,
+                                                    warnings: &warnings) else {
             return nil
         }
-
-        guard let geom = vectorGeometry else { return nil }
         return VectorShape(name: name, notes: notes, geometry: geom, style: style)
     }
 

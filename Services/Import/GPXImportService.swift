@@ -13,8 +13,11 @@ class GPXImportService: NSObject, RouteImporting, XMLParserDelegate {
     // Temp for current point (wpt / rtept / trkpt)
     private var tempLat: Double?
     private var tempLon: Double?
+    private var tempLatText = ""
+    private var tempLonText = ""
     private var tempName = ""
     private var tempEle: Double?
+    private var pointCounter = 0
 
     // Deduplication: name → UserWaypoint (insertion-ordered so points keep the file's order)
     private var waypointsByName = InsertionOrderedDictionary<UserWaypoint>()
@@ -32,10 +35,18 @@ class GPXImportService: NSObject, RouteImporting, XMLParserDelegate {
     // Standalone <wpt> elements (defined outside rte/trk)
     private var standaloneWaypoints: [UserWaypoint] = []
 
+    // Records that could not be parsed or were skipped, with the reason
+    private var warnings: [String] = []
+
     func importDocument(from url: URL) throws -> NavigationDocument {
+        try importDocumentWithWarnings(from: url).0
+    }
+
+    func importDocumentWithWarnings(from url: URL) throws -> (NavigationDocument, [String]) {
         // Reset state
         currentElement = ""; currentChars = ""
-        tempLat = nil; tempLon = nil; tempName = ""; tempEle = nil
+        tempLat = nil; tempLon = nil; tempLatText = ""; tempLonText = ""; tempName = ""; tempEle = nil
+        pointCounter = 0
         waypointsByName = .init()
         wptCounter = 1
         routes = []
@@ -43,6 +54,7 @@ class GPXImportService: NSObject, RouteImporting, XMLParserDelegate {
         currentRoutePoints = []
         inRoute = false; inTrack = false
         standaloneWaypoints = []
+        warnings = []
 
         // 1. Read file (same robust pattern as FPLImportService)
         var contentString = ""
@@ -74,7 +86,7 @@ class GPXImportService: NSObject, RouteImporting, XMLParserDelegate {
         parser.shouldProcessNamespaces = false
 
         if parser.parse() {
-            return buildDocument()
+            return (buildDocument(), warnings)
         } else {
             let msg = parser.parserError?.localizedDescription ?? "Unknown"
             throw RutError.importFailed("GPX XML parsing failed: \(msg)")
@@ -109,8 +121,11 @@ class GPXImportService: NSObject, RouteImporting, XMLParserDelegate {
 
         switch elementName {
         case "wpt", "rtept", "trkpt":
-            tempLat = attributeDict["lat"].flatMap { Double($0) }
-            tempLon = attributeDict["lon"].flatMap { Double($0) }
+            pointCounter += 1
+            tempLatText = attributeDict["lat"] ?? ""
+            tempLonText = attributeDict["lon"] ?? ""
+            tempLat = Double(tempLatText)
+            tempLon = Double(tempLonText)
             tempName = ""
             tempEle = nil
 
@@ -151,26 +166,26 @@ class GPXImportService: NSObject, RouteImporting, XMLParserDelegate {
             if let lat = tempLat, let lon = tempLon {
                 let wp = makeOrReuseWaypoint(name: tempName, lat: lat, lon: lon, ele: tempEle)
                 standaloneWaypoints.append(wp)
+            } else {
+                warnInvalidPosition(elementName)
             }
 
         case "rtept", "trkpt":
             if let lat = tempLat, let lon = tempLon {
                 let wp = makeOrReuseWaypoint(name: tempName, lat: lat, lon: lon, ele: tempEle)
                 currentRoutePoints.append(RoutePointRef(kind: .userWaypoint, refId: wp.id))
+            } else {
+                warnInvalidPosition(elementName)
             }
 
-        case "rte":
+        case "rte", "trk":
             let name = sanitizeRouteName(currentRouteName)
+            if currentRoutePoints.isEmpty {
+                warnings.append("Route '\(name)': no readable points")
+            }
             let route = Route(routeId: UUID().uuidString, name: name, pointRefs: currentRoutePoints)
             routes.append(route)
             inRoute = false
-            currentRouteName = ""
-            currentRoutePoints = []
-
-        case "trk":
-            let name = sanitizeRouteName(currentRouteName)
-            let route = Route(routeId: UUID().uuidString, name: name, pointRefs: currentRoutePoints)
-            routes.append(route)
             inTrack = false
             currentRouteName = ""
             currentRoutePoints = []
@@ -195,10 +210,18 @@ class GPXImportService: NSObject, RouteImporting, XMLParserDelegate {
 
     // MARK: - Helpers
 
+    private func warnInvalidPosition(_ element: String) {
+        let label = tempName.isEmpty ? "#\(pointCounter)" : "'\(tempName)'"
+        warnings.append("<\(element)> \(label): missing or invalid position (lat '\(tempLatText)', lon '\(tempLonText)'); skipped")
+    }
+
     private func makeOrReuseWaypoint(name: String, lat: Double, lon: Double, ele: Double?) -> UserWaypoint {
         let finalName = name.isEmpty ? nextWptName() : name
 
         if let existing = waypointsByName[finalName] {
+            if abs(existing.latitude - lat) > 1e-6 || abs(existing.longitude - lon) > 1e-6 {
+                warnings.append("Waypoint '\(finalName)' appears again at a different position; the first position is used")
+            }
             return existing
         }
 

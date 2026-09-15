@@ -19,6 +19,16 @@ struct ExportedFile: Identifiable {
 protocol RouteImporting {
     var supportedExtensions: [String] { get }
     func importDocument(from url: URL) throws -> NavigationDocument
+    /// Like `importDocument`, plus one line per record that could not be parsed or was
+    /// skipped, with the reason. Shown in the import report after every import.
+    /// (A protocol requirement, not only an extension, so importers' own versions are used.)
+    func importDocumentWithWarnings(from url: URL) throws -> (NavigationDocument, [String])
+}
+
+extension RouteImporting {
+    func importDocumentWithWarnings(from url: URL) throws -> (NavigationDocument, [String]) {
+        (try importDocument(from: url), [])
+    }
 }
 
 protocol RouteExporting {
@@ -156,6 +166,97 @@ final class CoreServices: ObservableObject {
 
     // MARK: - Import
 
+    /// One unit of an import: a single file, or all P01 files of one A109 card.
+    private enum ImportUnit {
+        case file(URL)
+        case a109Card(name: String, files: [URL])
+    }
+
+    /// Expands chosen folders into their files and groups the P01 files of each A109 card (files
+    /// from the same folder), so the card's routes are read against its own point files. Card
+    /// files that are not navigation data (header, checksums, logs) are left out.
+    private func importUnits(for urls: [URL]) -> [ImportUnit] {
+        var files: [URL] = []
+        for url in urls {
+            if (try? url.resourceValues(forKeys: [.isDirectoryKey]).isDirectory) == true {
+                let contents = (try? FileManager.default.contentsOfDirectory(
+                    at: url, includingPropertiesForKeys: [.isDirectoryKey], options: [.skipsHiddenFiles])) ?? []
+                files += contents
+                    .filter { (try? $0.resourceValues(forKeys: [.isDirectoryKey]).isDirectory) != true }
+                    .sorted { $0.lastPathComponent.localizedStandardCompare($1.lastPathComponent) == .orderedAscending }
+            } else {
+                files.append(url)
+            }
+        }
+
+        var units: [ImportUnit] = []
+        var cards: [(folder: URL, files: [URL])] = []
+        for file in files {
+            let name = file.lastPathComponent.trimmingCharacters(in: .whitespacesAndNewlines).uppercased()
+            if A109ImportService.cardSupportFiles.contains(name) { continue }
+            guard file.pathExtension.lowercased() == "p01" else {
+                units.append(.file(file))
+                continue
+            }
+            let folder = file.deletingLastPathComponent().standardizedFileURL
+            if let index = cards.firstIndex(where: { $0.folder == folder }) {
+                cards[index].files.append(file)
+            } else {
+                cards.append((folder, [file]))
+            }
+        }
+        units += cards.map { card in
+            .a109Card(name: card.files.count == 1 ? card.files[0].lastPathComponent : card.folder.lastPathComponent,
+                      files: card.files)
+        }
+        return units
+    }
+
+    /// Copies files into a fresh temporary folder, keeping their names, so locked or
+    /// security-scoped originals are never parsed directly.
+    private func copyToTemporaryFolder(_ files: [URL]) throws -> (folder: URL, files: [URL]) {
+        let folder = FileManager.default.temporaryDirectory
+            .appendingPathComponent("import-\(UUID().uuidString)", isDirectory: true)
+        try FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
+        let copies = try files.map { file -> URL in
+            let target = folder.appendingPathComponent(file.lastPathComponent)
+            try FileManager.default.copyItem(at: file, to: target)
+            return target
+        }
+        return (folder, copies)
+    }
+
+    /// Parses one import unit with the importer for its format.
+    private func importUnit(_ unit: ImportUnit, kmlAsVector: Bool,
+                            standalonePointKind: KMLImportService.StandalonePointKind) throws -> (NavigationDocument, [String]) {
+        switch unit {
+        case .a109Card(_, let files):
+            let copy = try copyToTemporaryFolder(files)
+            defer { try? FileManager.default.removeItem(at: copy.folder) }
+            return try A109ImportService().importCardWithWarnings(files: copy.files)
+
+        case .file(let url):
+            if url.pathExtension.lowercased() == "zip" { throw RutError.zipNotSupported }
+            // KMZ counted as zip by some systems — use extension-based lookup
+            guard let baseImporter = importer(for: url) else {
+                throw RutError.invalidFormat("Unsupported file: \(url.lastPathComponent)")
+            }
+            let copy = try copyToTemporaryFolder([url])
+            defer { try? FileManager.default.removeItem(at: copy.folder) }
+
+            // Remap KML/KMZ to vector or navigation importers as chosen
+            let finalImporter: RouteImporting
+            switch (url.pathExtension.lowercased(), kmlAsVector) {
+            case ("kml", true):  finalImporter = KMLVectorImportService()
+            case ("kmz", true):  finalImporter = KMZImportService()
+            case ("kmz", false): finalImporter = KMZNavigationImportService(standalonePointKind: standalonePointKind)
+            case ("kml", false): finalImporter = KMLImportService(standalonePointKind: standalonePointKind)
+            default:             finalImporter = baseImporter
+            }
+            return try finalImporter.importDocumentWithWarnings(from: copy.files[0])
+        }
+    }
+
     @MainActor
     func importDocuments(from urls: [URL], kmlAsVector: Bool = false,
                          standalonePointKind: KMLImportService.StandalonePointKind = .waypoint) async {
@@ -174,70 +275,24 @@ final class CoreServices: ObservableObject {
         // reason. Shown together with the failures in a report dialog after the import.
         var reportLines: [String] = []
 
-        for url in urls {
-            let originalName = url.lastPathComponent
-            toastManager.show(message: "Import started: \(originalName)", kind: .info)
-            ErrorLogger.shared.log("Import started: \(originalName)")
+        // Access to the chosen files and folders lasts for the whole import
+        let scoped = urls.filter { $0.startAccessingSecurityScopedResource() }
+        defer { scoped.forEach { $0.stopAccessingSecurityScopedResource() } }
 
-            if url.pathExtension.lowercased() == "zip" {
-                let err = RutError.zipNotSupported
-                ErrorLogger.shared.log(err)
-                failures.append((originalName, err.localizedDescription))
-                continue
+        for unit in importUnits(for: urls) {
+            let label: String
+            switch unit {
+            case .file(let url): label = url.lastPathComponent
+            case .a109Card(let name, _): label = name
             }
-
-            // KMZ counted as zip by some systems — use extension-based lookup
-            guard let baseImporter = importer(for: url) else {
-                let err = RutError.invalidFormat("Unsupported file: \(originalName)")
-                ErrorLogger.shared.log(err)
-                failures.append((originalName, err.localizedDescription))
-                continue
-            }
+            toastManager.show(message: "Import started: \(label)", kind: .info)
+            ErrorLogger.shared.log("Import started: \(label)")
 
             do {
-                // Vi kopierar alltid till temp först för att undvika problem med låsta filer
-                let tempDir = FileManager.default.temporaryDirectory
-                let localURL = tempDir.appendingPathComponent(originalName)
-                try? FileManager.default.removeItem(at: localURL)
-
-                let secured = url.startAccessingSecurityScopedResource()
-                defer { if secured { url.stopAccessingSecurityScopedResource() } }
-
-                try FileManager.default.copyItem(at: url, to: localURL)
-                defer { try? FileManager.default.removeItem(at: localURL) }
-
-                // Inject context for A109; remap KML/KMZ to vector importers if requested
-                let finalImporter: RouteImporting
-                let ext = localURL.pathExtension.lowercased()
-                if baseImporter is A109ImportService {
-                    finalImporter = A109ImportService(
-                        existingAirports: navStore.document.userAirports,
-                        existingNavaids: navStore.document.userNavaids,
-                        existingWaypoints: navStore.document.userWaypoints
-                    )
-                } else if kmlAsVector && ext == "kml" {
-                    finalImporter = KMLVectorImportService()
-                } else if kmlAsVector && ext == "kmz" {
-                    finalImporter = KMZImportService()
-                } else if ext == "kmz" {
-                    finalImporter = KMZNavigationImportService(standalonePointKind: standalonePointKind)
-                } else if ext == "kml" {
-                    finalImporter = KMLImportService(standalonePointKind: standalonePointKind)
-                } else {
-                    finalImporter = baseImporter
-                }
-
-                let doc: NavigationDocument
-                if let acoImporter = finalImporter as? ACOImportService {
-                    // For ACO files, capture parse warnings
-                    let (layer, warnings) = try acoImporter.importLayerWithWarnings(from: localURL)
-                    var acoDoc = NavigationDocument()
-                    if !layer.shapes.isEmpty { acoDoc.vectorLayers = [layer] }
-                    reportLines += warnings.map { "\(originalName): record not imported – \($0)" }
-                    doc = acoDoc
-                } else {
-                    doc = try finalImporter.importDocument(from: localURL)
-                }
+                // Every importer reports what it could not parse or skipped, with the reason
+                let (doc, importWarnings) = try importUnit(unit, kmlAsVector: kmlAsVector,
+                                                           standalonePointKind: standalonePointKind)
+                reportLines += importWarnings.map { "\(label): \($0)" }
 
                 foundItems += doc.routes.count + doc.userAirports.count
                             + doc.userNavaids.count + doc.userWaypoints.count
@@ -255,7 +310,7 @@ final class CoreServices: ObservableObject {
 
             } catch {
                 ErrorLogger.shared.log(error)
-                failures.append((originalName, error.localizedDescription))
+                failures.append((label, error.localizedDescription))
             }
         }
 
@@ -309,7 +364,7 @@ final class CoreServices: ObservableObject {
         if !failureLines.isEmpty || !reportLines.isEmpty {
             var titleParts: [String] = []
             if !failureLines.isEmpty { titleParts.append("\(failureLines.count) failed") }
-            if !reportLines.isEmpty { titleParts.append("\(reportLines.count) skipped") }
+            if !reportLines.isEmpty { titleParts.append("\(reportLines.count) problem(s)") }
             toastManager.importWarningTitle = "Import report: " + titleParts.joined(separator: ", ")
             toastManager.importWarnings = failureLines + Self.sortedReportLines(reportLines)
         }

@@ -51,7 +51,17 @@ class KMLImportService: NSObject, RouteImporting, XMLParserDelegate {
     private var wptCounter = 1
     private var standaloneCount = 0
 
+    // Records that could not be parsed or were skipped, with the reason
+    private var warnings: [String] = []
+    private var ignoredPolygons = 0
+    private var ignoredFolderLines = 0
+    private var ignoredExtraTopLevelLines = 0
+
     func importDocument(from url: URL) throws -> NavigationDocument {
+        try importDocumentWithWarnings(from: url).0
+    }
+
+    func importDocumentWithWarnings(from url: URL) throws -> (NavigationDocument, [String]) {
         // 1. Read file (robust, same pattern as FPLImportService)
         var contentString = ""
         do {
@@ -67,6 +77,10 @@ class KMLImportService: NSObject, RouteImporting, XMLParserDelegate {
 
     /// Parses KML that is already in memory, e.g. doc.kml extracted from a KMZ archive.
     func importDocument(kmlData: Data, documentName: String) throws -> NavigationDocument {
+        try importDocumentWithWarnings(kmlData: kmlData, documentName: documentName).0
+    }
+
+    func importDocumentWithWarnings(kmlData: Data, documentName: String) throws -> (NavigationDocument, [String]) {
         let contentString = String(data: kmlData, encoding: .utf8)
             ?? String(data: kmlData, encoding: .isoLatin1) ?? ""
         return try importDocument(kmlString: contentString, documentName: documentName)
@@ -86,7 +100,7 @@ class KMLImportService: NSObject, RouteImporting, XMLParserDelegate {
         return service.standaloneCount
     }
 
-    private func importDocument(kmlString: String, documentName name: String) throws -> NavigationDocument {
+    private func importDocument(kmlString: String, documentName name: String) throws -> (NavigationDocument, [String]) {
         // Reset state
         currentElement = ""; currentChars = ""
         currentFolderName = ""; inFolder = false
@@ -97,6 +111,8 @@ class KMLImportService: NSObject, RouteImporting, XMLParserDelegate {
         topLevelPoints = []; topLevelLineString = []
         wptCounter = 1
         standaloneCount = 0
+        warnings = []
+        ignoredPolygons = 0; ignoredFolderLines = 0; ignoredExtraTopLevelLines = 0
 
         var contentString = kmlString
 
@@ -120,7 +136,8 @@ class KMLImportService: NSObject, RouteImporting, XMLParserDelegate {
         parser.shouldProcessNamespaces = false
 
         if parser.parse() {
-            return buildDocument()
+            let doc = buildDocument()
+            return (doc, warnings)
         } else {
             let msg = parser.parserError?.localizedDescription ?? "Unknown"
             throw RutError.importFailed("KML XML parsing failed: \(msg)")
@@ -139,6 +156,9 @@ class KMLImportService: NSObject, RouteImporting, XMLParserDelegate {
             }
             let route = Route(routeId: UUID().uuidString, name: sanitizeRouteName(documentName), pointRefs: refs)
             routes.append(route)
+            if !topLevelLineString.isEmpty {
+                warnings.append("The line at document level was not imported: the document's points already form the route")
+            }
         } else if !topLevelLineString.isEmpty {
             // Route from LineString coordinates only – auto-name waypoints
             var refs: [RoutePointRef] = []
@@ -151,6 +171,17 @@ class KMLImportService: NSObject, RouteImporting, XMLParserDelegate {
             }
             let route = Route(routeId: UUID().uuidString, name: sanitizeRouteName(documentName), pointRefs: refs)
             routes.append(route)
+        }
+
+        // What navigation data cannot hold, summarised rather than listed one by one
+        if ignoredPolygons > 0 {
+            warnings.append("\(ignoredPolygons) polygon(s) not imported: navigation data has no polygons")
+        }
+        if ignoredFolderLines > 0 {
+            warnings.append("\(ignoredFolderLines) line(s) inside folders not imported: only a line at document level becomes a route")
+        }
+        if ignoredExtraTopLevelLines > 0 {
+            warnings.append("\(ignoredExtraTopLevelLines) additional line(s) at document level not imported: only the first becomes a route")
         }
 
         let allWaypoints = Array(importedWaypoints.values)
@@ -256,51 +287,86 @@ class KMLImportService: NSObject, RouteImporting, XMLParserDelegate {
 
     private func handlePlacemarkEnd() {
         let coords = tempCoordinates.trimmingCharacters(in: .whitespacesAndNewlines)
+        let label = tempName.isEmpty ? "(unnamed)" : tempName
 
-        if placemarkGeometry == .point {
+        switch placemarkGeometry {
+        case .point:
             // Single coordinate: lon,lat,alt
-            if let (lat, lon, ele) = parseSingleCoord(coords) {
-                if inFolder {
-                    let folderLC = currentFolderName.lowercased()
-                    if folderLC == "airports" {
-                        let ap = UserAirport(id: tempName, name: tempName,
-                                             latitude: lat, longitude: lon, elevation: ele,
-                                             magneticVariation: 0)
-                        importedAirports[tempName] = ap
-                    } else if folderLC == "navaids" {
-                        let nv = UserNavaid(id: tempName, name: tempName,
-                                            latitude: lat, longitude: lon, elevation: ele,
-                                            magneticVariation: 0, frequency: 0)
-                        importedNavaids[tempName] = nv
-                    } else {
-                        // Standalone point: not in a route and not in an Airports/Navaids folder
-                        standaloneCount += 1
-                        switch standalonePointKind {
-                        case .waypoint:
-                            makeOrReuseWaypoint(name: tempName, lat: lat, lon: lon, ele: ele)
-                        case .navaid:
-                            let pointId = tempName.isEmpty ? nextWptName() : tempName
-                            importedNavaids[pointId] = UserNavaid(id: pointId, name: pointId,
-                                                                  latitude: lat, longitude: lon, elevation: ele,
-                                                                  magneticVariation: 0, frequency: 0)
-                        case .airport:
-                            let pointId = tempName.isEmpty ? nextWptName() : tempName
-                            importedAirports[pointId] = UserAirport(id: pointId, name: pointId,
-                                                                    latitude: lat, longitude: lon, elevation: ele,
-                                                                    magneticVariation: 0)
-                        }
-                    }
+            guard let (lat, lon, ele) = parseSingleCoord(coords) else {
+                warnings.append("Placemark '\(label)': coordinates could not be read ('\(coords)'); skipped")
+                return
+            }
+            if inFolder {
+                let folderLC = currentFolderName.lowercased()
+                if folderLC == "airports" {
+                    addAirport(tempName, lat: lat, lon: lon, ele: ele)
+                } else if folderLC == "navaids" {
+                    addNavaid(tempName, lat: lat, lon: lon, ele: ele)
                 } else {
-                    // Top-level Point → potential route waypoint
-                    topLevelPoints.append((name: tempName, lat: lat, lon: lon, ele: ele))
+                    // Standalone point: not in a route and not in an Airports/Navaids folder
+                    standaloneCount += 1
+                    switch standalonePointKind {
+                    case .waypoint:
+                        makeOrReuseWaypoint(name: tempName, lat: lat, lon: lon, ele: ele)
+                    case .navaid:
+                        addNavaid(tempName.isEmpty ? nextWptName() : tempName, lat: lat, lon: lon, ele: ele)
+                    case .airport:
+                        addAirport(tempName.isEmpty ? nextWptName() : tempName, lat: lat, lon: lon, ele: ele)
+                    }
+                }
+            } else {
+                // Top-level Point → potential route waypoint
+                topLevelPoints.append((name: tempName, lat: lat, lon: lon, ele: ele))
+            }
+
+        case .lineString:
+            // Multiple coordinates (LineString)
+            if inFolder {
+                ignoredFolderLines += 1
+            } else if !topLevelLineString.isEmpty {
+                ignoredExtraTopLevelLines += 1
+            } else {
+                let (points, unreadable) = parseMultiCoord(coords)
+                if unreadable > 0 {
+                    warnings.append("Line '\(label)': \(unreadable) coordinate(s) could not be read")
+                }
+                if points.count < 2 {
+                    warnings.append("Line '\(label)': fewer than 2 readable coordinates; skipped")
+                } else {
+                    topLevelLineString = points
                 }
             }
-        } else if placemarkGeometry == .lineString {
-            // Multiple coordinates (LineString)
-            if !inFolder && topLevelLineString.isEmpty {
-                topLevelLineString = parseMultiCoord(coords)
-            }
+
+        case .other:
+            ignoredPolygons += 1
+
+        case .none:
+            warnings.append("Placemark '\(label)': no Point or LineString; skipped")
         }
+    }
+
+    private func addAirport(_ id: String, lat: Double, lon: Double, ele: Double) {
+        guard !id.isEmpty else {
+            warnings.append("Airport without name; skipped")
+            return
+        }
+        if importedAirports[id] != nil {
+            warnings.append("Airport '\(id)' appears more than once; the last one is used")
+        }
+        importedAirports[id] = UserAirport(id: id, name: id, latitude: lat, longitude: lon,
+                                           elevation: ele, magneticVariation: 0)
+    }
+
+    private func addNavaid(_ id: String, lat: Double, lon: Double, ele: Double) {
+        guard !id.isEmpty else {
+            warnings.append("Navaid without name; skipped")
+            return
+        }
+        if importedNavaids[id] != nil {
+            warnings.append("Navaid '\(id)' appears more than once; the last one is used")
+        }
+        importedNavaids[id] = UserNavaid(id: id, name: id, latitude: lat, longitude: lon,
+                                         elevation: ele, magneticVariation: 0, frequency: 0)
     }
 
     // MARK: - Coordinate parsing
@@ -319,19 +385,21 @@ class KMLImportService: NSObject, RouteImporting, XMLParserDelegate {
         return (lat, lon, ele)
     }
 
-    /// Parse space-separated "lon,lat,alt" triples → [(lat, lon)]
-    private func parseMultiCoord(_ raw: String) -> [(lat: Double, lon: Double)] {
-        raw.components(separatedBy: .whitespacesAndNewlines)
-            .compactMap { triple -> (lat: Double, lon: Double)? in
-                let t = triple.trimmingCharacters(in: .whitespaces)
-                guard !t.isEmpty else { return nil }
-                let parts = t.components(separatedBy: ",")
-                guard parts.count >= 2,
-                      let lon = Double(parts[0]),
-                      let lat = Double(parts[1])
-                else { return nil }
-                return (lat, lon)
+    /// Parse space-separated "lon,lat,alt" triples → [(lat, lon)], plus how many could not be read
+    private func parseMultiCoord(_ raw: String) -> ([(lat: Double, lon: Double)], Int) {
+        var points: [(lat: Double, lon: Double)] = []
+        var unreadable = 0
+        for triple in raw.components(separatedBy: .whitespacesAndNewlines) {
+            let t = triple.trimmingCharacters(in: .whitespaces)
+            guard !t.isEmpty else { continue }
+            let parts = t.components(separatedBy: ",")
+            guard parts.count >= 2, let lon = Double(parts[0]), let lat = Double(parts[1]) else {
+                unreadable += 1
+                continue
             }
+            points.append((lat, lon))
+        }
+        return (points, unreadable)
     }
 
     // MARK: - Helpers
@@ -339,7 +407,12 @@ class KMLImportService: NSObject, RouteImporting, XMLParserDelegate {
     @discardableResult
     private func makeOrReuseWaypoint(name: String, lat: Double, lon: Double, ele: Double) -> UserWaypoint {
         let finalName = name.isEmpty ? nextWptName() : name
-        if let existing = importedWaypoints[finalName] { return existing }
+        if let existing = importedWaypoints[finalName] {
+            if abs(existing.latitude - lat) > 1e-6 || abs(existing.longitude - lon) > 1e-6 {
+                warnings.append("Waypoint '\(finalName)' appears again at a different position; the first position is used")
+            }
+            return existing
+        }
         let wp = UserWaypoint(id: finalName, name: finalName,
                               type: finalName.hasPrefix("WPT") ? .wpt : .custom,
                               latitude: lat, longitude: lon, elevation: ele)

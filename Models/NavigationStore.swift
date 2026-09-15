@@ -160,6 +160,13 @@ final class NavigationStore: ObservableObject {
             }
         }
 
+        // Route points that resolve to nothing in the file or the app cannot be shown
+        for route in merged.routes where newRouteIds.contains(route.id) {
+            for (index, ref) in route.pointRefs.enumerated() where coordinate(of: ref, in: merged) == nil {
+                result.skipped.append("Route \(route.name): point \(index + 1) '\(ref.refId)' (\(ref.kind.rawValue)) was not found in the file or the app; the route cannot show it")
+            }
+        }
+
         document = merged
 
         if autoRenumberWaypoints && !newRouteIds.isEmpty {
@@ -436,12 +443,13 @@ final class NavigationStore: ObservableObject {
             && abs(a.frequency - b.frequency) <= 0.001
     }
 
-    /// Managed waypoint types (WPT, IP, …) get their IDs/names regenerated when routes are
-    /// renumbered, so only CUSTOM waypoints are compared by name.
+    /// Identical means same ID, name, type and position. Differently named waypoints at the same
+    /// position are different data (an A109 card can hold both), and dropping one would shift the
+    /// record numbers that A109 routes refer to.
     private static func sameWaypoint(_ a: UserWaypoint, _ b: UserWaypoint) -> Bool {
-        a.type == b.type && sameCoordinate(a.coordinate, b.coordinate)
+        a.id == b.id && a.name == b.name && a.type == b.type
+            && sameCoordinate(a.coordinate, b.coordinate)
             && abs(a.elevation - b.elevation) <= 0.5
-            && (a.type != .custom || a.name == b.name)
     }
 
     private static func waypointIds(in route: Route) -> [String] {

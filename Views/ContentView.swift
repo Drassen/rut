@@ -197,7 +197,7 @@ struct ContentView: View {
                                 .textSelection(.enabled)
                         }
                     } header: {
-                        Text("Failed or skipped during import, with reason")
+                        Text("Problems found during import, with reason")
                     }
                 }
                 .navigationTitle(toastManager.importWarningTitle)
@@ -218,7 +218,8 @@ struct ContentView: View {
                 get: { activeImporter != nil },
                 set: { if !$0 { activeImporter = nil } }
             ),
-            allowedContentTypes: lastImporter == .exportFolder ? [.folder] : [.item, .json],
+            // Import accepts folders too (e.g. an A109 card), expanded in CoreServices.importDocuments
+            allowedContentTypes: lastImporter == .exportFolder ? [.folder] : [.item, .json, .folder],
             allowsMultipleSelection: lastImporter == .importing
         ) { result in
             // activeImporter is already nil when this fires (binding set cleared it)

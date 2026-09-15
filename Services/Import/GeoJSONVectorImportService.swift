@@ -4,6 +4,10 @@ struct GeoJSONVectorImportService: RouteImporting {
     let supportedExtensions = ["geojson", "json"]
 
     func importDocument(from url: URL) throws -> NavigationDocument {
+        try importDocumentWithWarnings(from: url).0
+    }
+
+    func importDocumentWithWarnings(from url: URL) throws -> (NavigationDocument, [String]) {
         guard let data = try? Data(contentsOf: url) else {
             throw RutError.importFailed("Could not read GeoJSON file.")
         }
@@ -16,9 +20,10 @@ struct GeoJSONVectorImportService: RouteImporting {
 
         let layerName = url.deletingPathExtension().lastPathComponent
         var shapes: [VectorShape] = []
+        var warnings: [String] = []
 
         for (index, feature) in features.enumerated() {
-            if let shape = parseFeature(feature, index: index) {
+            if let shape = parseFeature(feature, index: index, warnings: &warnings) {
                 shapes.append(shape)
             }
         }
@@ -26,16 +31,10 @@ struct GeoJSONVectorImportService: RouteImporting {
         let layer = VectorLayer(name: layerName, shapes: shapes)
         var doc = NavigationDocument()
         doc.vectorLayers = [layer]
-        return doc
+        return (doc, warnings)
     }
 
-    private func parseFeature(_ feature: [String: Any], index: Int) -> VectorShape? {
-        guard let geometryDict = feature["geometry"] as? [String: Any],
-              let type = geometryDict["type"] as? String
-        else {
-            return nil
-        }
-
+    private func parseFeature(_ feature: [String: Any], index: Int, warnings: inout [String]) -> VectorShape? {
         let properties = feature["properties"] as? [String: Any] ?? [:]
         let name = properties["name"] as? String ?? "Shape \(index + 1)"
         var notes = ""
@@ -58,72 +57,10 @@ struct GeoJSONVectorImportService: RouteImporting {
             notes = propertiesNotes
         }
 
-        var vectorGeometry: VectorGeometry?
-
-        switch type {
-        case "Point":
-            if let coords = geometryDict["coordinates"] as? [Double], coords.count == 2 {
-                let lon = coords[0], lat = coords[1]
-                vectorGeometry = .point(lat: lat, lon: lon)
-            }
-
-        case "LineString":
-            if let coords = geometryDict["coordinates"] as? [[Double]] {
-                let flipped = coords.compactMap { c -> [Double]? in
-                    guard c.count == 2 else { return nil }
-                    return [c[1], c[0]]
-                }
-                if !flipped.isEmpty {
-                    vectorGeometry = .polyline(coordinates: flipped)
-                }
-            }
-
-        case "Polygon":
-            if let rings = geometryDict["coordinates"] as? [[[Double]]], !rings.isEmpty {
-                let outerRing = rings[0]
-                let flipped = outerRing.compactMap { c -> [Double]? in
-                    guard c.count == 2 else { return nil }
-                    return [c[1], c[0]]
-                }
-                if !flipped.isEmpty {
-                    vectorGeometry = .polygon(coordinates: flipped)
-                }
-            }
-
-        case "MultiLineString":
-            if let lineStrings = geometryDict["coordinates"] as? [[[Double]]] {
-                for lineCoords in lineStrings {
-                    let flipped = lineCoords.compactMap { c -> [Double]? in
-                        guard c.count == 2 else { return nil }
-                        return [c[1], c[0]]
-                    }
-                    if !flipped.isEmpty {
-                        vectorGeometry = .polyline(coordinates: flipped)
-                        break
-                    }
-                }
-            }
-
-        case "MultiPolygon":
-            if let polygons = geometryDict["coordinates"] as? [[[[Double]]]], !polygons.isEmpty {
-                let rings = polygons[0]
-                if !rings.isEmpty {
-                    let outerRing = rings[0]
-                    let flipped = outerRing.compactMap { c -> [Double]? in
-                        guard c.count == 2 else { return nil }
-                        return [c[1], c[0]]
-                    }
-                    if !flipped.isEmpty {
-                        vectorGeometry = .polygon(coordinates: flipped)
-                    }
-                }
-            }
-
-        default:
+        let label = "Feature \(index + 1) '\(name)'"
+        guard let geom = GeoJSONGeometryReader.read(feature["geometry"], label: label, warnings: &warnings) else {
             return nil
         }
-
-        guard let geom = vectorGeometry else { return nil }
         return VectorShape(name: name, notes: notes, geometry: geom, style: style)
     }
 }

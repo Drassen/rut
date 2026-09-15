@@ -7,13 +7,17 @@ struct KMLVectorImportService: RouteImporting {
     let supportedExtensions = ["kml"]
 
     func importDocument(from url: URL) throws -> NavigationDocument {
+        try importDocumentWithWarnings(from: url).0
+    }
+
+    func importDocumentWithWarnings(from url: URL) throws -> (NavigationDocument, [String]) {
         guard let data = try? Data(contentsOf: url) else {
             throw RutError.importFailed("Could not read KML file.")
         }
         let defaultName = url.deletingPathExtension().lastPathComponent
-        let layers = try KMLVectorParser.parse(kmlData: data, defaultLayerName: defaultName)
+        let (layers, warnings) = try KMLVectorParser.parseWithWarnings(kmlData: data, defaultLayerName: defaultName)
         var doc = NavigationDocument()
         doc.vectorLayers = layers
-        return doc
+        return (doc, warnings)
     }
 }

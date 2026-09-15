@@ -180,15 +180,14 @@ final class DrawingStateMachine: ObservableObject {
 
     // MARK: - Corridor geometry
 
-    /// Builds a rounded offset polygon around an axis polyline.
+    /// Builds an offset polygon around an axis polyline.
     /// radiusMeters is the buffer on each side.
-    /// End caps are 8-step semicircles; bends are 4-step arcs.
+    /// Ends are cut square (one corner on each side of the axis); bends are mitred.
     static func makeCorridorPolygon(from axis: [CLLocationCoordinate2D],
                                     radiusMeters: Double = 500) -> [CLLocationCoordinate2D] {
         guard axis.count >= 2 else { return [] }
 
         let bearings = (0..<axis.count - 1).map { geoBearing(axis[$0], axis[$0 + 1]) }
-        let capSteps = 4
 
         // Build right side (forward) and left side (forward)
         var right: [CLLocationCoordinate2D] = []
@@ -207,26 +206,10 @@ final class DrawingStateMachine: ObservableObject {
         right.append(geoOffset(from: axis.last!, bearingDeg: bearings.last! + 90, meters: radiusMeters))
         left.append( geoOffset(from: axis.last!, bearingDeg: bearings.last! - 90, meters: radiusMeters))
 
-        // End cap: right → (sweep through forward direction) → left
-        let endCap   = arcExplicit(center: axis.last!,
-                                   from: bearings.last! + 90,
-                                   to:   bearings.last! - 90,
-                                   throughBearing: bearings.last!,
-                                   r: radiusMeters, steps: capSteps)
-
-        // Start cap: left → (sweep through backward direction) → right
-        let startCap = arcExplicit(center: axis[0],
-                                   from: bearings[0] - 90,
-                                   to:   bearings[0] + 90,
-                                   throughBearing: bearings[0] + 180,
-                                   r: radiusMeters, steps: capSteps)
-
-        var ring = right
-        ring.append(contentsOf: endCap.dropFirst())
-        ring.append(contentsOf: left.reversed())
-        ring.append(contentsOf: startCap.dropFirst())
-        ring.append(ring[0]) // close
-        return ring
+        // Square ends: right side forward, straight across to the left side and back.
+        // Left open like polygon-tool shapes — MapPolygon and the exporters close it,
+        // and a repeated first vertex would show up as two stacked edit handles.
+        return right + left.reversed()
     }
 
     /// Returns the intersection point of the two offset lines at an interior vertex.
@@ -281,26 +264,6 @@ final class DrawingStateMachine: ObservableObject {
         }
     }
 
-    /// Sweeps an arc from `from` to `to` bearing, choosing the direction that passes through `throughBearing`.
-    private static func arcExplicit(center: CLLocationCoordinate2D,
-                                    from: Double, to: Double,
-                                    throughBearing: Double,
-                                    r: Double, steps: Int) -> [CLLocationCoordinate2D] {
-        // Normalize all bearings to [0, 360)
-        func n(_ b: Double) -> Double { var x = b.truncatingRemainder(dividingBy: 360); if x < 0 { x += 360 }; return x }
-        let f = n(from), t = n(to), mid = n(throughBearing)
-
-        // Try clockwise delta (positive)
-        let cwDelta = n(t - f)  // 0...360
-        // Does mid lie within f..f+cwDelta clockwise?
-        let midCW = n(mid - f)
-        let useClockwise = midCW <= cwDelta
-
-        let delta = useClockwise ? cwDelta : -(360 - cwDelta)
-        return (0...steps).map { i in
-            geoOffset(from: center, bearingDeg: f + delta * Double(i) / Double(steps), meters: r)
-        }
-    }
 }
 
 // MARK: - VectorStore
@@ -511,11 +474,39 @@ final class VectorStore: ObservableObject {
         editingVertices[index] = coord
     }
 
+    /// Inserts a new vertex so it ends up at `index` (index == count appends).
+    func insertEditVertex(_ coord: CLLocationCoordinate2D, at index: Int) {
+        guard index >= 0, index <= editingVertices.count else { return }
+        editingVertices.insert(coord, at: index)
+    }
+
+    /// True when the shape being edited is a polygon (its outline closes back to the first vertex).
+    var editingShapeIsPolygon: Bool {
+        guard let id = activeShapeId, case .polygon = findShape(id: id)?.shape.geometry else { return false }
+        return true
+    }
+
+    /// True when vertices can be inserted into the shape being edited (polylines and polygons).
+    var editingShapeSupportsVertexInsert: Bool {
+        guard let id = activeShapeId, let geometry = findShape(id: id)?.shape.geometry else { return false }
+        switch geometry {
+        case .polyline, .polygon: return true
+        case .point, .circle:     return false
+        }
+    }
+
     private func extractVertices(from shape: VectorShape) -> [CLLocationCoordinate2D] {
         switch shape.geometry {
         case .point(let lat, let lon):
             return [CLLocationCoordinate2D(latitude: lat, longitude: lon)]
-        case .polyline(let coords), .polygon(let coords):
+        case .polyline(let coords):
+            return coords.map { CLLocationCoordinate2D(latitude: $0[0], longitude: $0[1]) }
+        case .polygon(var coords):
+            // Closed rings (older corridors, imported areas) repeat the first vertex at the
+            // end; drop it so it doesn't become a second handle stacked on the first.
+            if coords.count > 3, let first = coords.first, let last = coords.last, first == last {
+                coords.removeLast()
+            }
             return coords.map { CLLocationCoordinate2D(latitude: $0[0], longitude: $0[1]) }
         case .circle(let lat, let lon, let r):
             let center = CLLocationCoordinate2D(latitude: lat, longitude: lon)

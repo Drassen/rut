@@ -9,13 +9,17 @@ final class KMZImportService: NSObject, RouteImporting, XMLParserDelegate {
     let supportedExtensions = ["kmz"]
 
     func importDocument(from url: URL) throws -> NavigationDocument {
+        try importDocumentWithWarnings(from: url).0
+    }
+
+    func importDocumentWithWarnings(from url: URL) throws -> (NavigationDocument, [String]) {
         let data = try Data(contentsOf: url)
         let kmlData = try Self.extractFirstKML(from: data)
         let defaultName = url.deletingPathExtension().lastPathComponent
-        let layers = try KMLVectorParser.parse(kmlData: kmlData, defaultLayerName: defaultName)
+        let (layers, warnings) = try KMLVectorParser.parseWithWarnings(kmlData: kmlData, defaultLayerName: defaultName)
         var doc = NavigationDocument()
         doc.vectorLayers = layers
-        return doc
+        return (doc, warnings)
     }
 
     // MARK: - ZIP extraction
@@ -143,8 +147,12 @@ final class KMZNavigationImportService: RouteImporting {
     }
 
     func importDocument(from url: URL) throws -> NavigationDocument {
+        try importDocumentWithWarnings(from: url).0
+    }
+
+    func importDocumentWithWarnings(from url: URL) throws -> (NavigationDocument, [String]) {
         let kmlData = try KMZImportService.extractFirstKML(from: Data(contentsOf: url))
-        return try KMLImportService(standalonePointKind: standalonePointKind).importDocument(
+        return try KMLImportService(standalonePointKind: standalonePointKind).importDocumentWithWarnings(
             kmlData: kmlData,
             documentName: url.deletingPathExtension().lastPathComponent
         )
@@ -157,6 +165,11 @@ final class KMZNavigationImportService: RouteImporting {
 final class KMLVectorParser: NSObject, XMLParserDelegate {
 
     static func parse(kmlData: Data, defaultLayerName: String) throws -> [VectorLayer] {
+        try parseWithWarnings(kmlData: kmlData, defaultLayerName: defaultLayerName).0
+    }
+
+    /// Parses KML into layers, plus one line per placemark that could not be read or lost data.
+    static func parseWithWarnings(kmlData: Data, defaultLayerName: String) throws -> ([VectorLayer], [String]) {
         // Strip xmlns to simplify parsing
         var text = String(data: kmlData, encoding: .utf8) ?? String(data: kmlData, encoding: .isoLatin1) ?? ""
         text = text.replacingOccurrences(of: " xmlns=\"[^\"]+\"", with: "", options: .regularExpression)
@@ -173,8 +186,14 @@ final class KMLVectorParser: NSObject, XMLParserDelegate {
         guard xmlParser.parse() else {
             throw RutError.importFailed("KMZ: KML XML parse error: \(xmlParser.parserError?.localizedDescription ?? "unknown")")
         }
-        return parser.result()
+        return (parser.result(), parser.warnings)
     }
+
+    // Placemarks that could not be read or lost data, with the reason
+    private(set) var warnings: [String] = []
+    private var pmGeometryCount = 0
+    private var pmHoleCount = 0
+    private var pmUnreadableCoordinates = 0
 
     // MARK: - State
 
@@ -247,9 +266,11 @@ final class KMLVectorParser: NSObject, XMLParserDelegate {
             strokeColor = VectorStyle().strokeColor
             fillColor   = VectorStyle().fillColor
             strokeWidth = VectorStyle().strokeWidth
-        case "Point":       inPoint = true
-        case "LineString":  inLineString = true
-        case "Polygon":     inPolygon = true
+            pmGeometryCount = 0; pmHoleCount = 0; pmUnreadableCoordinates = 0
+        case "Point":       inPoint = true; pmGeometryCount += 1
+        case "LineString":  inLineString = true; pmGeometryCount += 1
+        case "Polygon":     inPolygon = true; pmGeometryCount += 1
+        case "innerBoundaryIs": pmHoleCount += 1
         case "outerBoundaryIs": inOuterBoundary = true
         case "LinearRing":  inLinearRing = true
         case "coordinates": inCoordinates = true; coordsBuf = ""
@@ -331,6 +352,21 @@ final class KMLVectorParser: NSObject, XMLParserDelegate {
         case "Style":     inStyle = false
 
         case "Placemark":
+            let label = pmName.isEmpty ? "(unnamed)" : pmName
+            if inPlacemark {
+                if pmUnreadableCoordinates > 0 {
+                    warnings.append("Placemark '\(label)': \(pmUnreadableCoordinates) coordinate(s) could not be read")
+                }
+                if pmGeometryCount > 1 {
+                    warnings.append("Placemark '\(label)' has \(pmGeometryCount) geometries; only the last one is imported")
+                }
+                if pmHoleCount > 0 && pmGeometry != nil {
+                    warnings.append("Placemark '\(label)': \(pmHoleCount) hole(s) in the polygon not imported")
+                }
+                if pmGeometry == nil {
+                    warnings.append("Placemark '\(label)': no readable geometry; skipped")
+                }
+            }
             guard inPlacemark, let geo = pmGeometry else { inPlacemark = false; break }
             var style = VectorStyle()
             style.strokeColor = strokeColor
@@ -371,14 +407,18 @@ final class KMLVectorParser: NSObject, XMLParserDelegate {
     }
 
     private func parseMulti(_ raw: String) -> [[Double]] {
-        raw.components(separatedBy: .whitespacesAndNewlines).compactMap { triple in
+        var points: [[Double]] = []
+        for triple in raw.components(separatedBy: .whitespacesAndNewlines) {
             let t = triple.trimmingCharacters(in: .whitespaces)
-            guard !t.isEmpty else { return nil }
+            guard !t.isEmpty else { continue }
             let p = t.components(separatedBy: ",")
-            guard p.count >= 2,
-                  let lon = Double(p[0]), let lat = Double(p[1]) else { return nil }
-            return [lat, lon]
+            guard p.count >= 2, let lon = Double(p[0]), let lat = Double(p[1]) else {
+                pmUnreadableCoordinates += 1
+                continue
+            }
+            points.append([lat, lon])
         }
+        return points
     }
 
     // MARK: - KML color conversion: AABBGGRR
