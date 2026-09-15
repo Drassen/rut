@@ -14,7 +14,7 @@ Kritisk funktion: export/import av 6 filer till PCMCIA-kort för AgustaWestland 
 - `Services/Export/A109ExportService.swift` – huvud-export, bygger alla 6 filer
 - `Services/Import/A109ImportService.swift` – import + 6-bit decode
 - `Models/NavigationModel.swift` – datamodeller
-- `Views/MapView.swift` – karta + gesture-arkitektur
+- `Services/RutMKMapView.swift` – kartan (MKMapView) + gest-arkitektur; delade markörvyer i `Views/MapView.swift`
 - `Services/AirspaceService.swift` – LFV luftrumszoner via WFS API
 - `PCMCIA avkodning/` – all reverse-engineering dokumentation
 - `PCMCIA avkodning/verify_card.py` – verifiera kort mot kända referenskort
@@ -110,14 +110,27 @@ Max 40 fix-punkter per rutt.
 - byte14: 0x40, bytes16/28/40/52: 0x80
 - 4 checksums (wpt@68, airport@80, navaid@92, route@104): summa signed 16-bit par som signed 32-bit BE
 
-## MapView – Gesture-arkitektur
+## Kartan – RutMKMapView (MKMapView)
 
-Enda `LongPressGesture` sitter på `Map`-vyn med `.simultaneousGesture`.
-Annotation-vyer har bara `.onTapGesture`.
-`findDragTarget(at:proxy:)` gör hit-test (30pt radius) vid long press.
+Kartan är ett `MKMapView` via `UIViewRepresentable` (`Services/RutMKMapView.swift`). SwiftUI `Map`
+(tidigare `RutMapView`) togs bort 2026-09-15: den lägger en overlay per `MapPolygon`, och med LFV:s
+234 luftrumszoner utzoomat låste det panoreringen till ~30 fps (uppmätt på iPad). Luftrummet ritas
+nu som en `MKMultiPolygon` per zontyp (4 overlays) → 60 fps. Återinför inte en overlay per zon.
 
-Tidigare försök med `LongPressGesture` per marker blockerade MapKits pan-gesture.
-Ingen ren SwiftUI-lösning — enda fungerande är gesture på map-nivå.
+- `makeContent()` bygger specar (overlays i ritordning, annotations, interaktionsdata); koordinatorn
+  diffar dem per nyckel och byter bara ut det som ändrats.
+- Markörer är SwiftUI-vyerna i `Views/MapView.swift` (`DatabaseMarkerView`, `RouteMarkerShapeView`, …)
+  hostade i `MKAnnotationView`; z-ordning via `MapAnnotationZ` → `zPriority`.
+- Gester är UIKit-igenkännare på kartan:
+  - `UILongPressGestureRecognizer` 0,5 s: dra airports/navaids/off-route waypoints/aktiva ruttpunkter
+    (30 pt), infoga på ruttlinje (18 pt, snap 32 pt), annars lägg till punkt vid släpp. I
+    vektorredigering: nytt hörn på kant (22 pt). Kartans pan/zoom låses under drag.
+  - `UITapGestureRecognizer` med `cancelsTouchesInView = false` (annars når markörernas SwiftUI-tap
+    inte fram): vektorval (punkt 32 pt, linje/kant 22 pt) eller rit-hörn.
+  - `UILongPressGestureRecognizer` 0 s som bara tar emot touch nära ett redigeringshandtag (44 pt),
+    så hörnet dras utan att kartan hinner panorera.
+- Ritförhandsvisning, redigeringshandtag och ruttlinjen under drag ritas i UIView-lager ovanpå kartan
+  och följer kartan via `mapViewDidChangeVisibleRegion`.
 
 ## FAT-korruption vid kortborttagning
 
@@ -138,7 +151,7 @@ Om kortet dras ur iPaden innan iOS flushät skrivbuffertarna kan FAT1 bli inkomp
   referensfiler med `Euronav5 avkodning/analysis/verify_swift.py`)
 
 ### Annat
-- **LFV luftrum:** Laddas vid app-start, visas som icke-klickbara polygoner
+- **LFV luftrum:** Laddas vid app-start, visas som icke-klickbara polygoner (en `MKMultiPolygon` per zontyp)
 
 ## felsökning
 När man försöker hitta ett fel i koden måste hela felkedjan kontrolleras och reproduceras och förklaras innan den åtgärdas. Det räcker inte med att bara hitta felet.

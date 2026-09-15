@@ -111,7 +111,7 @@ struct VectorModeView: View {
     // MARK: Map area (shared)
 
     private var mapArea: some View {
-        RutMapView(
+        RutMKMapView(
             onPointTap: nil,    // navigation data is non-interactive in vector mode
             onMapLongPress: nil
         )

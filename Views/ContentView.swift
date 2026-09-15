@@ -319,7 +319,7 @@ struct ContentView: View {
     }
 
     private var persistentMap: some View {
-        RutMapContainer(
+        RutMKMapView(
             onPointTap: { point in
                 guard core.appMode == .navigation else { return }
                 handlePointTap(point)
@@ -887,7 +887,6 @@ private struct SettingsView: View {
     @State private var currentName: String? = DefaultPresetService.shared.defaultFileName
     @AppStorage("autoRenumberWaypoints") private var autoRenumberWaypoints: Bool = true
     @AppStorage("autoLoadLFVLayer") private var autoLoadLFVLayer: Bool = true
-    @AppStorage("useMKMapView") private var useMKMapView: Bool = false
 
     var body: some View {
         NavigationStack {
@@ -902,12 +901,6 @@ private struct SettingsView: View {
                     Toggle("Auto-load LFV vector layer", isOn: $autoLoadLFVLayer)
                 } footer: {
                     Text("When enabled, the LFV airspace (luftrum) vector layer is fetched and shown automatically at startup.")
-                }
-
-                Section {
-                    Toggle("New map engine (beta)", isOn: $useMKMapView)
-                } footer: {
-                    Text("Draws the map with MKMapView and groups the LFV airspace per zone type, which keeps zoomed-out panning smooth. Dragging points, inserting route points and vector drawing/editing are not available yet — turn this off to use them.")
                 }
 
                 Section("Default airports & navaids") {
